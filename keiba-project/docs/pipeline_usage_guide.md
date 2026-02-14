@@ -153,38 +153,36 @@ data/races/YYYYMMDD_会場_レース名_ev_results.json
 
 ---
 
-## 一括実行スクリプト（将来実装予定）
+## 一括実行スクリプト
+
+全4ステップを自動実行するスクリプトが用意されています。
+
+### Linux/Mac/Git Bash
 
 ```bash
-# run_pipeline.sh（未実装）
-#!/bin/bash
-echo "=== 全自動パイプライン ==="
-echo ""
-echo "[Step 1] JRAオッズ取得"
-python jra_scraper.py
-
-# 最新のinput.jsonを取得
-LATEST_INPUT=$(ls -t ../data/races/*_input.json | head -1)
-echo "対象: $LATEST_INPUT"
-
-echo "[Step 2] netkeiba過去走追加"
-python netkeiba_scraper.py "$LATEST_INPUT"
-
-# enriched_input.jsonを取得
-ENRICHED="${LATEST_INPUT/_input.json/_enriched_input.json}"
-
-echo "[Step 3] 基礎点算出"
-python scoring_engine.py "$ENRICHED"
-
-# base_scored.jsonを取得
-SCORED="${ENRICHED/_enriched_input.json/_base_scored.json}"
-
-echo "[Step 4] 期待値計算"
-python ev_calculator.py "$SCORED"
-
-echo ""
-echo "=== パイプライン完了 ==="
+cd tools
+bash run_pipeline.sh
 ```
+
+### Windows (コマンドプロンプト)
+
+```cmd
+cd tools
+run_pipeline.bat
+```
+
+**動作:**
+1. jra_scraper.pyを実行してオッズ取得
+2. 最新のinput.jsonに対してnetkeiba_scraper.pyを実行
+3. enriched_input.jsonに対してscoring_engine.pyを実行
+4. base_scored.jsonに対してev_calculator.pyを実行
+5. 全ファイルパスを表示
+
+**所要時間:** 約2〜3分（16頭の場合）
+
+**注意事項:**
+- Step 1（jra_scraper）は対話的な操作が必要です（開催・レース選択）
+- エラーが発生した場合、該当ステップで停止します
 
 ---
 
