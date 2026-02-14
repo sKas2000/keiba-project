@@ -1,0 +1,38 @@
+{
+  "race": {
+    "date": "2026-02-14",
+    "venue": "京都",
+    "race_number": 4,
+    "name": "3歳未勝利",
+    "grade": "未勝利",
+    "surface": "ダート",
+    "distance": 1400,
+    "direction": "右",
+    "entries": 16,
+    "weather": "",
+    "track_condition": ""
+  },
+  "parameters": {
+    "temperature": 10,
+    "budget": 1500,
+    "top_n": 6
+  },
+  "horses": [
+    { "num": 1, "name": "ショウナンタマユラ", "score": 30, "score_breakdown": { "ability": 10, "jockey": 10, "fitness": 5, "form": 3, "other": 2 }, "odds_win": 19.8, "odds_place": 4.5, "note": "2戦凡走。芝→ダート替わりも改善見えず" },
+    { "num": 2, "name": "レヴァンターセ", "score": 38, "score_breakdown": { "ability": 12, "jockey": 15, "fitness": 5, "form": 4, "other": 2 }, "odds_win": 27.8, "odds_place": 5.5, "note": "1戦のみ7着。浜中騎乗で上積み期待" },
+    { "num": 3, "name": "クリノトウシン", "score": 20, "score_breakdown": { "ability": 5, "jockey": 5, "fitness": 5, "form": 3, "other": 2 }, "odds_win": 116.9, "odds_place": 20.0, "note": "芝1200m15着大敗からダート替わり" },
+    { "num": 4, "name": "テイエムスワーブ", "score": 15, "score_breakdown": { "ability": 3, "jockey": 3, "fitness": 4, "form": 3, "other": 2 }, "odds_win": 175.0, "odds_place": 30.0, "note": "2戦大敗。馬格小さく苦戦続き" },
+    { "num": 5, "name": "キープシャイニング", "score": 78, "score_breakdown": { "ability": 38, "jockey": 10, "fitness": 15, "form": 10, "other": 5 }, "odds_win": 2.7, "odds_place": 1.4, "note": "6戦2着1回3着2回。京都ダ1400m4回経験で常に上位争い" },
+    { "num": 6, "name": "ワイドシャッフエン", "score": 30, "score_breakdown": { "ability": 10, "jockey": 10, "fitness": 5, "form": 3, "other": 2 }, "odds_win": 73.4, "odds_place": 13.0, "note": "3戦5着が最高。前走同コース5着も着差1.4秒" },
+    { "num": 7, "name": "イングラム", "score": 45, "score_breakdown": { "ability": 15, "jockey": 15, "fitness": 8, "form": 4, "other": 3 }, "odds_win": 13.9, "odds_place": 3.5, "note": "芝13着からダート替わり。-14kgは気になる" },
+    { "num": 8, "name": "ジュディーイメル", "score": 72, "score_breakdown": { "ability": 35, "jockey": 15, "fitness": 12, "form": 7, "other": 3 }, "odds_win": 7.1, "odds_place": 2.0, "note": "7戦2着2回。直近2走連続2着" },
+    { "num": 9, "name": "クランドゥルス", "score": 15, "score_breakdown": { "ability": 3, "jockey": 5, "fitness": 3, "form": 2, "other": 2 }, "odds_win": 228.4, "odds_place": 35.0, "note": "1戦15着大敗" },
+    { "num": 10, "name": "テーオーパーセル", "score": 62, "score_breakdown": { "ability": 28, "jockey": 10, "fitness": 12, "form": 7, "other": 5 }, "odds_win": 7.8, "odds_place": 2.2, "note": "新馬戦10人気で2着の好走。1戦のみだが素質を感じる内容" },
+    { "num": 11, "name": "シュネープリンセス", "score": 55, "score_breakdown": { "ability": 22, "jockey": 10, "fitness": 12, "form": 7, "other": 4 }, "odds_win": 10.4, "odds_place": 2.8, "note": "3戦3着1回。前走上がり37.1秒は出走馬中最速級" },
+    { "num": 12, "name": "ブリオーニ", "score": 18, "score_breakdown": { "ability": 5, "jockey": 3, "fitness": 5, "form": 3, "other": 2 }, "odds_win": 190.3, "odds_place": 30.0, "note": "2戦12着15着" },
+    { "num": 13, "name": "パピプペピンク", "score": 48, "score_breakdown": { "ability": 18, "jockey": 15, "fitness": 8, "form": 5, "other": 2 }, "odds_win": 13.5, "odds_place": 3.5, "note": "新馬戦3人気で7着。ダート血統。西村淳也騎乗" },
+    { "num": 14, "name": "ダンジョンヒーロー", "score": 42, "score_breakdown": { "ability": 15, "jockey": 12, "fitness": 8, "form": 5, "other": 2 }, "odds_win": 15.0, "odds_place": 3.8, "note": "2戦5着8着。距離短縮はプラス" },
+    { "num": 15, "name": "ナブッコ", "score": 25, "score_breakdown": { "ability": 8, "jockey": 8, "fitness": 4, "form": 3, "other": 2 }, "odds_win": 36.6, "odds_place": 7.0, "note": "5戦全て掲示板外。先行して止まるパターン" },
+    { "num": 16, "name": "ナウオアネヴァー", "score": 58, "score_breakdown": { "ability": 25, "jockey": 8, "fitness": 12, "form": 8, "other": 5 }, "odds_win": 6.4, "odds_place": 1.9, "note": "7戦3着1回。2人気裏切り続き。距離短縮" }
+  ]
+}
