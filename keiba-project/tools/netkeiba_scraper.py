@@ -22,6 +22,12 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
+# Windows環境での文字化け対策
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
 try:
     from playwright.async_api import async_playwright
 except ImportError:
@@ -103,32 +109,41 @@ class NetkeibaScraper:
         self.log(f"馬名検索: {horse_name}")
 
         try:
-            # netkeiba検索ページ
-            search_url = f"https://db.netkeiba.com/?pid=horse_search_detail&word={horse_name}"
-            await self.page.goto(search_url, wait_until="domcontentloaded")
-            await asyncio.sleep(1)
+            # URLエンコーディング
+            from urllib.parse import quote
+            encoded_name = quote(horse_name)
 
-            # 検索結果から最初の馬リンクを取得
-            # netkeibaの馬リンクは /horse/ を含む
-            links = await self.page.locator("a[href*='/horse/']").all()
+            # netkeiba検索ページ
+            search_url = f"https://db.netkeiba.com/?pid=horse_search_detail&word={encoded_name}"
+            await self.page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
+
+            # 検索結果テーブル内の馬リンクを取得
+            # table.nk_tb_common 内の /horse/ を含むリンク
+            links = await self.page.locator("table.nk_tb_common a[href*='/horse/']").all()
 
             if not links:
-                self.log(f"  ⚠️ 馬が見つかりません: {horse_name}")
+                # フォールバック: ページ全体から検索
+                links = await self.page.locator("a[href*='/horse/']").all()
+
+            if not links:
+                self.log(f"  [!] 馬が見つかりません: {horse_name}")
                 return ""
 
-            # 最初の馬詳細リンクを取得
-            first_link = links[0]
-            href = await first_link.get_attribute("href")
+            # 各リンクのhrefを確認して、top.htmlでないものを選択
+            for link in links:
+                href = await link.get_attribute("href")
+                if href and "top.html" not in href and "/horse/" in href:
+                    # 相対URLを絶対URLに変換
+                    if href.startswith("/"):
+                        href = f"https://db.netkeiba.com{href}"
+                    self.log(f"  [OK] 馬ページ: {href}")
+                    return href
 
-            if href:
-                # 相対URLを絶対URLに変換
-                if href.startswith("/"):
-                    href = f"https://db.netkeiba.com{href}"
-                self.log(f"  ✅ 馬ページ: {href}")
-                return href
+            self.log(f"  [!] 有効な馬ページが見つかりません: {horse_name}")
 
         except Exception as e:
-            self.log(f"  ❌ 馬検索エラー ({horse_name}): {e}")
+            self.log(f"  [ERROR] 馬検索エラー ({horse_name}): {e}")
 
         return ""
 
@@ -196,7 +211,7 @@ class NetkeibaScraper:
                     break
 
             if not result_table:
-                self.log(f"  ⚠️ 競走成績テーブルが見つかりません")
+                self.log(f"  [!] 競走成績テーブルが見つかりません")
                 return past_races
 
             # データ行を取得（最新4走）
@@ -282,7 +297,7 @@ class NetkeibaScraper:
             self.log(f"  → 過去走 {len(past_races)}件取得")
 
         except Exception as e:
-            self.log(f"  ❌ 過去走取得エラー: {e}")
+            self.log(f"  [ERROR] 過去走取得エラー: {e}")
             import traceback
             traceback.print_exc()
 
@@ -307,26 +322,42 @@ class NetkeibaScraper:
         result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
 
         try:
-            # netkeiba騎手検索
-            search_url = f"https://db.netkeiba.com/?pid=jockey_search_detail&word={jockey_name}"
-            await self.page.goto(search_url, wait_until="domcontentloaded")
-            await asyncio.sleep(1)
+            # URLエンコーディング
+            from urllib.parse import quote
+            encoded_name = quote(jockey_name)
 
-            # 騎手詳細ページへのリンクを取得
-            links = await self.page.locator("a[href*='/jockey/']").all()
+            # netkeiba騎手検索
+            search_url = f"https://db.netkeiba.com/?pid=jockey_search_detail&word={encoded_name}"
+            await self.page.goto(search_url, wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
+
+            # 検索結果テーブル内の騎手リンクを取得
+            links = await self.page.locator("table.nk_tb_common a[href*='/jockey/']").all()
 
             if not links:
-                self.log(f"  ⚠️ 騎手が見つかりません: {jockey_name}")
+                # フォールバック: ページ全体から検索
+                links = await self.page.locator("a[href*='/jockey/']").all()
+
+            if not links:
+                self.log(f"  [!] 騎手が見つかりません: {jockey_name}")
                 self.jockey_cache[jockey_name] = result
                 return result
 
-            # 最初の騎手リンクを取得
-            first_link = links[0]
-            href = await first_link.get_attribute("href")
+            # 各リンクのhrefを確認して、top.htmlでないものを選択
+            href = None
+            for link in links:
+                h = await link.get_attribute("href")
+                if h and "top.html" not in h and "/jockey/" in h:
+                    href = h
+                    break
 
-            if href:
-                if href.startswith("/"):
-                    href = f"https://db.netkeiba.com{href}"
+            if not href:
+                self.log(f"  [!] 有効な騎手ページが見つかりません: {jockey_name}")
+                self.jockey_cache[jockey_name] = result
+                return result
+
+            if href.startswith("/"):
+                href = f"https://db.netkeiba.com{href}"
 
                 self.log(f"  → 騎手ページ: {href}")
 
@@ -384,12 +415,12 @@ class NetkeibaScraper:
                         result["place_rate"] = place_val / 100 if place_val > 1 else place_val
 
                 if result["win_rate"] > 0 or result["place_rate"] > 0:
-                    self.log(f"  ✅ 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
+                    self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
                 else:
-                    self.log(f"  ⚠️ 成績データが見つかりません")
+                    self.log(f"  [!] 成績データが見つかりません")
 
         except Exception as e:
-            self.log(f"  ❌ 騎手検索エラー ({jockey_name}): {e}")
+            self.log(f"  [ERROR] 騎手検索エラー ({jockey_name}): {e}")
             import traceback
             traceback.print_exc()
 
@@ -408,23 +439,23 @@ async def enrich_race_data(input_path: str):
     """
     print()
     print("=" * 60)
-    print(f"  🐴 netkeiba スクレイパー v{VERSION}")
+    print(f"  [netkeiba] スクレイパー v{VERSION}")
     print("=" * 60)
     print()
 
     # input.json読み込み
     input_file = Path(input_path)
     if not input_file.exists():
-        print(f"❌ ファイルが見つかりません: {input_path}")
+        print(f"[ERROR] ファイルが見つかりません: {input_path}")
         return
 
-    print(f"📂 入力: {input_file}")
+    print(f"[入力] {input_file}")
 
     with open(input_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     horses = data.get("horses", [])
-    print(f"🐴 対象馬: {len(horses)}頭")
+    print(f"[対象馬] {len(horses)}頭")
 
     scraper = NetkeibaScraper(headless=False, debug=True)
 
@@ -437,7 +468,7 @@ async def enrich_race_data(input_path: str):
             print(f"\n[{i+1}/{len(horses)}] {horse_name}")
 
             if not horse_name:
-                print("  ⚠️ 馬名が空です。スキップします。")
+                print("  [!] 馬名が空です。スキップします。")
                 horse["past_races"] = []
                 horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
                 continue
@@ -451,7 +482,7 @@ async def enrich_race_data(input_path: str):
                 horse["past_races"] = past_races
             else:
                 horse["past_races"] = []
-                print(f"  ⚠️ 過去走データを取得できませんでした")
+                print(f"  [!] 過去走データを取得できませんでした")
 
             # 騎手成績取得
             jockey_name = horse.get("jockey", "")
@@ -460,7 +491,7 @@ async def enrich_race_data(input_path: str):
                 jockey_stats = await scraper.search_jockey(jockey_name)
                 horse["jockey_stats"] = jockey_stats
             else:
-                print(f"  ⚠️ 騎手情報がありません（input.jsonに'jockey'フィールドが必要）")
+                print(f"  [!] 騎手情報がありません（input.jsonに'jockey'フィールドが必要）")
                 horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
 
             await asyncio.sleep(0.5)  # 負荷軽減
@@ -472,13 +503,13 @@ async def enrich_race_data(input_path: str):
             json.dump(data, f, ensure_ascii=False, indent=2)
 
         print(f"\n{'=' * 60}")
-        print(f"  ✅ 保存完了: {output_file}")
+        print(f"  [OK] 保存完了: {output_file}")
         print(f"{'=' * 60}")
 
     except KeyboardInterrupt:
-        print("\n⚠️ 中断")
+        print("\n[!] 中断")
     except Exception as e:
-        print(f"\n❌ エラー: {e}")
+        print(f"\n[ERROR] エラー: {e}")
         import traceback
         traceback.print_exc()
     finally:
