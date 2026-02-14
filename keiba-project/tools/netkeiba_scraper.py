@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-netkeiba.com スクレイパー v0.2
+netkeiba.com スクレイパー v0.3
 =================================
 JRA scraperで取得したinput.jsonに、過去走データ・騎手成績を追加する
 
@@ -8,6 +8,12 @@ JRA scraperで取得したinput.jsonに、過去走データ・騎手成績を�
 - 過去走の着順、着差、上がり3F、タイム
 - 騎手の年間勝率、複勝率
 - 同コース・同距離の成績（優先度中、将来実装）
+
+v0.3の改善点（騎手検索の精度向上）:
+- 過去走データから騎手IDを抽出
+- 騎手検索を回避し、IDから直接成績ページにアクセス
+- 騎手名の正規化による照合精度向上
+- 全騎手が同じIDになる問題を解決
 
 v0.2の改善点:
 - headless=True（パフォーマンス向上）
@@ -20,7 +26,7 @@ v0.2の改善点:
   python netkeiba_scraper.py <input.jsonのパス>
 """
 
-VERSION = "0.2"
+VERSION = "0.3"
 
 import asyncio
 import json
@@ -76,6 +82,23 @@ def encode_for_netkeiba(text: str) -> str:
     except UnicodeEncodeError:
         # EUC-JPで表現できない文字がある場合はUTF-8にフォールバック
         return quote(text)
+
+
+def normalize_jockey_name(name: str) -> str:
+    """
+    騎手名を正規化（比較用）
+    - 全角→半角変換（英数字・記号）
+    - 空白・ドット・中黒を除去
+    - 大文字→小文字
+    """
+    import unicodedata
+    # 全角→半角
+    normalized = unicodedata.normalize('NFKC', name)
+    # 空白・ドット・中黒を除去
+    normalized = normalized.replace(" ", "").replace("　", "").replace(".", "").replace("・", "").replace("．", "")
+    # 小文字化
+    normalized = normalized.lower()
+    return normalized
 
 
 # ============================================================
@@ -288,6 +311,8 @@ class NetkeibaScraper:
                             header_map["surface"] = i
                         elif "着順" in h:
                             header_map["finish"] = i
+                        elif "騎手" in h:
+                            header_map["jockey"] = i
                         elif "タイム" in h:
                             header_map["time"] = i
                         elif "着差" in h:
@@ -330,6 +355,8 @@ class NetkeibaScraper:
                     "distance": "",
                     "surface": "",
                     "finish": 0,
+                    "jockey_name": "",
+                    "jockey_id": "",
                     "margin": "",
                     "time": "",
                     "last3f": "",
@@ -367,6 +394,22 @@ class NetkeibaScraper:
                     finish_text = cell_texts[header_map["finish"]]
                     race_data["finish"] = safe_int(finish_text)
 
+                # 騎手情報を抽出（名前とID）
+                if "jockey" in header_map and header_map["jockey"] < len(cells):
+                    jockey_cell = cells[header_map["jockey"]]
+                    # 騎手名（テキスト）
+                    jockey_text = await jockey_cell.text_content()
+                    race_data["jockey_name"] = jockey_text.strip() if jockey_text else ""
+
+                    # 騎手ID（リンクから抽出）
+                    jockey_links = await jockey_cell.locator("a[href*='/jockey/']").all()
+                    if jockey_links:
+                        href = await jockey_links[0].get_attribute("href")
+                        # /jockey/result/recent/05585/ or /jockey/05585 から ID抽出
+                        jockey_id_match = re.search(r'/jockey/(?:result/recent/)?(\d{5})', href)
+                        if jockey_id_match:
+                            race_data["jockey_id"] = jockey_id_match.group(1)
+
                 if "time" in header_map and header_map["time"] < len(cell_texts):
                     race_data["time"] = cell_texts[header_map["time"]]
 
@@ -392,6 +435,132 @@ class NetkeibaScraper:
             traceback.print_exc()
 
         return past_races
+
+    # ----------------------------------------------------------
+    # 過去走データから騎手IDを抽出
+    # ----------------------------------------------------------
+
+    def extract_jockey_id_from_past_races(self, jockey_name: str, past_races: list) -> str:
+        """
+        過去走データから騎手名に一致する騎手IDを抽出
+        Args:
+            jockey_name: 検索する騎手名（例: "C.ルメール", "北村 友一"）
+            past_races: scrape_horse_past_racesで取得した過去走データ
+        Returns:
+            騎手ID（5桁の数字）or ""
+        """
+        if not past_races:
+            return ""
+
+        normalized_search = normalize_jockey_name(jockey_name)
+        self.log(f"過去走から騎手ID検索: {jockey_name} (正規化: {normalized_search})")
+
+        # デバッグ: 過去走の騎手情報を表示
+        for idx, race in enumerate(past_races):
+            race_jockey_name = race.get("jockey_name", "")
+            race_jockey_id = race.get("jockey_id", "")
+            self.log(f"  過去走[{idx+1}] 騎手: '{race_jockey_name}' ID: '{race_jockey_id}'")
+
+        for race in past_races:
+            race_jockey_name = race.get("jockey_name", "")
+            race_jockey_id = race.get("jockey_id", "")
+
+            if race_jockey_name and race_jockey_id:
+                normalized_race = normalize_jockey_name(race_jockey_name)
+
+                if normalized_race == normalized_search:
+                    self.log(f"  [OK] 過去走で騎手発見: {race_jockey_name} (ID: {race_jockey_id})")
+                    return race_jockey_id
+
+        self.log(f"  [!] 過去走に該当騎手なし")
+        return ""
+
+    # ----------------------------------------------------------
+    # 騎手ID → 年間成績取得（直接アクセス）
+    # ----------------------------------------------------------
+
+    async def get_jockey_stats_by_id(self, jockey_id: str, jockey_name: str = "") -> dict:
+        """
+        騎手IDから直接成績ページにアクセスして年間成績を取得
+        Args:
+            jockey_id: 騎手ID（5桁の数字）
+            jockey_name: 騎手名（キャッシュ用、省略可）
+        Returns:
+            {"win_rate": 0.15, "place_rate": 0.35, "wins": 50, "races": 300}
+        """
+        # キャッシュチェック
+        if jockey_name and jockey_name in self.jockey_cache:
+            self.log(f"騎手キャッシュ: {jockey_name}")
+            return self.jockey_cache[jockey_name]
+
+        self.log(f"騎手成績取得（ID: {jockey_id}）")
+
+        result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
+
+        try:
+            jockey_url = f"https://db.netkeiba.com/jockey/{jockey_id}"
+            await self.page.goto(jockey_url, wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(1.5)
+
+            # 年間成績を探す
+            tables = await self.page.locator("table").all()
+
+            for table in tables:
+                text = await table.text_content()
+
+                # 本年成績や通算成績のセクションを探す
+                if "本年" in text or "2026年" in text or "成績" in text:
+                    # 勝率の抽出
+                    win_match = re.search(r'勝率[^\d]*([\d.]+)', text)
+                    if win_match:
+                        win_val = safe_float(win_match.group(1))
+                        result["win_rate"] = win_val / 100 if win_val > 1 else win_val
+
+                    # 複勝率の抽出
+                    place_match = re.search(r'複勝率[^\d]*([\d.]+)', text)
+                    if place_match:
+                        place_val = safe_float(place_match.group(1))
+                        result["place_rate"] = place_val / 100 if place_val > 1 else place_val
+
+                    # 勝利数と出走数
+                    wins_match = re.search(r'(\d+)\s*勝', text)
+                    if wins_match:
+                        result["wins"] = safe_int(wins_match.group(1))
+
+                    races_match = re.search(r'(\d+)\s*戦', text)
+                    if races_match:
+                        result["races"] = safe_int(races_match.group(1))
+
+                    if result["win_rate"] > 0:
+                        break
+
+            # 方法2: 勝率が取得できなかった場合、ページ全体から探す
+            if result["win_rate"] == 0:
+                page_text = await self.page.text_content("body")
+
+                win_match = re.search(r'勝率[^\d]*([\d.]+)', page_text)
+                if win_match:
+                    win_val = safe_float(win_match.group(1))
+                    result["win_rate"] = win_val / 100 if win_val > 1 else win_val
+
+                place_match = re.search(r'複勝率[^\d]*([\d.]+)', page_text)
+                if place_match:
+                    place_val = safe_float(place_match.group(1))
+                    result["place_rate"] = place_val / 100 if place_val > 1 else place_val
+
+            if result["win_rate"] > 0 or result["place_rate"] > 0:
+                self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
+            else:
+                self.log(f"  [!] 成績データが見つかりません")
+
+            # キャッシュに保存
+            if jockey_name:
+                self.jockey_cache[jockey_name] = result
+
+        except Exception as e:
+            self.log(f"  [ERROR] 騎手成績取得エラー: {e}")
+
+        return result
 
     # ----------------------------------------------------------
     # 騎手検索 → 年間成績取得
@@ -457,27 +626,43 @@ class NetkeibaScraper:
                 self.log(f"  検索結果リンク数: {len(links)}個")
 
                 jockey_page_url = None
-                self.log(f"  検索結果の最初の5件:")
-                for idx, link in enumerate(links[:5]):
+
+                # 騎手名を正規化（比較用）
+                normalized_search_name = normalize_jockey_name(jockey_name)
+                self.log(f"  正規化された検索名: {normalized_search_name}")
+
+                self.log(f"  検索結果の最初の10件:")
+                for idx, link in enumerate(links[:10]):
                     href = await link.get_attribute("href")
-                    self.log(f"    [{idx+1}] {href}")
+                    text = await link.text_content()
+                    link_text = text.strip() if text else ""
+                    self.log(f"    [{idx+1}] {href} | テキスト: {link_text}")
 
                 for link in links:
                     href = await link.get_attribute("href")
                     if href and "/jockey/" in href:
                         # 不要なページを除外
                         if any(x in href for x in ["search_detail", "top.html", "leading"]):
-                            self.log(f"  除外 (検索/トップページ): {href}")
                             continue
                         # 騎手IDパターンをチェック（5桁の数字、末尾スラッシュなし）
                         if re.search(r'/jockey/\d{5}$', href):
-                            if href.startswith("/"):
-                                href = f"https://db.netkeiba.com{href}"
-                            self.log(f"  [OK] 騎手ページ発見: {href}")
-                            jockey_page_url = href
-                            break
-                        else:
-                            self.log(f"  除外 (パターン不一致): {href}")
+                            # リンクテキストを取得して名前を照合
+                            link_text = await link.text_content()
+                            if link_text:
+                                normalized_link_text = normalize_jockey_name(link_text.strip())
+                                self.log(f"  名前照合: '{normalized_link_text}' vs '{normalized_search_name}'")
+
+                                # 名前が一致するか確認
+                                if normalized_link_text == normalized_search_name:
+                                    if href.startswith("/"):
+                                        href = f"https://db.netkeiba.com{href}"
+                                    self.log(f"  [OK] 騎手ページ発見（名前一致）: {href}")
+                                    jockey_page_url = href
+                                    break
+                                else:
+                                    self.log(f"  スキップ (名前不一致): {link_text.strip()}")
+                            else:
+                                self.log(f"  スキップ (リンクテキストなし): {href}")
 
                 if not jockey_page_url:
                     self.log(f"  [!] 騎手が見つかりません: {jockey_name}")
@@ -625,7 +810,19 @@ async def enrich_race_data(input_path: str):
             jockey_name = horse.get("jockey", "")
             if jockey_name:
                 print(f"  騎手: {jockey_name}")
-                jockey_stats = await scraper.search_jockey(jockey_name)
+
+                # 方法1: 過去走データから騎手IDを抽出
+                past_races = horse.get("past_races", [])
+                jockey_id = scraper.extract_jockey_id_from_past_races(jockey_name, past_races)
+
+                if jockey_id:
+                    # 過去走でIDが見つかった → 直接アクセス
+                    jockey_stats = await scraper.get_jockey_stats_by_id(jockey_id, jockey_name)
+                else:
+                    # 過去走にない → 検索（リーディングリスト方式）
+                    print(f"  → 過去走に騎手なし、検索を試行します")
+                    jockey_stats = await scraper.search_jockey(jockey_name)
+
                 horse["jockey_stats"] = jockey_stats
             else:
                 print(f"  [!] 騎手情報がありません（input.jsonに'jockey'フィールドが必要）")
