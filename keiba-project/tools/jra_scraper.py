@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-JRA公式サイト スクレイパー v1.4
-=================================
+JRA公式サイト スクレイパー v1.4.1
+===================================
 v1.2: 単勝・複勝・馬連・ワイド取得成功
 v1.3: レース情報自動取得（距離・グレード一部失敗）
 v1.4: レース情報を DIV.race_title から正確に取得
       3連複（二重三角行列）パース追加
       馬単（正方行列）パース追加
+v1.4.1: 馬単削除（対象券種: 単勝・複勝・馬連・ワイド・3連複のみ）
 
 使い方:
   python jra_scraper.py
 """
 
-VERSION = "1.4"
+VERSION = "1.4.1"
 
 import asyncio
 import json
@@ -450,48 +451,6 @@ class JRAScraper:
 
         return results
 
-    # ----------------------------------------------------------
-    # 馬単パーサー（v1.4: 正方行列）
-    # ----------------------------------------------------------
-
-    async def parse_exacta(self):
-        """
-        馬単の構造:
-          N個のテーブル（各N行×1セル）。
-          テーブルt = 1着馬 t+1。
-          行r = 2着馬 r+1。
-          対角線（同馬）は空セル。
-        """
-        results = []
-        try:
-            await self.click_tab("馬単")
-
-            num_tables = await self._get_numeric_tables()
-            self.log(f"馬単: 数値テーブル {len(num_tables)}個")
-
-            for t_idx, tbl in enumerate(num_tables):
-                first = t_idx + 1  # 1着馬番
-
-                for r_idx, row in enumerate(tbl["rows"]):
-                    second = r_idx + 1  # 2着馬番
-                    if first == second:
-                        continue
-                    if not row or not row[0]:
-                        continue
-                    odds = safe_float(row[0])
-                    if odds > 0:
-                        results.append({
-                            "combo": [first, second],  # 順序あり [1着, 2着]
-                            "odds": odds,
-                        })
-
-            self.log(f"馬単: {len(results)}組取得")
-
-        except Exception as e:
-            self.log(f"馬単エラー: {e}")
-
-        return results
-
 
 # ============================================================
 # input.json 生成
@@ -547,7 +506,6 @@ def build_json(scraped, race_info):
         },
         "horses": horses,
         "combo_odds": {
-            "exacta": scraped.get("exacta", []),
             "quinella": scraped.get("quinella", []),
             "wide": scraped.get("wide", []),
             "trio": scraped.get("trio", []),
@@ -664,17 +622,12 @@ async def main():
         wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
         print(f"  → {len(wide)}組")
 
-        print("\n馬単を取得中...")
-        exacta = await scraper.parse_exacta()
-        print(f"  → {len(exacta)}組")
-
         print("\n3連複を取得中...")
         trio = await scraper.parse_trio()
         print(f"  → {len(trio)}組")
 
         scraped = {
             "horses": horses,
-            "exacta": exacta,
             "quinella": quinella,
             "wide": wide,
             "trio": trio,
@@ -699,7 +652,6 @@ async def main():
         n_horses = len(horses)
         # 期待組数
         expected_q = n_horses * (n_horses - 1) // 2
-        expected_e = n_horses * (n_horses - 1)
         expected_t = (n_horses * (n_horses - 1) * (n_horses - 2)) // 6
 
         print(f"\n{'=' * 60}")
@@ -711,9 +663,8 @@ async def main():
         print(f"  出走馬: {n_horses}頭")
         print(f"  馬連:   {len(quinella)}/{expected_q}組")
         print(f"  ワイド: {len(wide)}/{expected_q}組")
-        print(f"  馬単:   {len(exacta)}/{expected_e}組")
         print(f"  3連複:  {len(trio)}/{expected_t}組")
-        print(f"\nCLAUDE: Claudeに評価点を依頼してください")
+        print(f"\n次のステップ: netkeiba_scraper.pyで過去走データ追加")
 
     except KeyboardInterrupt:
         print("\n[!] 中断")

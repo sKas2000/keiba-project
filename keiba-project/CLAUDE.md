@@ -5,7 +5,7 @@
 詳細な指示書: `docs/project_instructions_v3.md`
 
 ## 現在の状況（2026-02-14時点）
-- ✅ jra_scraper.py v1.4 完成（単複・馬連・ワイド・3連複の全オッズ取得、文字化け対策済み）
+- ✅ jra_scraper.py v1.4.1 完成（対象券種: 単勝・複勝・馬連・ワイド・3連複のみ）
 - ✅ netkeiba_scraper.py v0.1 完成（過去走データ・騎手成績の自動取得）
 - ✅ scoring_engine.py v0.1 完成（基礎点自動算出、動作テスト済み）
 - ⏸️ ev_calculator.jsx v0.1 は保留（全自動Pythonパイプラインを優先）
@@ -32,13 +32,12 @@ keiba-project/
 ## 優先課題
 1. ✅ 評価点の定量化（基礎点自動算出 + Claude補正に分離）第1段階完了
 2. 🔄 パイプライン実装
-   - ✅ jra_scraper.py → input.json
+   - ✅ jra_scraper.py v1.4.1 → input.json（馬単削除完了）
    - ✅ netkeiba_scraper.py → enriched_input.json
    - ✅ scoring_engine.py → base_scored.json
    - 📋 Claude API連携 → final_scored.json（次回）
    - 📋 ev_calculator.py → 買い目リスト（次回）
 3. 📋 実データでの統合テスト（全パイプライン）
-4. 📋 scraper v1.4.1（馬単削除、優先度低）
 
 ## 技術スタック
 - Python 3 + Playwright（スクレイパー）
