@@ -1,35 +1,26 @@
-# 🏇 競馬分析プロジェクト
+# 競馬分析プロジェクト
 
 日本競馬のレースを体系的に分析し、期待値に基づいた馬券購入判断を行うプロジェクト。
 
-## リポジトリ構成
+## セットアップ
 
-```
-keiba-project/
-├── docs/                    # 設計ドキュメント
-│   ├── project_v3_draft.md  # プロジェクト指示書 v3.0
-│   ├── architecture.jsx     # アーキテクチャ図
-│   └── issues_map.jsx       # 問題点マップ
-├── tools/                   # 分析ツール
-│   └── ev_calculator.jsx    # 期待値計算ツール
-├── data/                    # レース分析データ
-│   ├── races/               # 各レースの分析・検証
-│   │   └── YYYYMMDD_会場_レース名/
-│   │       ├── input.json   # 評価点・オッズ
-│   │       └── result.json  # 結果・検証
-│   └── templates/           # データテンプレート
-│       ├── input.json       # 入力テンプレート
-│       └── result.json      # 結果テンプレート
-└── README.md
+```bash
+pip install playwright
+playwright install chromium
 ```
 
-## ワークフロー
+## 使い方
 
-1. **分析時**: Claudeとのチャットで評価 → ツールで期待値計算
-2. **記録時**: `data/races/` に評価点と結果をJSON保存
-3. **改善時**: 蓄積データを元に指示書・ツールを更新
+```bash
+# オッズ取得
+python tools/jra_scraper.py
 
-## バージョン履歴
+# → input.json が data/races/ に生成される
+# → Claudeに評価を依頼
+# → 期待値計算（パイプライン開発中）
+```
 
-- v2.0: 小倉牝馬S2026の反省に基づく改訂
-- v3.0-draft: ツール導入によるワークフロー再設計（現在）
+## ドキュメント
+- `docs/project_instructions_v3.md` - プロジェクト指示書
+- `docs/discussion_20260214_architecture.md` - アーキテクチャ議論ログ
+- `CLAUDE.md` - Claude Code用コンテキスト
