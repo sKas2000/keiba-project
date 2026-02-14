@@ -4,15 +4,16 @@
 日本競馬のレースを体系的に分析し、期待値に基づいた馬券購入判断を行う。
 詳細な指示書: `docs/project_instructions_v3.md`
 
-## 現在の状況（2026-02-14時点）
+## 現在の状況（2026-02-15時点）
 - ✅ jra_scraper.py v1.4.1 完成（対象券種: 単勝・複勝・馬連・ワイド・3連複のみ）
-- ✅ netkeiba_scraper.py v0.1 完成（過去走データ・騎手成績の自動取得）
+- ⚠️ netkeiba_scraper.py v0.1 要改善（過去走データ取得が遅く実用性に課題）
 - ✅ scoring_engine.py v0.1 完成（基礎点自動算出、動作テスト済み）
 - ✅ ev_calculator.py v0.1 完成（期待値計算・買い目リスト生成、動作テスト済み）
 - ✅ 一括実行スクリプト完成（run_pipeline.bat / run_pipeline.sh）
 - ✅ ドキュメント完備（使用ガイド・統合テストガイド・チェックリスト）
+- ✅ 統合テスト実施済み（2026-02-15、部分的成功）
 - ⏸️ ev_calculator.jsx v0.1 は保留（Pythonパイプライン完成により不要）
-- 📋 次の課題: 実データでの統合テスト（次回開催日）
+- 📋 次の課題: netkeiba_scraperの改善（headless=True化、処理速度向上）
 - 方針詳細: `docs/discussion_20260214_architecture.md`
 
 ## ディレクトリ構成
@@ -36,11 +37,17 @@ keiba-project/
 1. ✅ 評価点の定量化（基礎点自動算出 + Claude補正に分離）第1段階完了
 2. ✅ 全自動Pythonパイプライン実装完了
    - ✅ jra_scraper.py v1.4.1 → input.json
-   - ✅ netkeiba_scraper.py → enriched_input.json
+   - ⚠️ netkeiba_scraper.py → enriched_input.json（要改善）
    - ✅ scoring_engine.py → base_scored.json
    - ✅ ev_calculator.py → ev_results.json（買い目リスト）
-3. 📋 実データでの統合テスト（jra_scraper → netkeiba → scoring → ev_calculator）
-4. 📋 Claude API連携（base_scored.json → Claude補正 → final_scored.json）
+3. ✅ 統合テスト実施（2026-02-15）
+   - 結果: パイプライン基本フロー確認、netkeiba_scraperに課題
+   - 詳細: `docs/integration_test_result_20260215.md`
+4. 📋 netkeiba_scraper.py v0.2 改善
+   - headless=Trueに変更（処理速度向上）
+   - アクセス間隔延長（0.5秒 → 2秒）
+   - リトライメカニズム追加
+5. 📋 Claude API連携（base_scored.json → Claude補正 → final_scored.json）
 
 ## 技術スタック
 - Python 3 + Playwright（スクレイパー）
