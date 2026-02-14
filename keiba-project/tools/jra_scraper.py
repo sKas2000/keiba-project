@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 """
 JRA公式サイト スクレイパー v1.4
 =================================
@@ -20,6 +21,12 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+
+# Windows環境での文字化け対策
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
 try:
     from playwright.async_api import async_playwright
@@ -229,9 +236,9 @@ class JRAScraper:
         if not info["grade"]:
             missing.append("グレード")
         if missing:
-            self.log(f"  ⚠️ 未検出: {', '.join(missing)}")
+            self.log(f"  [!] 未検出: {', '.join(missing)}")
         else:
-            self.log("  ✅ 全項目取得成功")
+            self.log("  [OK] 全項目取得成功")
 
         return info
 
@@ -256,7 +263,7 @@ class JRAScraper:
             if not any("馬番" in h for h in headers):
                 continue
 
-            self.log(f"  ★馬番テーブル発見 (テーブル{ti})")
+            self.log(f"  * 馬番テーブル発見 (テーブル{ti})")
 
             rows = await table.locator("tbody tr").all()
             if not rows:
@@ -555,7 +562,7 @@ def build_json(scraped, race_info):
 async def main():
     print()
     print("=" * 60)
-    print(f"  🏇 JRA スクレイパー v{VERSION}")
+    print(f"  JRA スクレイパー v{VERSION}")
     print("=" * 60)
     print()
 
@@ -565,14 +572,14 @@ async def main():
         await scraper.start()
 
         # --- 開催選択 ---
-        print("🌐 JRA公式サイトに接続中...")
+        print("JRA公式サイトに接続中...")
         meetings = await scraper.goto_odds_top()
 
         if not meetings:
-            print("❌ 開催情報が見つかりません")
+            print("[ERROR] 開催情報が見つかりません")
             return
 
-        print(f"\n📅 開催一覧 ({len(meetings)}件):")
+        print(f"\n開催一覧 ({len(meetings)}件):")
         for i, m in enumerate(meetings):
             print(f"  [{i+1}] {m['text']}")
 
@@ -594,11 +601,11 @@ async def main():
                 break
             print("  無効")
 
-        print(f"\n🏇 {rn}R を選択中...")
+        print(f"\n{rn}R を選択中...")
         await scraper.select_race(rn)
 
         # === レース情報 ===
-        print("\n🔍 レース情報を自動取得中...")
+        print("\nレース情報を自動取得中...")
         race_info = await scraper.scrape_race_info(meeting_text, rn)
 
         venue = race_info["venue"]
@@ -608,7 +615,7 @@ async def main():
         direction = race_info["direction"]
         grade = race_info["grade"]
 
-        print(f"\n📝 自動取得結果:")
+        print(f"\n自動取得結果:")
         print(f"  競馬場:   {venue or '（未検出）'}")
         print(f"  レース名: {name or '（未検出）'}")
         print(f"  馬場:     {surface or '（未検出）'} {direction}")
@@ -635,13 +642,13 @@ async def main():
             grade = input("  → グレード (G1/G2/G3/OP/3勝/2勝/1勝/未勝利/新馬): ").strip()
             race_info["grade"] = grade
 
-        confirm = input("\n✅ 取得開始 (Enter / n でキャンセル): ").strip()
+        confirm = input("\n[OK] 取得開始 (Enter / n でキャンセル): ").strip()
         if confirm.lower() == "n":
             print("キャンセル")
             return
 
         # === オッズ取得 ===
-        print("\n📋 単勝・複勝を取得中...")
+        print("\n単勝・複勝を取得中...")
         horses = await scraper.parse_win_place()
         print(f"  → {len(horses)}頭")
         for h in horses:
@@ -649,19 +656,19 @@ async def main():
                   f"単勝{h['odds_win']:.1f}  複勝{h['odds_place']:.1f}  "
                   f"{h['jockey']}")
 
-        print("\n📋 馬連を取得中...")
+        print("\n馬連を取得中...")
         quinella = await scraper.parse_triangle_odds("馬連", is_range=False)
         print(f"  → {len(quinella)}組")
 
-        print("\n📋 ワイドを取得中...")
+        print("\nワイドを取得中...")
         wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
         print(f"  → {len(wide)}組")
 
-        print("\n📋 馬単を取得中...")
+        print("\n馬単を取得中...")
         exacta = await scraper.parse_exacta()
         print(f"  → {len(exacta)}組")
 
-        print("\n📋 3連複を取得中...")
+        print("\n3連複を取得中...")
         trio = await scraper.parse_trio()
         print(f"  → {len(trio)}組")
 
@@ -696,9 +703,9 @@ async def main():
         expected_t = (n_horses * (n_horses - 1) * (n_horses - 2)) // 6
 
         print(f"\n{'=' * 60}")
-        print(f"  ✅ 保存完了: {out_path}")
+        print(f"  [OK] 保存完了: {out_path}")
         print(f"{'=' * 60}")
-        print(f"\n📊 サマリー:")
+        print(f"\nサマリー:")
         print(f"  {venue}{rn}R {name}")
         print(f"  {surface}{direction} {race_info.get('distance', 0)}m  {grade}")
         print(f"  出走馬: {n_horses}頭")
@@ -706,12 +713,12 @@ async def main():
         print(f"  ワイド: {len(wide)}/{expected_q}組")
         print(f"  馬単:   {len(exacta)}/{expected_e}組")
         print(f"  3連複:  {len(trio)}/{expected_t}組")
-        print(f"\n💡 Claudeに評価点を依頼してください")
+        print(f"\nCLAUDE: Claudeに評価点を依頼してください")
 
     except KeyboardInterrupt:
-        print("\n⚠️ 中断")
+        print("\n[!] 中断")
     except Exception as e:
-        print(f"\n❌ エラー: {e}")
+        print(f"\n[ERROR] エラー: {e}")
         import traceback
         traceback.print_exc()
     finally:
