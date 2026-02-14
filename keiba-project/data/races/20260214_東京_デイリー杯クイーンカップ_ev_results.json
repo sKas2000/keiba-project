@@ -21,11 +21,11 @@
     {
       "num": 1,
       "name": "ドリームコア",
-      "score": 4.0,
+      "score": 45.5,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 33.0,
+        "jockey": 2.0,
+        "fitness": 6.5,
         "form": 2.0,
         "other": 2.0
       },
@@ -35,27 +35,64 @@
       "sex_age": "牝3",
       "weight": "502(+8)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(C.ルメール勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=33.0(3着内率3/3, 着差評価13.0点, 同条件なし) jockey=2.0(C.ルメール勝率0.020) fitness=6.5(同場なし, 同距離3戦平均1.7着) form=2.0(前走10週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/30",
+          "venue": "5東京8",
+          "race": "ベゴニア賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:33.1",
+          "last3f": "33.7",
+          "position": "4-5"
+        },
+        {
+          "date": "2025/09/28",
+          "venue": "4中山9",
+          "race": "サフラン賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 3,
+          "margin": "0.3",
+          "time": "1:34.1",
+          "last3f": "33.7",
+          "position": "6-6-4"
+        },
+        {
+          "date": "2025/06/14",
+          "venue": "3東京3",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.4",
+          "time": "1:36.7",
+          "last3f": "34.5",
+          "position": "1-1"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 0,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.08634885007254907,
+      "place_prob": 0.2608808933735554
     },
     {
       "num": 2,
       "name": "ジッピーチューン",
-      "score": 4.0,
+      "score": 47.1,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
-        "form": 2.0,
+        "ability": 33.5,
+        "jockey": 2.0,
+        "fitness": 6.6,
+        "form": 3.0,
         "other": 2.0
       },
       "odds_win": 31.0,
@@ -64,26 +101,51 @@
       "sex_age": "牝3",
       "weight": "428(-2)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(北村 友一勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=33.5(3着内率2/2, 着差評価13.5点, 同条件なし) jockey=2.0(北村 友一勝率0.020) fitness=6.6(同場なし, 同距離2戦平均1.5着) form=3.0(前走7週前3点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/21",
+          "venue": "5中山6",
+          "race": "2歳未勝利",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.7",
+          "time": "1:34.6",
+          "last3f": "36.1",
+          "position": "3-2-2"
+        },
+        {
+          "date": "2025/10/18",
+          "venue": "4東京6",
+          "race": "2歳新馬",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.1",
+          "time": "1:23.4",
+          "last3f": "33.4",
+          "position": "6-6"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 1,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.1013313142577783,
+      "place_prob": 0.30039607467436985
     },
     {
       "num": 3,
       "name": "マルガ",
-      "score": 4.0,
+      "score": 33.5,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 22.6,
+        "jockey": 2.0,
+        "fitness": 4.9,
         "form": 2.0,
         "other": 2.0
       },
@@ -93,26 +155,63 @@
       "sex_age": "牝3",
       "weight": "470(-8)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(武 豊勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=22.6(3着内率2/3, 着差評価9.3点, 同条件なし) jockey=2.0(武 豊勝率0.020) fitness=4.9(同場なし, 同距離3戦平均3.7着) form=2.0(前走2661週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "1975/02/15",
+          "venue": "2東京7",
+          "race": "早春特別(500万下)",
+          "distance": "1400",
+          "surface": "ダ",
+          "finish": 2,
+          "margin": "1:27.1",
+          "time": "不",
+          "last3f": "",
+          "position": ""
+        },
+        {
+          "date": "1975/01/26",
+          "venue": "2東京1",
+          "race": "多摩特別(500万下)",
+          "distance": "1600",
+          "surface": "ダ",
+          "finish": 8,
+          "margin": "1:40.1",
+          "time": "重",
+          "last3f": "",
+          "position": ""
+        },
+        {
+          "date": "1975/01/05",
+          "venue": "1東京1",
+          "race": "初富士賞(400万下)",
+          "distance": "1600",
+          "surface": "ダ",
+          "finish": 1,
+          "margin": "1:39.0",
+          "time": "稍",
+          "last3f": "",
+          "position": ""
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 2,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.026007773847126308,
+      "place_prob": 0.08423986469285709
     },
     {
       "num": 4,
       "name": "モートンアイランド",
-      "score": 4.0,
+      "score": 48.0,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 35.0,
+        "jockey": 2.0,
+        "fitness": 7.0,
         "form": 2.0,
         "other": 2.0
       },
@@ -122,26 +221,39 @@
       "sex_age": "牝3",
       "weight": "434(+4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(R.キング勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=35.0(3着内率1/1, 着差評価15.0点, 同条件なし) jockey=2.0(R.キング勝率0.020) fitness=7.0(同場なし, 同距離1戦平均1.0着) form=2.0(前走14週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/02",
+          "venue": "4東京11",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.2",
+          "time": "1:33.6",
+          "last3f": "33.8",
+          "position": "7-5"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 3,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.11087411819491212,
+      "place_prob": 0.3246256866144463
     },
     {
       "num": 5,
       "name": "ヒズマスターピース",
-      "score": 4.0,
+      "score": 28.4,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 19.0,
+        "jockey": 2.0,
+        "fitness": 3.4,
         "form": 2.0,
         "other": 2.0
       },
@@ -151,27 +263,76 @@
       "sex_age": "牝3",
       "weight": "500(+12)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(佐々木 大輔勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=19.0(3着内率2/4, 着差評価9.0点, 同条件なし) jockey=2.0(佐々木 大輔勝率0.020) fitness=3.4(同場なし, 同距離3戦平均5.7着) form=2.0(前走8週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/14",
+          "venue": "5阪神4",
+          "race": "阪神ジュベナイルF(GI)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 15,
+          "margin": "1.6",
+          "time": "1:34.2",
+          "last3f": "36.9",
+          "position": "1-1"
+        },
+        {
+          "date": "2025/11/23",
+          "venue": "5東京5",
+          "race": "赤松賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.3",
+          "time": "1:33.6",
+          "last3f": "33.8",
+          "position": "1-1"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4東京8",
+          "race": "2歳未勝利",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.1",
+          "time": "1:34.9",
+          "last3f": "35.2",
+          "position": "1-1"
+        },
+        {
+          "date": "2025/09/28",
+          "venue": "4中山9",
+          "race": "2歳新馬",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "margin": "0.8",
+          "time": "2:02.0",
+          "last3f": "35.8",
+          "position": "1-1-1-1"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 4,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.015617553209948625,
+      "place_prob": 0.051141829382565854
     },
     {
       "num": 6,
       "name": "ニシノサリーナ",
-      "score": 4.0,
+      "score": 49.0,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
-        "form": 2.0,
+        "ability": 35.0,
+        "jockey": 2.0,
+        "fitness": 7.0,
+        "form": 3.0,
         "other": 2.0
       },
       "odds_win": 15.8,
@@ -180,26 +341,39 @@
       "sex_age": "牝3",
       "weight": "448(-2)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(池添 謙一勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=35.0(3着内率1/1, 着差評価15.0点, 同条件なし) jockey=2.0(池添 謙一勝率0.020) fitness=7.0(同場なし, 同距離1戦平均1.0着) form=3.0(前走4週前3点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/12",
+          "venue": "1京都5",
+          "race": "3歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.9",
+          "time": "1:35.9",
+          "last3f": "34.8",
+          "position": "1-1"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 5,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.1225348509962989,
+      "place_prob": 0.35323025054787727
     },
     {
       "num": 7,
       "name": "フェーダーローター",
-      "score": 4.0,
+      "score": 20.2,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 13.7,
+        "jockey": 2.0,
+        "fitness": 0.5,
         "form": 2.0,
         "other": 2.0
       },
@@ -209,26 +383,63 @@
       "sex_age": "牝3",
       "weight": "442(-2)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(原 優介勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=13.7(3着内率1/3, 着差評価7.0点, 同条件なし) jockey=2.0(原 優介勝率0.020) fitness=0.5(同場なし, 同距離3戦平均9.3着) form=2.0(前走14週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/08",
+          "venue": "5東京1",
+          "race": "京王杯2歳S(GII)",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 15,
+          "margin": "1.5",
+          "time": "1:22.4",
+          "last3f": "35.0",
+          "position": "3-3"
+        },
+        {
+          "date": "2025/10/05",
+          "venue": "4東京2",
+          "race": "2歳未勝利",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.2",
+          "time": "1:21.6",
+          "last3f": "34.2",
+          "position": "3-4"
+        },
+        {
+          "date": "2025/09/15",
+          "venue": "4中山5",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 12,
+          "margin": "1.7",
+          "time": "1:38.6",
+          "last3f": "35.8",
+          "position": "8-9-11"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 6,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.006878464799593154,
+      "place_prob": 0.022727455398470695
     },
     {
       "num": 8,
       "name": "ラヴノー",
-      "score": 4.0,
+      "score": 43.4,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 32.0,
+        "jockey": 2.0,
+        "fitness": 5.4,
         "form": 2.0,
         "other": 2.0
       },
@@ -238,26 +449,51 @@
       "sex_age": "牝3",
       "weight": "406(-4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(石橋 脩勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=32.0(3着内率2/2, 着差評価12.0点, 同条件なし) jockey=2.0(石橋 脩勝率0.020) fitness=5.4(同場なし, 同距離1戦平均3.0着) form=2.0(前走11週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/23",
+          "venue": "5東京5",
+          "race": "赤松賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 3,
+          "margin": "0.5",
+          "time": "1:34.1",
+          "last3f": "34.0",
+          "position": "2-2"
+        },
+        {
+          "date": "2025/09/20",
+          "venue": "4中山6",
+          "race": "2歳新馬",
+          "distance": "1200",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.8",
+          "time": "1:09.1",
+          "last3f": "33.9",
+          "position": "1-1"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 7,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.0699930175264499,
+      "place_prob": 0.21572217926076898
     },
     {
       "num": 9,
       "name": "ギャラボーグ",
-      "score": 4.0,
+      "score": 45.5,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 33.0,
+        "jockey": 2.0,
+        "fitness": 6.5,
         "form": 2.0,
         "other": 2.0
       },
@@ -267,26 +503,63 @@
       "sex_age": "牝3",
       "weight": "500(0)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(川田 将雅勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=33.0(3着内率3/3, 着差評価13.0点, 同条件なし) jockey=2.0(川田 将雅勝率0.020) fitness=6.5(同場なし, 同距離3戦平均1.7着) form=2.0(前走8週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/14",
+          "venue": "5阪神4",
+          "race": "阪神ジュベナイルF(GI)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.2",
+          "time": "1:32.8",
+          "last3f": "34.3",
+          "position": "12-13"
+        },
+        {
+          "date": "2025/09/13",
+          "venue": "4阪神3",
+          "race": "2歳未勝利",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:51.1",
+          "last3f": "33.0",
+          "position": "2-2"
+        },
+        {
+          "date": "2025/08/10",
+          "venue": "2新潟6",
+          "race": "2歳新馬",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.3",
+          "time": "1:49.1",
+          "last3f": "33.5",
+          "position": "4-3"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 8,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.08634885007254907,
+      "place_prob": 0.26088089337355547
     },
     {
       "num": 10,
       "name": "ミツカネベネラ",
-      "score": 4.0,
+      "score": 33.2,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 23.3,
+        "jockey": 2.0,
+        "fitness": 3.9,
         "form": 2.0,
         "other": 2.0
       },
@@ -296,26 +569,63 @@
       "sex_age": "牝3",
       "weight": "442(-2)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(津村 明秀勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=23.3(3着内率2/3, 着差評価10.0点, 同条件なし) jockey=2.0(津村 明秀勝率0.020) fitness=3.9(同場なし, 同距離3戦平均5.0着) form=2.0(前走8週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/14",
+          "venue": "5阪神4",
+          "race": "阪神ジュベナイルF(GI)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 12,
+          "margin": "1.2",
+          "time": "1:33.8",
+          "last3f": "35.5",
+          "position": "8-9"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4東京8",
+          "race": "アルテミスS(GIII)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.3",
+          "time": "1:34.1",
+          "last3f": "34.0",
+          "position": "4-4"
+        },
+        {
+          "date": "2025/08/30",
+          "venue": "3新潟3",
+          "race": "2歳新馬",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:23.1",
+          "last3f": "35.4",
+          "position": "4-4"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 9,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.02523912796748344,
+      "place_prob": 0.0818171856854363
     },
     {
       "num": 11,
       "name": "レディーゴール",
-      "score": 4.0,
+      "score": 20.5,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 11.0,
+        "jockey": 2.0,
+        "fitness": 3.5,
         "form": 2.0,
         "other": 2.0
       },
@@ -325,26 +635,75 @@
       "sex_age": "牝3",
       "weight": "456(+6)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(菅原 明良勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=2.0(菅原 明良勝率0.020) fitness=3.5(同場なし, 同距離4戦平均5.5着) form=2.0(前走8週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/14",
+          "venue": "5阪神4",
+          "race": "阪神ジュベナイルF(GI)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 9,
+          "margin": "0.9",
+          "time": "1:33.5",
+          "last3f": "34.6",
+          "position": "16-17"
+        },
+        {
+          "date": "2025/11/30",
+          "venue": "4京都8",
+          "race": "白菊賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 6,
+          "margin": "1.2",
+          "time": "1:34.8",
+          "last3f": "35.2",
+          "position": "9-8"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4東京8",
+          "race": "アルテミスS(GIII)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 6,
+          "margin": "0.7",
+          "time": "1:34.5",
+          "last3f": "34.0",
+          "position": "9-9"
+        },
+        {
+          "date": "2025/08/31",
+          "venue": "4中京4",
+          "race": "2歳未勝利",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:21.3",
+          "last3f": "34.8",
+          "position": "10-11"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 10,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.007087945239380432,
+      "place_prob": 0.02341462953956661
     },
     {
       "num": 12,
       "name": "ザバルガド",
-      "score": 4.0,
+      "score": 26.6,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 19.0,
+        "jockey": 2.0,
+        "fitness": 1.6,
         "form": 2.0,
         "other": 2.0
       },
@@ -354,26 +713,51 @@
       "sex_age": "牝3",
       "weight": "448(+12)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(長浜 鴻緒勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=19.0(3着内率1/2, 着差評価9.0点, 同条件なし) jockey=2.0(長浜 鴻緒勝率0.020) fitness=1.6(同場なし, 同距離2戦平均8.0着) form=2.0(前走16週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/10/19",
+          "venue": "4東京7",
+          "race": "2歳未勝利",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.5",
+          "time": "1:22.1",
+          "last3f": "33.8",
+          "position": "5-4"
+        },
+        {
+          "date": "2025/07/26",
+          "venue": "2新潟1",
+          "race": "2歳新馬",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 15,
+          "margin": "3.3",
+          "time": "1:24.6",
+          "last3f": "35.4",
+          "position": "18-18"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 11,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.013044876971400582,
+      "place_prob": 0.04283111738123609
     },
     {
       "num": 13,
       "name": "ゴバド",
-      "score": 4.0,
+      "score": 46.1,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 33.5,
+        "jockey": 2.0,
+        "fitness": 6.6,
         "form": 2.0,
         "other": 2.0
       },
@@ -383,27 +767,52 @@
       "sex_age": "牝3",
       "weight": "430(-4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(岩田 康誠勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=33.5(3着内率2/2, 着差評価13.5点, 同条件なし) jockey=2.0(岩田 康誠勝率0.020) fitness=6.6(同場なし, 同距離2戦平均1.5着) form=2.0(前走10週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/30",
+          "venue": "5東京8",
+          "race": "2歳未勝利",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:34.7",
+          "last3f": "33.3",
+          "position": "10-7"
+        },
+        {
+          "date": "2025/09/06",
+          "venue": "2札幌5",
+          "race": "2歳新馬",
+          "distance": "1500",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.5",
+          "time": "1:29.9",
+          "last3f": "35.4",
+          "position": "9-4-4"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 12,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.09168836475919853,
+      "place_prob": 0.2751685530151574
     },
     {
       "num": 14,
       "name": "モルニケ",
-      "score": 4.0,
+      "score": 31.2,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
-        "form": 2.0,
+        "ability": 19.0,
+        "jockey": 2.0,
+        "fitness": 5.2,
+        "form": 3.0,
         "other": 2.0
       },
       "odds_win": 27.7,
@@ -412,26 +821,75 @@
       "sex_age": "牝3",
       "weight": "460(0)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(田辺 裕信勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=19.0(3着内率2/4, 着差評価9.0点, 同条件なし) jockey=2.0(田辺 裕信勝率0.020) fitness=5.2(同場なし, 同距離4戦平均3.2着) form=3.0(前走4週前3点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/11",
+          "venue": "1中山4",
+          "race": "フェアリーS(GIII)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 6,
+          "margin": "0.5",
+          "time": "1:34.1",
+          "last3f": "35.3",
+          "position": "6-7-7"
+        },
+        {
+          "date": "2025/11/01",
+          "venue": "4東京10",
+          "race": "2歳未勝利",
+          "distance": "1400",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.3",
+          "time": "1:23.5",
+          "last3f": "33.6",
+          "position": "5-6"
+        },
+        {
+          "date": "2025/10/11",
+          "venue": "4東京3",
+          "race": "2歳未勝利",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.1",
+          "time": "1:36.0",
+          "last3f": "34.3",
+          "position": "3-3"
+        },
+        {
+          "date": "2025/09/13",
+          "venue": "4中山3",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 4,
+          "margin": "0.4",
+          "time": "1:36.4",
+          "last3f": "34.2",
+          "position": "13-11-10"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 13,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.020664050247849258,
+      "place_prob": 0.06731134236062057
     },
     {
       "num": 15,
       "name": "マスターソアラ",
-      "score": 4.0,
+      "score": 48.0,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
+        "ability": 35.0,
+        "jockey": 2.0,
+        "fitness": 7.0,
         "form": 2.0,
         "other": 2.0
       },
@@ -441,27 +899,40 @@
       "sex_age": "牝3",
       "weight": "482(+4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(横山 武史勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=35.0(3着内率1/1, 着差評価15.0点, 同条件なし) jockey=2.0(横山 武史勝率0.020) fitness=7.0(同場なし, 同距離1戦平均1.0着) form=2.0(前走13週前2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/15",
+          "venue": "5東京3",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "0.0",
+          "time": "1:34.8",
+          "last3f": "32.8",
+          "position": "9-9"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 14,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.11087411819491212,
+      "place_prob": 0.3246256866144465
     },
     {
       "num": 16,
       "name": "タイムレスキス",
-      "score": 4.0,
+      "score": 47.5,
       "score_breakdown": {
-        "ability": 0.0,
-        "jockey": 0.0,
-        "fitness": 0.0,
-        "form": 2.0,
+        "ability": 33.0,
+        "jockey": 2.0,
+        "fitness": 6.5,
+        "form": 4.0,
         "other": 2.0
       },
       "odds_win": 30.5,
@@ -470,17 +941,54 @@
       "sex_age": "牝3",
       "weight": "470(0)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=0.0(過去走なし, 過去走なし, 同条件なし) jockey=0.0(石川 裕紀人勝率0.000) fitness=0.0(同場なし, 同距離なし) form=2.0(初出走2点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
-      "past_races": [],
+      "note": "[AUTO] ability=33.0(3着内率3/3, 着差評価13.0点, 同条件なし) jockey=2.0(石川 裕紀人勝率0.020) fitness=6.5(同場なし, 同距離3戦平均1.7着) form=4.0(前走2週前4点) other=2.0(斤量55.0kg(平均±0.0kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/25",
+          "venue": "1京都9",
+          "race": "河津桜賞(1勝クラス)",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.1",
+          "time": "1:33.8",
+          "last3f": "36.0",
+          "position": "3-3"
+        },
+        {
+          "date": "2025/11/09",
+          "venue": "4京都2",
+          "race": "2歳未勝利",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 1,
+          "margin": "-0.2",
+          "time": "1:35.4",
+          "last3f": "35.5",
+          "position": "3-4"
+        },
+        {
+          "date": "2025/10/18",
+          "venue": "3京都6",
+          "race": "2歳新馬",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 2,
+          "margin": "0.0",
+          "time": "1:34.8",
+          "last3f": "34.5",
+          "position": "2-2"
+        }
+      ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
+        "win_rate": 0.02,
+        "place_rate": 0.02,
+        "wins": 20,
         "races": 0
       },
       "index": 15,
-      "win_prob": 0.0625,
-      "place_prob": 0.18749999999999978
+      "win_prob": 0.10546672364257041,
+      "place_prob": 0.31098635808507147
     }
   ],
   "combo_odds": {
@@ -6654,755 +7162,755 @@
   "ev_results": {
     "win": [
       {
-        "num": 1,
-        "name": "ドリームコア",
-        "prob": 0.0625,
-        "odds": 3.4,
-        "ev": 0.2125,
-        "ev_ratio": 0.2125,
-        "rank": "C"
-      },
-      {
-        "num": 2,
-        "name": "ジッピーチューン",
-        "prob": 0.0625,
-        "odds": 31.0,
-        "ev": 1.9375,
-        "ev_ratio": 1.9375,
+        "num": 6,
+        "name": "ニシノサリーナ",
+        "prob": 0.1225348509962989,
+        "odds": 15.8,
+        "ev": 1.9360506457415227,
+        "ev_ratio": 1.9360506457415227,
         "rank": "S"
-      },
-      {
-        "num": 3,
-        "name": "マルガ",
-        "prob": 0.0625,
-        "odds": 13.3,
-        "ev": 0.83125,
-        "ev_ratio": 0.83125,
-        "rank": "C"
       },
       {
         "num": 4,
         "name": "モートンアイランド",
-        "prob": 0.0625,
+        "prob": 0.11087411819491212,
         "odds": 9.8,
-        "ev": 0.6125,
-        "ev_ratio": 0.6125,
-        "rank": "C"
-      },
-      {
-        "num": 5,
-        "name": "ヒズマスターピース",
-        "prob": 0.0625,
-        "odds": 17.7,
-        "ev": 1.10625,
-        "ev_ratio": 1.10625,
+        "ev": 1.0865663583101388,
+        "ev_ratio": 1.0865663583101388,
         "rank": "B"
       },
       {
-        "num": 6,
-        "name": "ニシノサリーナ",
-        "prob": 0.0625,
-        "odds": 15.8,
-        "ev": 0.9875,
-        "ev_ratio": 0.9875,
-        "rank": "C"
+        "num": 15,
+        "name": "マスターソアラ",
+        "prob": 0.11087411819491212,
+        "odds": 10.2,
+        "ev": 1.1309160055881036,
+        "ev_ratio": 1.1309160055881036,
+        "rank": "B"
       },
       {
-        "num": 7,
-        "name": "フェーダーローター",
-        "prob": 0.0625,
-        "odds": 346.4,
-        "ev": 21.65,
-        "ev_ratio": 21.65,
+        "num": 16,
+        "name": "タイムレスキス",
+        "prob": 0.10546672364257041,
+        "odds": 30.5,
+        "ev": 3.2167350710983977,
+        "ev_ratio": 3.2167350710983977,
         "rank": "S"
       },
       {
-        "num": 8,
-        "name": "ラヴノー",
-        "prob": 0.0625,
-        "odds": 183.6,
-        "ev": 11.475,
-        "ev_ratio": 11.475,
-        "rank": "S"
-      },
-      {
-        "num": 9,
-        "name": "ギャラボーグ",
-        "prob": 0.0625,
-        "odds": 2.5,
-        "ev": 0.15625,
-        "ev_ratio": 0.15625,
-        "rank": "C"
-      },
-      {
-        "num": 10,
-        "name": "ミツカネベネラ",
-        "prob": 0.0625,
-        "odds": 50.4,
-        "ev": 3.15,
-        "ev_ratio": 3.15,
-        "rank": "S"
-      },
-      {
-        "num": 11,
-        "name": "レディーゴール",
-        "prob": 0.0625,
-        "odds": 139.8,
-        "ev": 8.7375,
-        "ev_ratio": 8.7375,
-        "rank": "S"
-      },
-      {
-        "num": 12,
-        "name": "ザバルガド",
-        "prob": 0.0625,
-        "odds": 251.3,
-        "ev": 15.70625,
-        "ev_ratio": 15.70625,
+        "num": 2,
+        "name": "ジッピーチューン",
+        "prob": 0.1013313142577783,
+        "odds": 31.0,
+        "ev": 3.1412707419911277,
+        "ev_ratio": 3.1412707419911277,
         "rank": "S"
       },
       {
         "num": 13,
         "name": "ゴバド",
-        "prob": 0.0625,
+        "prob": 0.09168836475919853,
         "odds": 26.0,
-        "ev": 1.625,
-        "ev_ratio": 1.625,
+        "ev": 2.3838974837391618,
+        "ev_ratio": 2.3838974837391618,
         "rank": "S"
+      },
+      {
+        "num": 1,
+        "name": "ドリームコア",
+        "prob": 0.08634885007254907,
+        "odds": 3.4,
+        "ev": 0.2935860902466668,
+        "ev_ratio": 0.2935860902466668,
+        "rank": "C"
+      },
+      {
+        "num": 9,
+        "name": "ギャラボーグ",
+        "prob": 0.08634885007254907,
+        "odds": 2.5,
+        "ev": 0.21587212518137266,
+        "ev_ratio": 0.21587212518137266,
+        "rank": "C"
+      },
+      {
+        "num": 8,
+        "name": "ラヴノー",
+        "prob": 0.0699930175264499,
+        "odds": 183.6,
+        "ev": 12.850718017856202,
+        "ev_ratio": 12.850718017856202,
+        "rank": "S"
+      },
+      {
+        "num": 3,
+        "name": "マルガ",
+        "prob": 0.026007773847126308,
+        "odds": 13.3,
+        "ev": 0.3459033921667799,
+        "ev_ratio": 0.3459033921667799,
+        "rank": "C"
+      },
+      {
+        "num": 10,
+        "name": "ミツカネベネラ",
+        "prob": 0.02523912796748344,
+        "odds": 50.4,
+        "ev": 1.2720520495611654,
+        "ev_ratio": 1.2720520495611654,
+        "rank": "A"
       },
       {
         "num": 14,
         "name": "モルニケ",
-        "prob": 0.0625,
+        "prob": 0.020664050247849258,
         "odds": 27.7,
-        "ev": 1.73125,
-        "ev_ratio": 1.73125,
-        "rank": "S"
-      },
-      {
-        "num": 15,
-        "name": "マスターソアラ",
-        "prob": 0.0625,
-        "odds": 10.2,
-        "ev": 0.6375,
-        "ev_ratio": 0.6375,
+        "ev": 0.5723941918654244,
+        "ev_ratio": 0.5723941918654244,
         "rank": "C"
       },
       {
-        "num": 16,
-        "name": "タイムレスキス",
-        "prob": 0.0625,
-        "odds": 30.5,
-        "ev": 1.90625,
-        "ev_ratio": 1.90625,
+        "num": 5,
+        "name": "ヒズマスターピース",
+        "prob": 0.015617553209948625,
+        "odds": 17.7,
+        "ev": 0.27643069181609065,
+        "ev_ratio": 0.27643069181609065,
+        "rank": "C"
+      },
+      {
+        "num": 12,
+        "name": "ザバルガド",
+        "prob": 0.013044876971400582,
+        "odds": 251.3,
+        "ev": 3.2781775829129662,
+        "ev_ratio": 3.2781775829129662,
+        "rank": "S"
+      },
+      {
+        "num": 11,
+        "name": "レディーゴール",
+        "prob": 0.007087945239380432,
+        "odds": 139.8,
+        "ev": 0.9908947444653845,
+        "ev_ratio": 0.9908947444653845,
+        "rank": "C"
+      },
+      {
+        "num": 7,
+        "name": "フェーダーローター",
+        "prob": 0.006878464799593154,
+        "odds": 346.4,
+        "ev": 2.3827002065790683,
+        "ev_ratio": 2.3827002065790683,
         "rank": "S"
       }
     ],
     "place": [
       {
-        "num": 1,
-        "name": "ドリームコア",
-        "prob": 0.18749999999999978,
-        "odds": 1.3,
-        "ev": 0.24374999999999972,
-        "ev_ratio": 0.24374999999999972,
-        "rank": "C"
-      },
-      {
-        "num": 2,
-        "name": "ジッピーチューン",
-        "prob": 0.18749999999999978,
-        "odds": 4.3,
-        "ev": 0.806249999999999,
-        "ev_ratio": 0.806249999999999,
-        "rank": "C"
-      },
-      {
-        "num": 3,
-        "name": "マルガ",
-        "prob": 0.18749999999999978,
-        "odds": 2.6,
-        "ev": 0.48749999999999943,
-        "ev_ratio": 0.48749999999999943,
-        "rank": "C"
+        "num": 6,
+        "name": "ニシノサリーナ",
+        "prob": 0.35323025054787727,
+        "odds": 3.4,
+        "ev": 1.2009828518627828,
+        "ev_ratio": 1.2009828518627828,
+        "rank": "A"
       },
       {
         "num": 4,
         "name": "モートンアイランド",
-        "prob": 0.18749999999999978,
+        "prob": 0.3246256866144463,
         "odds": 2.3,
-        "ev": 0.43124999999999947,
-        "ev_ratio": 0.43124999999999947,
-        "rank": "C"
-      },
-      {
-        "num": 5,
-        "name": "ヒズマスターピース",
-        "prob": 0.18749999999999978,
-        "odds": 3.1,
-        "ev": 0.5812499999999994,
-        "ev_ratio": 0.5812499999999994,
-        "rank": "C"
-      },
-      {
-        "num": 6,
-        "name": "ニシノサリーナ",
-        "prob": 0.18749999999999978,
-        "odds": 3.4,
-        "ev": 0.6374999999999992,
-        "ev_ratio": 0.6374999999999992,
-        "rank": "C"
-      },
-      {
-        "num": 7,
-        "name": "フェーダーローター",
-        "prob": 0.18749999999999978,
-        "odds": 37.1,
-        "ev": 6.956249999999992,
-        "ev_ratio": 6.956249999999992,
-        "rank": "S"
-      },
-      {
-        "num": 8,
-        "name": "ラヴノー",
-        "prob": 0.18749999999999978,
-        "odds": 18.3,
-        "ev": 3.431249999999996,
-        "ev_ratio": 3.431249999999996,
-        "rank": "S"
-      },
-      {
-        "num": 9,
-        "name": "ギャラボーグ",
-        "prob": 0.18749999999999978,
-        "odds": 1.1,
-        "ev": 0.20624999999999977,
-        "ev_ratio": 0.20624999999999977,
-        "rank": "C"
-      },
-      {
-        "num": 10,
-        "name": "ミツカネベネラ",
-        "prob": 0.18749999999999978,
-        "odds": 5.8,
-        "ev": 1.0874999999999986,
-        "ev_ratio": 1.0874999999999986,
-        "rank": "B"
-      },
-      {
-        "num": 11,
-        "name": "レディーゴール",
-        "prob": 0.18749999999999978,
-        "odds": 10.9,
-        "ev": 2.0437499999999975,
-        "ev_ratio": 2.0437499999999975,
-        "rank": "S"
-      },
-      {
-        "num": 12,
-        "name": "ザバルガド",
-        "prob": 0.18749999999999978,
-        "odds": 23.2,
-        "ev": 4.349999999999994,
-        "ev_ratio": 4.349999999999994,
-        "rank": "S"
-      },
-      {
-        "num": 13,
-        "name": "ゴバド",
-        "prob": 0.18749999999999978,
-        "odds": 4.0,
-        "ev": 0.7499999999999991,
-        "ev_ratio": 0.7499999999999991,
-        "rank": "C"
-      },
-      {
-        "num": 14,
-        "name": "モルニケ",
-        "prob": 0.18749999999999978,
-        "odds": 5.1,
-        "ev": 0.9562499999999988,
-        "ev_ratio": 0.9562499999999988,
+        "ev": 0.7466390792132265,
+        "ev_ratio": 0.7466390792132265,
         "rank": "C"
       },
       {
         "num": 15,
         "name": "マスターソアラ",
-        "prob": 0.18749999999999978,
+        "prob": 0.3246256866144465,
         "odds": 2.3,
-        "ev": 0.43124999999999947,
-        "ev_ratio": 0.43124999999999947,
+        "ev": 0.7466390792132269,
+        "ev_ratio": 0.7466390792132269,
         "rank": "C"
       },
       {
         "num": 16,
         "name": "タイムレスキス",
-        "prob": 0.18749999999999978,
+        "prob": 0.31098635808507147,
         "odds": 4.4,
-        "ev": 0.8249999999999991,
-        "ev_ratio": 0.8249999999999991,
+        "ev": 1.3683399755743146,
+        "ev_ratio": 1.3683399755743146,
+        "rank": "A"
+      },
+      {
+        "num": 2,
+        "name": "ジッピーチューン",
+        "prob": 0.30039607467436985,
+        "odds": 4.3,
+        "ev": 1.2917031210997902,
+        "ev_ratio": 1.2917031210997902,
+        "rank": "A"
+      },
+      {
+        "num": 13,
+        "name": "ゴバド",
+        "prob": 0.2751685530151574,
+        "odds": 4.0,
+        "ev": 1.1006742120606297,
+        "ev_ratio": 1.1006742120606297,
+        "rank": "B"
+      },
+      {
+        "num": 1,
+        "name": "ドリームコア",
+        "prob": 0.2608808933735554,
+        "odds": 1.3,
+        "ev": 0.33914516138562206,
+        "ev_ratio": 0.33914516138562206,
+        "rank": "C"
+      },
+      {
+        "num": 9,
+        "name": "ギャラボーグ",
+        "prob": 0.26088089337355547,
+        "odds": 1.1,
+        "ev": 0.28696898271091104,
+        "ev_ratio": 0.28696898271091104,
+        "rank": "C"
+      },
+      {
+        "num": 8,
+        "name": "ラヴノー",
+        "prob": 0.21572217926076898,
+        "odds": 18.3,
+        "ev": 3.9477158804720722,
+        "ev_ratio": 3.9477158804720722,
+        "rank": "S"
+      },
+      {
+        "num": 3,
+        "name": "マルガ",
+        "prob": 0.08423986469285709,
+        "odds": 2.6,
+        "ev": 0.21902364820142844,
+        "ev_ratio": 0.21902364820142844,
+        "rank": "C"
+      },
+      {
+        "num": 10,
+        "name": "ミツカネベネラ",
+        "prob": 0.0818171856854363,
+        "odds": 5.8,
+        "ev": 0.47453967697553057,
+        "ev_ratio": 0.47453967697553057,
+        "rank": "C"
+      },
+      {
+        "num": 14,
+        "name": "モルニケ",
+        "prob": 0.06731134236062057,
+        "odds": 5.1,
+        "ev": 0.3432878460391649,
+        "ev_ratio": 0.3432878460391649,
+        "rank": "C"
+      },
+      {
+        "num": 5,
+        "name": "ヒズマスターピース",
+        "prob": 0.051141829382565854,
+        "odds": 3.1,
+        "ev": 0.15853967108595415,
+        "ev_ratio": 0.15853967108595415,
+        "rank": "C"
+      },
+      {
+        "num": 12,
+        "name": "ザバルガド",
+        "prob": 0.04283111738123609,
+        "odds": 23.2,
+        "ev": 0.9936819232446773,
+        "ev_ratio": 0.9936819232446773,
+        "rank": "C"
+      },
+      {
+        "num": 11,
+        "name": "レディーゴール",
+        "prob": 0.02341462953956661,
+        "odds": 10.9,
+        "ev": 0.25521946198127604,
+        "ev_ratio": 0.25521946198127604,
+        "rank": "C"
+      },
+      {
+        "num": 7,
+        "name": "フェーダーローター",
+        "prob": 0.022727455398470695,
+        "odds": 37.1,
+        "ev": 0.8431885952832628,
+        "ev_ratio": 0.8431885952832628,
         "rank": "C"
       }
     ],
     "quinella": [
       {
-        "combo": "2-3",
-        "names": "ジッピーチューン-マルガ",
-        "prob": 0.008333333333333333,
-        "odds": 218.3,
-        "ev": 1.8191666666666668,
-        "ev_ratio": 1.8191666666666668,
+        "combo": "6-13",
+        "names": "ニシノサリーナ-ゴバド",
+        "prob": 0.02517307520433521,
+        "odds": 289.7,
+        "ev": 7.292639886695911,
+        "ev_ratio": 7.292639886695911,
         "rank": "S"
       },
       {
-        "combo": "2-5",
-        "names": "ジッピーチューン-ヒズマスターピース",
-        "prob": 0.008333333333333333,
-        "odds": 200.4,
-        "ev": 1.67,
-        "ev_ratio": 1.67,
+        "combo": "2-16",
+        "names": "ジッピーチューン-タイムレスキス",
+        "prob": 0.023839230117314543,
+        "odds": 291.2,
+        "ev": 6.941983810161995,
+        "ev_ratio": 6.941983810161995,
+        "rank": "S"
+      },
+      {
+        "combo": "2-13",
+        "names": "ジッピーチューン-ゴバド",
+        "prob": 0.02056727899305982,
+        "odds": 336.9,
+        "ev": 6.929116292761853,
+        "ev_ratio": 6.929116292761853,
+        "rank": "S"
+      },
+      {
+        "combo": "13-16",
+        "names": "ゴバド-タイムレスキス",
+        "prob": 0.021456390874883276,
+        "odds": 308.1,
+        "ev": 6.610714028551538,
+        "ev_ratio": 6.610714028551538,
+        "rank": "S"
+      },
+      {
+        "combo": "4-16",
+        "names": "モートンアイランド-タイムレスキス",
+        "prob": 0.026223928272204548,
+        "odds": 197.9,
+        "ev": 5.18971540506928,
+        "ev_ratio": 5.18971540506928,
+        "rank": "S"
+      },
+      {
+        "combo": "6-16",
+        "names": "ニシノサリーナ-タイムレスキス",
+        "prob": 0.02917507870346174,
+        "odds": 176.6,
+        "ev": 5.152318899031343,
+        "ev_ratio": 5.152318899031343,
         "rank": "S"
       },
       {
         "combo": "2-6",
         "names": "ジッピーチューン-ニシノサリーナ",
-        "prob": 0.008333333333333333,
+        "prob": 0.02796723327120084,
         "odds": 162.0,
-        "ev": 1.35,
-        "ev_ratio": 1.35,
-        "rank": "A"
-      },
-      {
-        "combo": "3-5",
-        "names": "マルガ-ヒズマスターピース",
-        "prob": 0.008333333333333333,
-        "odds": 159.3,
-        "ev": 1.3275000000000001,
-        "ev_ratio": 1.3275000000000001,
-        "rank": "A"
+        "ev": 4.5306917899345365,
+        "ev_ratio": 4.5306917899345365,
+        "rank": "S"
       },
       {
         "combo": "2-4",
         "names": "ジッピーチューン-モートンアイランド",
-        "prob": 0.008333333333333333,
+        "prob": 0.025137877540482134,
         "odds": 157.4,
-        "ev": 1.3116666666666668,
-        "ev_ratio": 1.3116666666666668,
-        "rank": "A"
-      },
-      {
-        "combo": "3-6",
-        "names": "マルガ-ニシノサリーナ",
-        "prob": 0.008333333333333333,
-        "odds": 149.3,
-        "ev": 1.2441666666666666,
-        "ev_ratio": 1.2441666666666666,
-        "rank": "A"
-      },
-      {
-        "combo": "5-6",
-        "names": "ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.008333333333333333,
-        "odds": 128.5,
-        "ev": 1.0708333333333333,
-        "ev_ratio": 1.0708333333333333,
-        "rank": "B"
+        "ev": 3.956701924871888,
+        "ev_ratio": 3.956701924871888,
+        "rank": "S"
       },
       {
         "combo": "4-6",
         "names": "モートンアイランド-ニシノサリーナ",
-        "prob": 0.008333333333333333,
+        "prob": 0.030763284246277733,
         "odds": 123.8,
-        "ev": 1.0316666666666667,
-        "ev_ratio": 1.0316666666666667,
-        "rank": "B"
+        "ev": 3.8084945896891833,
+        "ev_ratio": 3.8084945896891833,
+        "rank": "S"
       },
       {
-        "combo": "4-5",
-        "names": "モートンアイランド-ヒズマスターピース",
-        "prob": 0.008333333333333333,
-        "odds": 111.0,
-        "ev": 0.9249999999999999,
-        "ev_ratio": 0.9249999999999999,
-        "rank": "C"
+        "combo": "15-16",
+        "names": "マスターソアラ-タイムレスキス",
+        "prob": 0.026223928272204548,
+        "odds": 139.8,
+        "ev": 3.666105172454196,
+        "ev_ratio": 3.666105172454196,
+        "rank": "S"
       },
       {
-        "combo": "3-4",
-        "names": "マルガ-モートンアイランド",
-        "prob": 0.008333333333333333,
-        "odds": 66.6,
-        "ev": 0.5549999999999999,
-        "ev_ratio": 0.5549999999999999,
-        "rank": "C"
+        "combo": "2-15",
+        "names": "ジッピーチューン-マスターソアラ",
+        "prob": 0.025137877540482134,
+        "odds": 117.8,
+        "ev": 2.961241974268795,
+        "ev_ratio": 2.961241974268795,
+        "rank": "S"
       },
       {
-        "combo": "1-2",
-        "names": "ドリームコア-ジッピーチューン",
-        "prob": 0.008333333333333333,
-        "odds": 41.5,
-        "ev": 0.3458333333333333,
-        "ev_ratio": 0.3458333333333333,
-        "rank": "C"
+        "combo": "6-15",
+        "names": "ニシノサリーナ-マスターソアラ",
+        "prob": 0.030763284246277733,
+        "odds": 95.7,
+        "ev": 2.944046302368779,
+        "ev_ratio": 2.944046302368779,
+        "rank": "S"
       },
       {
-        "combo": "1-6",
-        "names": "ドリームコア-ニシノサリーナ",
-        "prob": 0.008333333333333333,
-        "odds": 29.4,
-        "ev": 0.245,
-        "ev_ratio": 0.245,
-        "rank": "C"
+        "combo": "4-13",
+        "names": "モートンアイランド-ゴバド",
+        "prob": 0.022625598622911844,
+        "odds": 107.6,
+        "ev": 2.4345144118253144,
+        "ev_ratio": 2.4345144118253144,
+        "rank": "S"
       },
       {
-        "combo": "1-5",
-        "names": "ドリームコア-ヒズマスターピース",
-        "prob": 0.008333333333333333,
-        "odds": 28.4,
-        "ev": 0.23666666666666666,
-        "ev_ratio": 0.23666666666666666,
-        "rank": "C"
+        "combo": "13-15",
+        "names": "ゴバド-マスターソアラ",
+        "prob": 0.022625598622911844,
+        "odds": 86.7,
+        "ev": 1.961639400606457,
+        "ev_ratio": 1.961639400606457,
+        "rank": "S"
       },
       {
-        "combo": "1-3",
-        "names": "ドリームコア-マルガ",
-        "prob": 0.008333333333333333,
-        "odds": 23.8,
-        "ev": 0.19833333333333333,
-        "ev_ratio": 0.19833333333333333,
-        "rank": "C"
-      },
-      {
-        "combo": "1-4",
-        "names": "ドリームコア-モートンアイランド",
-        "prob": 0.008333333333333333,
-        "odds": 15.4,
-        "ev": 0.12833333333333333,
-        "ev_ratio": 0.12833333333333333,
-        "rank": "C"
+        "combo": "4-15",
+        "names": "モートンアイランド-マスターソアラ",
+        "prob": 0.027652035188857997,
+        "odds": 47.5,
+        "ev": 1.3134716714707548,
+        "ev_ratio": 1.3134716714707548,
+        "rank": "A"
       }
     ],
     "wide": [
       {
-        "combo": "2-3",
-        "names": "ジッピーチューン-マルガ",
-        "prob": 0.025000000000000015,
-        "odds": 62.9,
-        "ev": 1.572500000000001,
-        "ev_ratio": 1.572500000000001,
+        "combo": "6-13",
+        "names": "ニシノサリーナ-ゴバド",
+        "prob": 0.07382429389750689,
+        "odds": 71.1,
+        "ev": 5.24890729611274,
+        "ev_ratio": 5.24890729611274,
         "rank": "S"
       },
       {
-        "combo": "2-5",
-        "names": "ジッピーチューン-ヒズマスターピース",
-        "prob": 0.025000000000000015,
-        "odds": 52.5,
-        "ev": 1.3125000000000009,
-        "ev_ratio": 1.3125000000000009,
-        "rank": "A"
+        "combo": "2-13",
+        "names": "ジッピーチューン-ゴバド",
+        "prob": 0.06135593511194493,
+        "odds": 79.3,
+        "ev": 4.865525654377233,
+        "ev_ratio": 4.865525654377233,
+        "rank": "S"
       },
       {
-        "combo": "3-6",
-        "names": "マルガ-ニシノサリーナ",
-        "prob": 0.025000000000000015,
-        "odds": 46.9,
-        "ev": 1.1725000000000008,
-        "ev_ratio": 1.1725000000000008,
-        "rank": "B"
+        "combo": "2-16",
+        "names": "ジッピーチューン-タイムレスキス",
+        "prob": 0.07037198659338945,
+        "odds": 62.4,
+        "ev": 4.3912119634275015,
+        "ev_ratio": 4.3912119634275015,
+        "rank": "S"
       },
       {
-        "combo": "3-5",
-        "names": "マルガ-ヒズマスターピース",
-        "prob": 0.025000000000000015,
-        "odds": 46.1,
-        "ev": 1.1525000000000007,
-        "ev_ratio": 1.1525000000000007,
-        "rank": "B"
+        "combo": "6-16",
+        "names": "ニシノサリーナ-タイムレスキス",
+        "prob": 0.08462182888816404,
+        "odds": 47.3,
+        "ev": 4.002612506410159,
+        "ev_ratio": 4.002612506410159,
+        "rank": "S"
       },
       {
-        "combo": "2-4",
-        "names": "ジッピーチューン-モートンアイランド",
-        "prob": 0.025000000000000015,
-        "odds": 45.5,
-        "ev": 1.1375000000000006,
-        "ev_ratio": 1.1375000000000006,
-        "rank": "B"
+        "combo": "4-16",
+        "names": "モートンアイランド-タイムレスキス",
+        "prob": 0.07682081888834501,
+        "odds": 51.8,
+        "ev": 3.979318418416271,
+        "ev_ratio": 3.979318418416271,
+        "rank": "S"
       },
       {
-        "combo": "5-6",
-        "names": "ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.025000000000000015,
-        "odds": 43.0,
-        "ev": 1.0750000000000006,
-        "ev_ratio": 1.0750000000000006,
-        "rank": "B"
+        "combo": "13-16",
+        "names": "ゴバド-タイムレスキス",
+        "prob": 0.06380534417926595,
+        "odds": 57.3,
+        "ev": 3.656046221471939,
+        "ev_ratio": 3.656046221471939,
+        "rank": "S"
       },
       {
         "combo": "2-6",
         "names": "ジッピーチューン-ニシノサリーナ",
-        "prob": 0.025000000000000015,
+        "prob": 0.08139459160706765,
         "odds": 42.9,
-        "ev": 1.0725000000000007,
-        "ev_ratio": 1.0725000000000007,
-        "rank": "B"
+        "ev": 3.491827979943202,
+        "ev_ratio": 3.491827979943202,
+        "rank": "S"
       },
       {
         "combo": "4-6",
         "names": "モートンアイランド-ニシノサリーナ",
-        "prob": 0.025000000000000015,
+        "prob": 0.08882243238412098,
         "odds": 39.0,
-        "ev": 0.9750000000000006,
-        "ev_ratio": 0.9750000000000006,
-        "rank": "C"
+        "ev": 3.464074862980718,
+        "ev_ratio": 3.464074862980718,
+        "rank": "S"
       },
       {
-        "combo": "4-5",
-        "names": "モートンアイランド-ヒズマスターピース",
-        "prob": 0.025000000000000015,
-        "odds": 31.6,
-        "ev": 0.7900000000000005,
-        "ev_ratio": 0.7900000000000005,
-        "rank": "C"
+        "combo": "2-4",
+        "names": "ジッピーチューン-モートンアイランド",
+        "prob": 0.07388343533560389,
+        "odds": 45.5,
+        "ev": 3.361696307769977,
+        "ev_ratio": 3.361696307769977,
+        "rank": "S"
       },
       {
-        "combo": "3-4",
-        "names": "マルガ-モートンアイランド",
-        "prob": 0.025000000000000015,
-        "odds": 23.6,
-        "ev": 0.5900000000000004,
-        "ev_ratio": 0.5900000000000004,
-        "rank": "C"
+        "combo": "6-15",
+        "names": "ニシノサリーナ-マスターソアラ",
+        "prob": 0.08882243238412096,
+        "odds": 31.0,
+        "ev": 2.75349540390775,
+        "ev_ratio": 2.75349540390775,
+        "rank": "S"
       },
       {
-        "combo": "1-2",
-        "names": "ドリームコア-ジッピーチューン",
-        "prob": 0.025000000000000015,
-        "odds": 12.7,
-        "ev": 0.31750000000000017,
-        "ev_ratio": 0.31750000000000017,
-        "rank": "C"
+        "combo": "2-15",
+        "names": "ジッピーチューン-マスターソアラ",
+        "prob": 0.07388343533560389,
+        "odds": 34.7,
+        "ev": 2.5637552061454554,
+        "ev_ratio": 2.5637552061454554,
+        "rank": "S"
       },
       {
-        "combo": "1-6",
-        "names": "ドリームコア-ニシノサリーナ",
-        "prob": 0.025000000000000015,
-        "odds": 10.6,
-        "ev": 0.2650000000000002,
-        "ev_ratio": 0.2650000000000002,
-        "rank": "C"
+        "combo": "15-16",
+        "names": "マスターソアラ-タイムレスキス",
+        "prob": 0.07682081888834501,
+        "odds": 33.3,
+        "ev": 2.5581332689818885,
+        "ev_ratio": 2.5581332689818885,
+        "rank": "S"
       },
       {
-        "combo": "1-3",
-        "names": "ドリームコア-マルガ",
-        "prob": 0.025000000000000015,
-        "odds": 9.6,
-        "ev": 0.24000000000000013,
-        "ev_ratio": 0.24000000000000013,
-        "rank": "C"
+        "combo": "4-13",
+        "names": "モートンアイランド-ゴバド",
+        "prob": 0.06699608325852341,
+        "odds": 23.8,
+        "ev": 1.594506781552857,
+        "ev_ratio": 1.594506781552857,
+        "rank": "S"
       },
       {
-        "combo": "1-5",
-        "names": "ドリームコア-ヒズマスターピース",
-        "prob": 0.025000000000000015,
-        "odds": 9.3,
-        "ev": 0.23250000000000015,
-        "ev_ratio": 0.23250000000000015,
-        "rank": "C"
+        "combo": "13-15",
+        "names": "ゴバド-マスターソアラ",
+        "prob": 0.06699608325852341,
+        "odds": 22.1,
+        "ev": 1.4806134400133675,
+        "ev_ratio": 1.4806134400133675,
+        "rank": "A"
       },
       {
-        "combo": "1-4",
-        "names": "ドリームコア-モートンアイランド",
-        "prob": 0.025000000000000015,
-        "odds": 5.9,
-        "ev": 0.1475000000000001,
-        "ev_ratio": 0.1475000000000001,
-        "rank": "C"
+        "combo": "4-15",
+        "names": "モートンアイランド-マスターソアラ",
+        "prob": 0.08064537185551231,
+        "odds": 15.4,
+        "ev": 1.2419387265748896,
+        "ev_ratio": 1.2419387265748896,
+        "rank": "A"
       }
     ],
     "trio": [
       {
-        "combo": "2-3-5",
-        "names": "ジッピーチューン-マルガ-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 1002.7,
-        "ev": 1.7905357142857143,
-        "ev_ratio": 1.7905357142857143,
+        "combo": "6-13-16",
+        "names": "ニシノサリーナ-ゴバド-タイムレスキス",
+        "prob": 0.010118574252899812,
+        "odds": 1800.3,
+        "ev": 18.21646922749553,
+        "ev_ratio": 18.21646922749553,
         "rank": "S"
       },
       {
-        "combo": "2-3-6",
-        "names": "ジッピーチューン-マルガ-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 839.4,
-        "ev": 1.4989285714285714,
-        "ev_ratio": 1.4989285714285714,
-        "rank": "A"
+        "combo": "2-6-13",
+        "names": "ジッピーチューン-ニシノサリーナ-ゴバド",
+        "prob": 0.009673153720555152,
+        "odds": 1570.4,
+        "ev": 15.190720602759813,
+        "ev_ratio": 15.190720602759813,
+        "rank": "S"
+      },
+      {
+        "combo": "2-13-16",
+        "names": "ジッピーチューン-ゴバド-タイムレスキス",
+        "prob": 0.008151766642356326,
+        "odds": 1728.3,
+        "ev": 14.088698287984437,
+        "ev_ratio": 14.088698287984437,
+        "rank": "S"
+      },
+      {
+        "combo": "4-6-16",
+        "names": "モートンアイランド-ニシノサリーナ-タイムレスキス",
+        "prob": 0.01252292852187355,
+        "odds": 945.1,
+        "ev": 11.835419746022692,
+        "ev_ratio": 11.835419746022692,
+        "rank": "S"
+      },
+      {
+        "combo": "2-4-16",
+        "names": "ジッピーチューン-モートンアイランド-タイムレスキス",
+        "prob": 0.01008850853537644,
+        "odds": 1113.2,
+        "ev": 11.230527701581055,
+        "ev_ratio": 11.230527701581055,
+        "rank": "S"
+      },
+      {
+        "combo": "2-6-16",
+        "names": "ジッピーチューン-ニシノサリーナ-タイムレスキス",
+        "prob": 0.01131258174054571,
+        "odds": 959.4,
+        "ev": 10.853290921879553,
+        "ev_ratio": 10.853290921879553,
+        "rank": "S"
       },
       {
         "combo": "2-4-6",
         "names": "ジッピーチューン-モートンアイランド-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
+        "prob": 0.011971652042079088,
         "odds": 774.2,
-        "ev": 1.3825,
-        "ev_ratio": 1.3825,
-        "rank": "A"
+        "ev": 9.26845301097763,
+        "ev_ratio": 9.26845301097763,
+        "rank": "S"
       },
       {
-        "combo": "2-5-6",
-        "names": "ジッピーチューン-ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 761.6,
-        "ev": 1.36,
-        "ev_ratio": 1.36,
-        "rank": "A"
+        "combo": "4-6-13",
+        "names": "モートンアイランド-ニシノサリーナ-ゴバド",
+        "prob": 0.010708072387065684,
+        "odds": 721.0,
+        "ev": 7.720520191074359,
+        "ev_ratio": 7.720520191074359,
+        "rank": "S"
       },
       {
-        "combo": "3-5-6",
-        "names": "マルガ-ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 727.4,
-        "ev": 1.2989285714285714,
-        "ev_ratio": 1.2989285714285714,
-        "rank": "A"
+        "combo": "6-13-15",
+        "names": "ニシノサリーナ-ゴバド-マスターソアラ",
+        "prob": 0.010708072387065682,
+        "odds": 711.2,
+        "ev": 7.615581081681114,
+        "ev_ratio": 7.615581081681114,
+        "rank": "S"
       },
       {
-        "combo": "2-4-5",
-        "names": "ジッピーチューン-モートンアイランド-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 722.1,
-        "ev": 1.2894642857142857,
-        "ev_ratio": 1.2894642857142857,
-        "rank": "A"
+        "combo": "6-15-16",
+        "names": "ニシノサリーナ-マスターソアラ-タイムレスキス",
+        "prob": 0.01252292852187355,
+        "odds": 581.8,
+        "ev": 7.285839814026031,
+        "ev_ratio": 7.285839814026031,
+        "rank": "S"
       },
       {
-        "combo": "2-3-4",
-        "names": "ジッピーチューン-マルガ-モートンアイランド",
-        "prob": 0.0017857142857142857,
-        "odds": 610.4,
-        "ev": 1.0899999999999999,
-        "ev_ratio": 1.0899999999999999,
-        "rank": "B"
+        "combo": "2-15-16",
+        "names": "ジッピーチューン-マスターソアラ-タイムレスキス",
+        "prob": 0.01008850853537644,
+        "odds": 713.2,
+        "ev": 7.1951242874304775,
+        "ev_ratio": 7.1951242874304775,
+        "rank": "S"
       },
       {
-        "combo": "4-5-6",
-        "names": "モートンアイランド-ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 605.5,
-        "ev": 1.08125,
-        "ev_ratio": 1.08125,
-        "rank": "B"
+        "combo": "2-13-15",
+        "names": "ジッピーチューン-ゴバド-マスターソアラ",
+        "prob": 0.008626578842425618,
+        "odds": 821.0,
+        "ev": 7.082421229631432,
+        "ev_ratio": 7.082421229631432,
+        "rank": "S"
       },
       {
-        "combo": "3-4-5",
-        "names": "マルガ-モートンアイランド-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 497.1,
-        "ev": 0.8876785714285714,
-        "ev_ratio": 0.8876785714285714,
-        "rank": "C"
+        "combo": "2-6-15",
+        "names": "ジッピーチューン-ニシノサリーナ-マスターソアラ",
+        "prob": 0.011971652042079086,
+        "odds": 562.0,
+        "ev": 6.728068447648447,
+        "ev_ratio": 6.728068447648447,
+        "rank": "S"
       },
       {
-        "combo": "3-4-6",
-        "names": "マルガ-モートンアイランド-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 484.2,
-        "ev": 0.864642857142857,
-        "ev_ratio": 0.864642857142857,
-        "rank": "C"
+        "combo": "13-15-16",
+        "names": "ゴバド-マスターソアラ-タイムレスキス",
+        "prob": 0.009023763004714372,
+        "odds": 627.9,
+        "ev": 5.666020790660154,
+        "ev_ratio": 5.666020790660154,
+        "rank": "S"
       },
       {
-        "combo": "1-2-5",
-        "names": "ドリームコア-ジッピーチューン-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 184.8,
-        "ev": 0.33,
-        "ev_ratio": 0.33,
-        "rank": "C"
+        "combo": "4-15-16",
+        "names": "モートンアイランド-マスターソアラ-タイムレスキス",
+        "prob": 0.011167792302422251,
+        "odds": 413.6,
+        "ev": 4.618998896281844,
+        "ev_ratio": 4.618998896281844,
+        "rank": "S"
       },
       {
-        "combo": "1-2-3",
-        "names": "ドリームコア-ジッピーチューン-マルガ",
-        "prob": 0.0017857142857142857,
-        "odds": 175.0,
-        "ev": 0.3125,
-        "ev_ratio": 0.3125,
-        "rank": "C"
+        "combo": "4-6-15",
+        "names": "モートンアイランド-ニシノサリーナ-マスターソアラ",
+        "prob": 0.013252534075570277,
+        "odds": 345.8,
+        "ev": 4.582726283332202,
+        "ev_ratio": 4.582726283332202,
+        "rank": "S"
       },
       {
-        "combo": "1-2-6",
-        "names": "ドリームコア-ジッピーチューン-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 155.3,
-        "ev": 0.2773214285714286,
-        "ev_ratio": 0.2773214285714286,
-        "rank": "C"
+        "combo": "2-4-13",
+        "names": "ジッピーチューン-モートンアイランド-ゴバド",
+        "prob": 0.008626578842425618,
+        "odds": 529.2,
+        "ev": 4.565185523411637,
+        "ev_ratio": 4.565185523411637,
+        "rank": "S"
       },
       {
-        "combo": "1-2-4",
-        "names": "ドリームコア-ジッピーチューン-モートンアイランド",
-        "prob": 0.0017857142857142857,
-        "odds": 143.7,
-        "ev": 0.2566071428571428,
-        "ev_ratio": 0.2566071428571428,
-        "rank": "C"
+        "combo": "2-4-15",
+        "names": "ジッピーチューン-モートンアイランド-マスターソアラ",
+        "prob": 0.010676203326861594,
+        "odds": 418.5,
+        "ev": 4.467991092291577,
+        "ev_ratio": 4.467991092291577,
+        "rank": "S"
       },
       {
-        "combo": "1-5-6",
-        "names": "ドリームコア-ヒズマスターピース-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 137.0,
-        "ev": 0.24464285714285713,
-        "ev_ratio": 0.24464285714285713,
-        "rank": "C"
+        "combo": "4-13-16",
+        "names": "モートンアイランド-ゴバド-タイムレスキス",
+        "prob": 0.009023763004714372,
+        "odds": 451.5,
+        "ev": 4.0742289966285385,
+        "ev_ratio": 4.0742289966285385,
+        "rank": "S"
       },
       {
-        "combo": "1-3-5",
-        "names": "ドリームコア-マルガ-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 134.9,
-        "ev": 0.24089285714285716,
-        "ev_ratio": 0.24089285714285716,
-        "rank": "C"
-      },
-      {
-        "combo": "1-3-6",
-        "names": "ドリームコア-マルガ-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 124.8,
-        "ev": 0.22285714285714284,
-        "ev_ratio": 0.22285714285714284,
-        "rank": "C"
-      },
-      {
-        "combo": "1-4-6",
-        "names": "ドリームコア-モートンアイランド-ニシノサリーナ",
-        "prob": 0.0017857142857142857,
-        "odds": 117.7,
-        "ev": 0.21017857142857144,
-        "ev_ratio": 0.21017857142857144,
-        "rank": "C"
-      },
-      {
-        "combo": "1-4-5",
-        "names": "ドリームコア-モートンアイランド-ヒズマスターピース",
-        "prob": 0.0017857142857142857,
-        "odds": 88.7,
-        "ev": 0.15839285714285714,
-        "ev_ratio": 0.15839285714285714,
-        "rank": "C"
-      },
-      {
-        "combo": "1-3-4",
-        "names": "ドリームコア-マルガ-モートンアイランド",
-        "prob": 0.0017857142857142857,
-        "odds": 59.8,
-        "ev": 0.10678571428571428,
-        "ev_ratio": 0.10678571428571428,
-        "rank": "C"
+        "combo": "4-13-15",
+        "names": "モートンアイランド-ゴバド-マスターソアラ",
+        "prob": 0.0095494119654814,
+        "odds": 198.4,
+        "ev": 1.8946033339515098,
+        "ev_ratio": 1.8946033339515098,
+        "rank": "S"
       }
     ],
-    "confidence": 0.1875,
+    "confidence": 0.3442830873861231,
     "temperature": 10,
     "budget": 3000
   },
-  "timestamp": "2026-02-14T21:04:50.366569"
+  "timestamp": "2026-02-14T21:49:53.158345"
 }

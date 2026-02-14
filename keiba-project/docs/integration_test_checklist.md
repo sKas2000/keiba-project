@@ -11,7 +11,7 @@
 ### ディレクトリ確認
 - [ ] `keiba-project/tools/` に全スクリプトが存在する
   - [ ] jra_scraper.py v1.4.1
-  - [ ] netkeiba_scraper.py v0.1
+  - [ ] netkeiba_scraper.py v0.2
   - [ ] scoring_engine.py v0.1
   - [ ] ev_calculator.py v0.1
   - [ ] run_pipeline.bat または run_pipeline.sh
@@ -188,6 +188,8 @@ python ev_calculator.py ../data/races/YYYYMMDD_会場_レース名_base_scored.j
 - [ ] 馬が見つからない → 馬名の全角・半角を確認
 - [ ] 過去走データ0件 → 新馬戦・HTML構造変更の可能性
 - [ ] 騎手が見つからない → 騎手名の表記ゆれを確認
+- [ ] タイムアウトエラー → v0.2のリトライメカニズムで自動復旧（最大3回）
+- [ ] ブラウザクラッシュ → v0.2では5頭ごとに自動再起動
 
 ### scoring_engine.py でのエラー
 - [ ] スコアが全馬0点 → enriched_input.jsonにデータが含まれているか確認
@@ -265,7 +267,16 @@ data/races/YYYYMMDD_会場_レース名/
 playwright install chromium
 
 # ヘッドレスモードで失敗する場合
-# jra_scraper.py の headless=True を False に変更
+# netkeiba_scraper.py v0.2はデフォルトでheadless=True
+# デバッグ時のみ headless=False に変更してブラウザを目視確認
+```
+
+### netkeiba_scraper.py v0.2 のパフォーマンス
+```bash
+# 16頭の処理時間: 約1分30秒（v0.1は2分以上）
+# リトライ: タイムアウト時に自動で最大3回リトライ
+# ブラウザ再起動: 5頭ごとにメモリリフレッシュ
+# アクセス間隔: 2秒（v0.1は0.5秒）
 ```
 
 ### 文字化け
