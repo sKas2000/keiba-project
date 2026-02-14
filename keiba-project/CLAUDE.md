@@ -9,8 +9,10 @@
 - ✅ netkeiba_scraper.py v0.1 完成（過去走データ・騎手成績の自動取得）
 - ✅ scoring_engine.py v0.1 完成（基礎点自動算出、動作テスト済み）
 - ✅ ev_calculator.py v0.1 完成（期待値計算・買い目リスト生成、動作テスト済み）
+- ✅ 一括実行スクリプト完成（run_pipeline.bat / run_pipeline.sh）
+- ✅ ドキュメント完備（使用ガイド・統合テストガイド・チェックリスト）
 - ⏸️ ev_calculator.jsx v0.1 は保留（Pythonパイプライン完成により不要）
-- 📋 次の課題: 実データでの統合テスト or Claude API連携
+- 📋 次の課題: 実データでの統合テスト（次回開催日）
 - 方針詳細: `docs/discussion_20260214_architecture.md`
 
 ## ディレクトリ構成
