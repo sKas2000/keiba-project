@@ -5,16 +5,46 @@
 詳細な指示書: `docs/project_instructions_v3.md`
 
 ## 現在の状況（2026-02-15時点）
-- ✅ jra_scraper.py v1.4.1 完成（対象券種: 単勝・複勝・馬連・ワイド・3連複のみ）
-- ⚠️ netkeiba_scraper.py v0.1 要改善（過去走データ取得が遅く実用性に課題）
-- ✅ scoring_engine.py v0.1 完成（基礎点自動算出、動作テスト済み）
-- ✅ ev_calculator.py v0.1 完成（期待値計算・買い目リスト生成、動作テスト済み）
-- ✅ 一括実行スクリプト完成（run_pipeline.bat / run_pipeline.sh）
-- ✅ ドキュメント完備（使用ガイド・統合テストガイド・チェックリスト）
-- ✅ 統合テスト実施済み（2026-02-15、部分的成功）
-- ⏸️ ev_calculator.jsx v0.1 は保留（Pythonパイプライン完成により不要）
-- 📋 次の課題: netkeiba_scraperの改善（headless=True化、処理速度向上）
-- 方針詳細: `docs/discussion_20260214_architecture.md`
+
+### 🎉 全自動パイプライン完成！
+
+**ステータス**: ✅ 全4ステップが正常動作
+
+1. ✅ **jra_scraper.py v1.4.1** - オッズ・馬情報取得
+   - 対象券種: 単勝・複勝・馬連・ワイド・3連複
+   - 馬単・3連単は対象外
+
+2. ✅ **netkeiba_scraper.py v0.3** - 過去走・騎手成績取得
+   - v0.2: 16/16頭の過去走データ取得成功
+   - v0.3: 騎手検索精度を大幅改善（「全騎手が同じID」問題を解決）
+   - 処理時間: 約3分/16頭
+
+3. ✅ **scoring_engine.py v0.1** - 基礎点自動算出
+   - 再現性100%（同じデータ→同じスコア）
+   - 計算根拠をnote欄に記録
+
+4. ✅ **ev_calculator.py v0.1** - 期待値計算・推奨買い目生成
+   - Softmax確率分布による期待値計算
+   - S/A/B/C級ランク付け
+
+### 最新の統合テスト結果
+
+- **日時**: 2026年2月15日
+- **対象**: デイリー杯クイーンカップ（東京11R、OP、芝1600m、16頭）
+- **結果**: 全ステップ成功 ✅
+- **推奨買い目**: 3連複 6-13-16 (EV 18.22, S級)
+- **詳細**: `docs/integration_test_result_20260215_v2.md`、`docs/project_status_20260215.md`
+
+### 既知の課題
+
+- ⚠️ **リーディング外騎手の成績が0.0になる**（v0.4で対応予定）
+- ⚠️ 馬体重・調教タイム未実装（scoring_engine v0.2で対応予定）
+
+### 次のステップ
+
+1. **10レースデータ蓄積**（次回開催日〜）
+2. **スコア配点の検証・最適化**（10レース後）
+3. **Claude API連携**（オプション）
 
 ## ディレクトリ構成
 ```
@@ -33,21 +63,39 @@ keiba-project/
 4. 1レースの結果で評価基準を大幅変更しない（10レース単位）
 5. 本命は必ず1頭
 
-## 優先課題
-1. ✅ 評価点の定量化（基礎点自動算出 + Claude補正に分離）第1段階完了
-2. ✅ 全自動Pythonパイプライン実装完了
+## 優先課題（完了済み）
+
+1. ✅ **評価点の定量化**（完了）
+   - scoring_engine.py v0.1完成
+   - 基礎点自動算出（実力50+騎手20+適性15+調子10+他5）
+   - 再現性100%、計算根拠の透明化
+
+2. ✅ **全自動Pythonパイプライン実装**（完了）
    - ✅ jra_scraper.py v1.4.1 → input.json
-   - ⚠️ netkeiba_scraper.py → enriched_input.json（要改善）
-   - ✅ scoring_engine.py → base_scored.json
-   - ✅ ev_calculator.py → ev_results.json（買い目リスト）
-3. ✅ 統合テスト実施（2026-02-15）
-   - 結果: パイプライン基本フロー確認、netkeiba_scraperに課題
-   - 詳細: `docs/integration_test_result_20260215.md`
-4. 📋 netkeiba_scraper.py v0.2 改善
-   - headless=Trueに変更（処理速度向上）
-   - アクセス間隔延長（0.5秒 → 2秒）
-   - リトライメカニズム追加
-5. 📋 Claude API連携（base_scored.json → Claude補正 → final_scored.json）
+   - ✅ netkeiba_scraper.py v0.3 → enriched_input.json
+   - ✅ scoring_engine.py v0.1 → base_scored.json
+   - ✅ ev_calculator.py v0.1 → ev_results.json
+
+3. ✅ **統合テスト実施**（完了）
+   - 2026-02-15: 全ステップ成功
+   - netkeiba_scraper v0.2 → v0.3 改善完了
+   - 「全騎手が同じID」問題を解決
+
+## 次のフェーズ
+
+### フェーズ1: データ蓄積（次回開催日〜）
+- 10レース分のデータを蓄積
+- スコア配点の妥当性検証
+- 温度パラメータの最適化
+
+### フェーズ2: 精度向上（10レース後）
+- 騎手マッピングデータベース構築（netkeiba_scraper v0.4）
+- スコア配点の調整
+- 馬体重・調教データ追加（scoring_engine v0.2）
+
+### フェーズ3: Claude API連携（オプション）
+- base_scored.json → Claude補正 → final_scored.json
+- 定量評価では捉えきれない要素を補正
 
 ## 技術スタック
 - Python 3 + Playwright（スクレイパー）
