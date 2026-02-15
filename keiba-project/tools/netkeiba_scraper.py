@@ -26,7 +26,7 @@ v0.2の改善点:
   python netkeiba_scraper.py <input.jsonのパス>
 """
 
-VERSION = "0.5.3"
+VERSION = "0.6"
 
 import asyncio
 import json
