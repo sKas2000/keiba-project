@@ -1,0 +1,7518 @@
+{
+  "race": {
+    "date": "2026-02-15",
+    "venue": "小倉",
+    "race_number": 6,
+    "name": "4歳以上1勝クラス",
+    "grade": "1勝",
+    "surface": "芝",
+    "distance": 2000,
+    "direction": "右",
+    "entries": 16,
+    "weather": "",
+    "track_condition": ""
+  },
+  "parameters": {
+    "temperature": 12,
+    "budget": 1500,
+    "top_n": 6
+  },
+  "horses": [
+    {
+      "num": 1,
+      "name": "ラミントン",
+      "score": 8.3,
+      "score_breakdown": {
+        "ability": 3.8,
+        "jockey": 0.0,
+        "fitness": 0.5,
+        "form": 2.0,
+        "other": 2.0
+      },
+      "odds_win": 14.2,
+      "odds_place": 4.1,
+      "jockey": "亀田 温心",
+      "sex_age": "牝4",
+      "weight": "504(-2)",
+      "load_weight": 55.0,
+      "note": "[AUTO] ability=3.8(3着内率0/4, 着差評価3.8点, 同条件なし) jockey=0.0(亀田 温心勝率0.000) fitness=0.5(同場なし, 同距離3戦平均9.3着) form=2.0(前走14週前2点) other=2.0(斤量55.0kg(平均±0.4kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/08",
+          "venue": "4京都1",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 8,
+          "jockey_name": "西村淳也",
+          "jockey_id": "01171",
+          "margin": "0.9",
+          "time": "2:01.8",
+          "last3f": "35.3",
+          "position": "1-1-1-1"
+        },
+        {
+          "date": "2025/09/13",
+          "venue": "4阪神3",
+          "race": "3歳未勝利",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 5,
+          "jockey_name": "吉村誠之",
+          "jockey_id": "01216",
+          "margin": "0.3",
+          "time": "1:45.7",
+          "last3f": "34.1",
+          "position": "14-13"
+        },
+        {
+          "date": "2025/07/05",
+          "venue": "2小倉3",
+          "race": "3歳未勝利",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 11,
+          "jockey_name": "亀田温心",
+          "jockey_id": "01176",
+          "margin": "1.8",
+          "time": "1:49.2",
+          "last3f": "39.3",
+          "position": "13-13-4-6"
+        },
+        {
+          "date": "2024/10/06",
+          "venue": "4新潟2",
+          "race": "2歳未勝利",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 15,
+          "jockey_name": "亀田温心",
+          "jockey_id": "01176",
+          "margin": "2.7",
+          "time": "1:50.9",
+          "last3f": "37.9",
+          "position": "5-5"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.0,
+        "place_rate": 0.077,
+        "wins": 0,
+        "races": 26
+      }
+    },
+    {
+      "num": 2,
+      "name": "ミッドタウンナイト",
+      "score": 31.4,
+      "score_breakdown": {
+        "ability": 18.2,
+        "jockey": 2.9,
+        "fitness": 4.3,
+        "form": 4.0,
+        "other": 2.0
+      },
+      "odds_win": 20.4,
+      "odds_place": 5.0,
+      "jockey": "秋山 稔樹",
+      "sex_age": "牝4",
+      "weight": "484(-4)",
+      "load_weight": 55.0,
+      "note": "[AUTO] ability=18.2(3着内率2/4, 着差評価8.2点, 同条件なし) jockey=2.9(秋山 稔樹勝率0.029) fitness=4.3(同場なし, 同距離4戦平均4.5着) form=4.0(前走3週前4点) other=2.0(斤量55.0kg(平均±0.4kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/25",
+          "venue": "1小倉2",
+          "race": "4歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 9,
+          "jockey_name": "秋山稔樹",
+          "jockey_id": "01181",
+          "margin": "1.1",
+          "time": "1:47.4",
+          "last3f": "36.7",
+          "position": "10-10-13-13"
+        },
+        {
+          "date": "2025/05/04",
+          "venue": "1新潟2",
+          "race": "3歳未勝利",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 1,
+          "jockey_name": "秋山稔樹",
+          "jockey_id": "01181",
+          "margin": "-0.1",
+          "time": "1:48.3",
+          "last3f": "36.8",
+          "position": "2-2"
+        },
+        {
+          "date": "2025/04/20",
+          "venue": "1福島4",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 2,
+          "jockey_name": "秋山稔樹",
+          "jockey_id": "01181",
+          "margin": "0.2",
+          "time": "2:02.0",
+          "last3f": "35.3",
+          "position": "1-1-1-1"
+        },
+        {
+          "date": "2025/02/22",
+          "venue": "1小倉9",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "秋山稔樹",
+          "jockey_id": "01181",
+          "margin": "0.8",
+          "time": "2:01.3",
+          "last3f": "36.6",
+          "position": "1-1-1-2"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.028999999999999998,
+        "place_rate": 0.147,
+        "wins": 1,
+        "races": 34
+      }
+    },
+    {
+      "num": 3,
+      "name": "タイキジパング",
+      "score": 33.7,
+      "score_breakdown": {
+        "ability": 23.2,
+        "jockey": 4.5,
+        "fitness": 0.0,
+        "form": 4.0,
+        "other": 2.0
+      },
+      "odds_win": 66.8,
+      "odds_place": 11.3,
+      "jockey": "柴田 裕一郎",
+      "sex_age": "牡5",
+      "weight": "496(-2)",
+      "load_weight": 56.0,
+      "note": "[AUTO] ability=23.2(3着内率3/4, 着差評価8.2点, 同条件なし) jockey=4.5(柴田 裕一郎勝率0.045) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量56.0kg(平均±0.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/24",
+          "venue": "1小倉1",
+          "race": "4歳以上1勝クラス",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 9,
+          "jockey_name": "柴田裕一",
+          "jockey_id": "01212",
+          "margin": "1.4",
+          "time": "1:47.1",
+          "last3f": "38.2",
+          "position": "13-14-14-12"
+        },
+        {
+          "date": "2025/10/10",
+          "venue": "園田",
+          "race": "スポニチなにわ賞B1(B1B2)",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 0,
+          "jockey_name": "鴨宮祥行",
+          "jockey_id": "05597",
+          "margin": "",
+          "time": "",
+          "last3f": "",
+          "position": ""
+        },
+        {
+          "date": "2025/09/10",
+          "venue": "園田",
+          "race": "白露特別B2",
+          "distance": "1400",
+          "surface": "ダ",
+          "finish": 1,
+          "jockey_name": "鴨宮祥行",
+          "jockey_id": "05597",
+          "margin": "-0.1",
+          "time": "1:32.1",
+          "last3f": "39.1",
+          "position": "11-11-11-9"
+        },
+        {
+          "date": "2025/07/24",
+          "venue": "園田",
+          "race": "B2",
+          "distance": "1400",
+          "surface": "ダ",
+          "finish": 3,
+          "jockey_name": "鴨宮祥行",
+          "jockey_id": "05597",
+          "margin": "0.1",
+          "time": "1:30.7",
+          "last3f": "39.2",
+          "position": "8-8-6-5"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.045,
+        "place_rate": 0.114,
+        "wins": 2,
+        "races": 44
+      }
+    },
+    {
+      "num": 4,
+      "name": "ユイノコキュウ",
+      "score": 12.7,
+      "score_breakdown": {
+        "ability": 3.8,
+        "jockey": 0.0,
+        "fitness": 3.9,
+        "form": 3.0,
+        "other": 2.0
+      },
+      "odds_win": 65.4,
+      "odds_place": 12.6,
+      "jockey": "★河原田 菜々",
+      "sex_age": "牡5",
+      "weight": "484(0)",
+      "load_weight": 54.0,
+      "note": "[AUTO] ability=3.8(3着内率0/4, 着差評価3.8点, 同条件なし) jockey=0.0(★河原田 菜々勝率0.000) fitness=3.9(同場なし, 同距離1戦平均5.0着) form=3.0(前走1週前3点) other=2.0(斤量54.0kg(平均±1.4kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/02/07",
+          "venue": "1小倉5",
+          "race": "4歳以上1勝クラス",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 11,
+          "jockey_name": "長岡禎仁",
+          "jockey_id": "01142",
+          "margin": "3.4",
+          "time": "1:48.6",
+          "last3f": "40.9",
+          "position": "2-2-2-3"
+        },
+        {
+          "date": "2026/01/24",
+          "venue": "1小倉1",
+          "race": "4歳以上1勝クラス",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 14,
+          "jockey_name": "長岡禎仁",
+          "jockey_id": "01142",
+          "margin": "2.6",
+          "time": "1:48.3",
+          "last3f": "40.6",
+          "position": "2-2-2-4"
+        },
+        {
+          "date": "2025/11/16",
+          "venue": "3福島4",
+          "race": "3歳以上1勝クラス",
+          "distance": "1700",
+          "surface": "ダ",
+          "finish": 15,
+          "jockey_name": "今村聖奈",
+          "jockey_id": "01193",
+          "margin": "3.1",
+          "time": "1:49.1",
+          "last3f": "39.0",
+          "position": "15-15-15-15"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4新潟3",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "ダ",
+          "finish": 5,
+          "jockey_name": "今村聖奈",
+          "jockey_id": "01193",
+          "margin": "1.1",
+          "time": "1:53.8",
+          "last3f": "38.8",
+          "position": "1-1-1-1"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.0,
+        "place_rate": 0.0,
+        "wins": 0,
+        "races": 30
+      }
+    },
+    {
+      "num": 5,
+      "name": "フェアリーグレン",
+      "score": 11.3,
+      "score_breakdown": {
+        "ability": 3.0,
+        "jockey": 2.3,
+        "fitness": 0.0,
+        "form": 4.0,
+        "other": 2.0
+      },
+      "odds_win": 54.8,
+      "odds_place": 9.7,
+      "jockey": "松本 大輝",
+      "sex_age": "牝4",
+      "weight": "414(+2)",
+      "load_weight": 55.0,
+      "note": "[AUTO] ability=3.0(3着内率0/4, 着差評価3.0点, 同条件なし) jockey=2.3(松本 大輝勝率0.023) fitness=0.0(同場なし, 同距離4戦平均10.2着) form=4.0(前走2週前4点) other=2.0(斤量55.0kg(平均±0.4kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/01/31",
+          "venue": "1小倉3",
+          "race": "4歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 9,
+          "jockey_name": "松本大輝",
+          "jockey_id": "01191",
+          "margin": "0.7",
+          "time": "1:58.9",
+          "last3f": "35.5",
+          "position": "16-16-15-12"
+        },
+        {
+          "date": "2025/11/15",
+          "venue": "3福島3",
+          "race": "土湯温泉特別(1勝クラス)",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 14,
+          "jockey_name": "松本大輝",
+          "jockey_id": "01191",
+          "margin": "2.2",
+          "time": "1:49.1",
+          "last3f": "37.1",
+          "position": "12-12-13-14"
+        },
+        {
+          "date": "2025/10/19",
+          "venue": "4東京7",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 12,
+          "jockey_name": "原優介",
+          "jockey_id": "01184",
+          "margin": "1.6",
+          "time": "1:47.5",
+          "last3f": "33.8",
+          "position": "11-10-11"
+        },
+        {
+          "date": "2025/08/23",
+          "venue": "2札幌1",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "松本大輝",
+          "jockey_id": "01191",
+          "margin": "1.1",
+          "time": "2:03.5",
+          "last3f": "36.2",
+          "position": "10-13-13-13"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.023,
+        "place_rate": 0.114,
+        "wins": 1,
+        "races": 44
+      }
+    },
+    {
+      "num": 6,
+      "name": "ゴールドジェスター",
+      "score": 17.1,
+      "score_breakdown": {
+        "ability": 9.5,
+        "jockey": 0.0,
+        "fitness": 2.6,
+        "form": 3.0,
+        "other": 2.0
+      },
+      "odds_win": 26.8,
+      "odds_place": 5.2,
+      "jockey": "野中 悠太郎",
+      "sex_age": "せん4",
+      "weight": "438(-8)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=9.5(3着内率1/4, 着差評価4.5点, 同条件なし) jockey=0.0(野中 悠太郎勝率0.000) fitness=2.6(同場なし, 同距離3戦平均6.7着) form=3.0(前走1週前3点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/02/07",
+          "venue": "1小倉5",
+          "race": "戸畑特別(1勝クラス)",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 3,
+          "jockey_name": "西塚洸二",
+          "jockey_id": "01200",
+          "margin": "0.6",
+          "time": "2:01.6",
+          "last3f": "35.7",
+          "position": "9-9-10-10"
+        },
+        {
+          "date": "2026/01/24",
+          "venue": "1小倉1",
+          "race": "4歳以上1勝クラス",
+          "distance": "2600",
+          "surface": "芝",
+          "finish": 14,
+          "jockey_name": "野中悠太",
+          "jockey_id": "01158",
+          "margin": "1.8",
+          "time": "2:39.8",
+          "last3f": "35.7",
+          "position": "12-13-15-15"
+        },
+        {
+          "date": "2025/11/01",
+          "venue": "4東京10",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 10,
+          "jockey_name": "岩部純二",
+          "jockey_id": "00726",
+          "margin": "1.1",
+          "time": "1:45.2",
+          "last3f": "34.1",
+          "position": "13-13-13"
+        },
+        {
+          "date": "2025/10/18",
+          "venue": "4新潟1",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 7,
+          "jockey_name": "岩部純二",
+          "jockey_id": "00726",
+          "margin": "0.6",
+          "time": "1:46.2",
+          "last3f": "33.7",
+          "position": "10-10"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.0,
+        "place_rate": 0.065,
+        "wins": 0,
+        "races": 31
+      }
+    },
+    {
+      "num": 7,
+      "name": "シャインフリーリー",
+      "score": 18.6,
+      "score_breakdown": {
+        "ability": 11.8,
+        "jockey": 0.0,
+        "fitness": 0.8,
+        "form": 4.0,
+        "other": 2.0
+      },
+      "odds_win": 23.8,
+      "odds_place": 5.4,
+      "jockey": "黛 弘人",
+      "sex_age": "牡4",
+      "weight": "476(0)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=11.8(3着内率1/4, 着差評価6.8点, 同条件なし) jockey=0.0(黛 弘人勝率0.000) fitness=0.8(同場なし, 同距離2戦平均9.0着) form=4.0(前走2週前4点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/02/01",
+          "venue": "1小倉4",
+          "race": "足立山特別(1勝クラス)",
+          "distance": "2600",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "黛弘人",
+          "jockey_id": "01109",
+          "margin": "1.3",
+          "time": "2:37.8",
+          "last3f": "36.3",
+          "position": "9-9-5-5"
+        },
+        {
+          "date": "2025/09/06",
+          "venue": "2札幌5",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 16,
+          "jockey_name": "横山和生",
+          "jockey_id": "01140",
+          "margin": "3.6",
+          "time": "2:06.0",
+          "last3f": "39.6",
+          "position": "16-16-10-15"
+        },
+        {
+          "date": "2025/08/24",
+          "venue": "2札幌2",
+          "race": "3歳未勝利",
+          "distance": "2600",
+          "surface": "芝",
+          "finish": 5,
+          "jockey_name": "丹内祐次",
+          "jockey_id": "01091",
+          "margin": "1.0",
+          "time": "2:43.5",
+          "last3f": "39.2",
+          "position": "3-3-3-3"
+        },
+        {
+          "date": "2025/08/17",
+          "venue": "1札幌8",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 2,
+          "jockey_name": "キング",
+          "jockey_id": "05643",
+          "margin": "0.3",
+          "time": "2:02.7",
+          "last3f": "35.8",
+          "position": "13-13-12-8"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.0,
+        "place_rate": 0.045,
+        "wins": 0,
+        "races": 22
+      }
+    },
+    {
+      "num": 8,
+      "name": "レジェンドシップ",
+      "score": 27.3,
+      "score_breakdown": {
+        "ability": 11.0,
+        "jockey": 9.4,
+        "fitness": 3.9,
+        "form": 2.0,
+        "other": 1.0
+      },
+      "odds_win": 4.2,
+      "odds_place": 1.4,
+      "jockey": "浜中 俊",
+      "sex_age": "せん6",
+      "weight": "456(+2)",
+      "load_weight": 58.0,
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=9.4(浜中 俊勝率0.094) fitness=3.9(同場なし, 同距離2戦平均5.0着) form=2.0(前走9週前2点) other=1.0(斤量58.0kg(平均+2.6kg)1点)",
+      "past_races": [
+        {
+          "date": "2025/12/13",
+          "venue": "5中京3",
+          "race": "3歳以上1勝クラス",
+          "distance": "2200",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "Ｍ．デム",
+          "jockey_id": "05212",
+          "margin": "0.7",
+          "time": "2:11.7",
+          "last3f": "34.9",
+          "position": "2-2-2-2"
+        },
+        {
+          "date": "2025/11/23",
+          "venue": "4京都6",
+          "race": "3歳以上1勝クラス",
+          "distance": "2400",
+          "surface": "芝",
+          "finish": 7,
+          "jockey_name": "西村淳也",
+          "jockey_id": "01171",
+          "margin": "0.9",
+          "time": "2:24.8",
+          "last3f": "35.2",
+          "position": "3-3-3-3"
+        },
+        {
+          "date": "2025/10/12",
+          "venue": "3京都4",
+          "race": "3歳以上1勝クラス",
+          "distance": "2400",
+          "surface": "芝",
+          "finish": 2,
+          "jockey_name": "西村淳也",
+          "jockey_id": "01171",
+          "margin": "0.1",
+          "time": "2:26.5",
+          "last3f": "33.9",
+          "position": "4-4-4-3"
+        },
+        {
+          "date": "2025/09/21",
+          "venue": "4阪神7",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "武豊",
+          "jockey_id": "00666",
+          "margin": "0.6",
+          "time": "2:00.1",
+          "last3f": "35.9",
+          "position": "4-4-4-4"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.094,
+        "place_rate": 0.21899999999999997,
+        "wins": 3,
+        "races": 32
+      }
+    },
+    {
+      "num": 9,
+      "name": "リアルセンター",
+      "score": 28.1,
+      "score_breakdown": {
+        "ability": 12.5,
+        "jockey": 6.7,
+        "fitness": 3.9,
+        "form": 2.0,
+        "other": 3.0
+      },
+      "odds_win": 28.6,
+      "odds_place": 5.6,
+      "jockey": "田山 旺佑",
+      "sex_age": "牝5",
+      "weight": "520(+24)",
+      "load_weight": 53.0,
+      "note": "[AUTO] ability=12.5(3着内率1/4, 着差評価7.5点, 同条件なし) jockey=6.7(田山 旺佑勝率0.067) fitness=3.9(同場なし, 同距離4戦平均5.0着) form=2.0(前走72週前2点) other=3.0(斤量53.0kg(平均-2.4kg)3点)",
+      "past_races": [
+        {
+          "date": "2024/09/29",
+          "venue": "4中山9",
+          "race": "3歳以上1勝クラス",
+          "distance": "2200",
+          "surface": "芝",
+          "finish": 10,
+          "jockey_name": "菅原明良",
+          "jockey_id": "01179",
+          "margin": "1.3",
+          "time": "2:14.7",
+          "last3f": "35.8",
+          "position": "2-2-2-2"
+        },
+        {
+          "date": "2024/09/15",
+          "venue": "4中山4",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "横山琉人",
+          "jockey_id": "01192",
+          "margin": "0.6",
+          "time": "1:58.7",
+          "last3f": "34.4",
+          "position": "12-10-8-8"
+        },
+        {
+          "date": "2024/07/21",
+          "venue": "2福島8",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 1,
+          "jockey_name": "横山琉人",
+          "jockey_id": "01192",
+          "margin": "-0.1",
+          "time": "2:01.3",
+          "last3f": "36.5",
+          "position": "1-1-1-1"
+        },
+        {
+          "date": "2024/06/30",
+          "venue": "2福島2",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 5,
+          "jockey_name": "荻野極",
+          "jockey_id": "01160",
+          "margin": "1.1",
+          "time": "1:59.2",
+          "last3f": "36.1",
+          "position": "8-8-6-5"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.067,
+        "place_rate": 0.16,
+        "wins": 5,
+        "races": 75
+      }
+    },
+    {
+      "num": 10,
+      "name": "ストレートブラック",
+      "score": 39.3,
+      "score_breakdown": {
+        "ability": 24.0,
+        "jockey": 3.9,
+        "fitness": 5.4,
+        "form": 3.0,
+        "other": 3.0
+      },
+      "odds_win": 5.0,
+      "odds_place": 1.6,
+      "jockey": "石神 深道",
+      "sex_age": "牝4",
+      "weight": "436(+4)",
+      "load_weight": 52.0,
+      "note": "[AUTO] ability=24.0(3着内率3/4, 着差評価9.0点, 同条件なし) jockey=3.9(石神 深道勝率0.039) fitness=5.4(同場なし, 同距離4戦平均3.0着) form=3.0(前走4週前3点) other=3.0(斤量52.0kg(平均-3.4kg)3点)",
+      "past_races": [
+        {
+          "date": "2026/01/17",
+          "venue": "1中山6",
+          "race": "4歳以上1勝クラス",
+          "distance": "2200",
+          "surface": "芝",
+          "finish": 3,
+          "jockey_name": "松岡正海",
+          "jockey_id": "01085",
+          "margin": "0.3",
+          "time": "2:12.3",
+          "last3f": "35.2",
+          "position": "9-8-8-7"
+        },
+        {
+          "date": "2025/09/14",
+          "venue": "4中山4",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 2,
+          "jockey_name": "石神深道",
+          "jockey_id": "01209",
+          "margin": "0.2",
+          "time": "1:58.6",
+          "last3f": "34.9",
+          "position": "4-3-3-3"
+        },
+        {
+          "date": "2025/08/30",
+          "venue": "2札幌3",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "松岡正海",
+          "jockey_id": "01085",
+          "margin": "0.4",
+          "time": "2:04.3",
+          "last3f": "38.1",
+          "position": "7-7-6-3"
+        },
+        {
+          "date": "2025/08/10",
+          "venue": "1札幌6",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 3,
+          "jockey_name": "松岡正海",
+          "jockey_id": "01085",
+          "margin": "0.8",
+          "time": "2:01.8",
+          "last3f": "35.6",
+          "position": "3-3-4-4"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.039,
+        "place_rate": 0.157,
+        "wins": 2,
+        "races": 51
+      }
+    },
+    {
+      "num": 11,
+      "name": "デビューフライト",
+      "score": 10.0,
+      "score_breakdown": {
+        "ability": 3.0,
+        "jockey": 0.0,
+        "fitness": 0.0,
+        "form": 4.0,
+        "other": 3.0
+      },
+      "odds_win": 16.7,
+      "odds_place": 4.4,
+      "jockey": "石田 拓郎",
+      "sex_age": "牝4",
+      "weight": "430(-2)",
+      "load_weight": 52.0,
+      "note": "[AUTO] ability=3.0(3着内率0/4, 着差評価3.0点, 同条件なし) jockey=0.0(石田 拓郎勝率0.000) fitness=0.0(同場なし, 同距離2戦平均10.0着) form=4.0(前走2週前4点) other=3.0(斤量52.0kg(平均-3.4kg)3点)",
+      "past_races": [
+        {
+          "date": "2026/01/31",
+          "venue": "1小倉3",
+          "race": "4歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "石田拓郎",
+          "jockey_id": "01203",
+          "margin": "0.2",
+          "time": "1:58.4",
+          "last3f": "35.6",
+          "position": "7-7-8-9"
+        },
+        {
+          "date": "2026/01/18",
+          "venue": "1京都7",
+          "race": "4歳以上1勝クラス",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "吉村誠之",
+          "jockey_id": "01216",
+          "margin": "0.4",
+          "time": "1:36.5",
+          "last3f": "35.1",
+          "position": "5-5"
+        },
+        {
+          "date": "2025/12/06",
+          "venue": "5中京1",
+          "race": "3歳以上1勝クラス",
+          "distance": "1600",
+          "surface": "芝",
+          "finish": 13,
+          "jockey_name": "今村聖奈",
+          "jockey_id": "01193",
+          "margin": "1.1",
+          "time": "1:34.1",
+          "last3f": "34.0",
+          "position": "15-14-14"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4新潟3",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 14,
+          "jockey_name": "今村聖奈",
+          "jockey_id": "01193",
+          "margin": "1.5",
+          "time": "1:48.1",
+          "last3f": "35.3",
+          "position": "1-1"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.0,
+        "place_rate": 0.042,
+        "wins": 0,
+        "races": 48
+      }
+    },
+    {
+      "num": 12,
+      "name": "ピティロディア",
+      "score": 13.5,
+      "score_breakdown": {
+        "ability": 3.0,
+        "jockey": 4.7,
+        "fitness": 1.8,
+        "form": 2.0,
+        "other": 2.0
+      },
+      "odds_win": 51.7,
+      "odds_place": 8.0,
+      "jockey": "菊沢 一樹",
+      "sex_age": "牡4",
+      "weight": "452(0)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=3.0(3着内率0/4, 着差評価3.0点, 同条件なし) jockey=4.7(菊沢 一樹勝率0.047) fitness=1.8(同場なし, 同距離4戦平均7.8着) form=2.0(前走14週前2点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/11/08",
+          "venue": "3福島1",
+          "race": "三春駒特別(1勝クラス)",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 12,
+          "jockey_name": "上里直汰",
+          "jockey_id": "01217",
+          "margin": "0.6",
+          "time": "2:00.3",
+          "last3f": "35.2",
+          "position": "14-13-14-13"
+        },
+        {
+          "date": "2025/10/25",
+          "venue": "4新潟3",
+          "race": "3歳以上1勝クラス",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "上里直汰",
+          "jockey_id": "01217",
+          "margin": "0.6",
+          "time": "1:47.2",
+          "last3f": "33.9",
+          "position": "9-8"
+        },
+        {
+          "date": "2025/08/23",
+          "venue": "2札幌1",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 7,
+          "jockey_name": "石川倭",
+          "jockey_id": "05534",
+          "margin": "1.1",
+          "time": "2:03.5",
+          "last3f": "36.7",
+          "position": "10-9-7-7"
+        },
+        {
+          "date": "2025/07/27",
+          "venue": "1札幌2",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "横山武史",
+          "jockey_id": "01170",
+          "margin": "1.1",
+          "time": "2:03.9",
+          "last3f": "36.4",
+          "position": "5-6-5-6"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.047,
+        "place_rate": 0.163,
+        "wins": 4,
+        "races": 86
+      }
+    },
+    {
+      "num": 13,
+      "name": "ゼットエイト",
+      "score": 24.3,
+      "score_breakdown": {
+        "ability": 11.0,
+        "jockey": 6.2,
+        "fitness": 3.1,
+        "form": 2.0,
+        "other": 2.0
+      },
+      "odds_win": 44.2,
+      "odds_place": 7.5,
+      "jockey": "富田 暁",
+      "sex_age": "牡4",
+      "weight": "466(-2)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=6.2(富田 暁勝率0.062) fitness=3.1(同場なし, 同距離4戦平均6.0着) form=2.0(前走9週前2点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/14",
+          "venue": "5中京4",
+          "race": "大須特別(1勝クラス)",
+          "distance": "1800",
+          "surface": "ダ",
+          "finish": 7,
+          "jockey_name": "富田暁",
+          "jockey_id": "01168",
+          "margin": "1.6",
+          "time": "1:55.8",
+          "last3f": "40.3",
+          "position": "8-8-9-9"
+        },
+        {
+          "date": "2025/11/22",
+          "venue": "3福島5",
+          "race": "高湯温泉特別(1勝クラス)",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 10,
+          "jockey_name": "富田暁",
+          "jockey_id": "01168",
+          "margin": "0.5",
+          "time": "1:49.0",
+          "last3f": "34.4",
+          "position": "8-9-10-11"
+        },
+        {
+          "date": "2025/07/05",
+          "venue": "1函館7",
+          "race": "恵山特別(1勝クラス)",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "鮫島克駿",
+          "jockey_id": "01157",
+          "margin": "1.0",
+          "time": "1:49.6",
+          "last3f": "37.2",
+          "position": "6-7-6-6"
+        },
+        {
+          "date": "2025/06/22",
+          "venue": "1函館4",
+          "race": "3歳未勝利",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 1,
+          "jockey_name": "鮫島克駿",
+          "jockey_id": "01157",
+          "margin": "0.0",
+          "time": "1:48.9",
+          "last3f": "36.6",
+          "position": "13-13-12-10"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.062,
+        "place_rate": 0.21899999999999997,
+        "wins": 2,
+        "races": 32
+      }
+    },
+    {
+      "num": 14,
+      "name": "マイネルゼウス",
+      "score": 20.6,
+      "score_breakdown": {
+        "ability": 3.8,
+        "jockey": 9.7,
+        "fitness": 3.1,
+        "form": 2.0,
+        "other": 2.0
+      },
+      "odds_win": 5.2,
+      "odds_place": 1.8,
+      "jockey": "丹内 祐次",
+      "sex_age": "牡4",
+      "weight": "432(+2)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=3.8(3着内率0/4, 着差評価3.8点, 同条件なし) jockey=9.7(丹内 祐次勝率0.097) fitness=3.1(同場なし, 同距離3戦平均6.0着) form=2.0(前走1561週前2点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "1996/03/17",
+          "venue": "1中山8",
+          "race": "4歳以上900万下",
+          "distance": "1200",
+          "surface": "ダ",
+          "finish": 10,
+          "jockey_name": "木幡初広",
+          "jockey_id": "00629",
+          "margin": "2.2",
+          "time": "1:12.6",
+          "last3f": "37.9",
+          "position": "11-9"
+        },
+        {
+          "date": "1995/09/03",
+          "venue": "1新潟8",
+          "race": "佐渡S(900万下)",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 8,
+          "jockey_name": "木幡初広",
+          "jockey_id": "00629",
+          "margin": "1.2",
+          "time": "2:02.4",
+          "last3f": "37.1",
+          "position": "3-4-5-6"
+        },
+        {
+          "date": "1995/08/26",
+          "venue": "1新潟5",
+          "race": "豊栄特別(900万下)",
+          "distance": "1800",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "木幡初広",
+          "jockey_id": "00629",
+          "margin": "1.2",
+          "time": "1:49.2",
+          "last3f": "36.9",
+          "position": "11-10-7-8"
+        },
+        {
+          "date": "1995/07/30",
+          "venue": "3福島6",
+          "race": "ラジオ福島賞(900万下)",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "木幡初広",
+          "jockey_id": "00629",
+          "margin": "1.0",
+          "time": "2:04.7",
+          "last3f": "38.2",
+          "position": "5-3-4-4"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.09699999999999999,
+        "place_rate": 0.23,
+        "wins": 11,
+        "races": 113
+      }
+    },
+    {
+      "num": 15,
+      "name": "ダノンジャイアン",
+      "score": 33.2,
+      "score_breakdown": {
+        "ability": 11.0,
+        "jockey": 13.7,
+        "fitness": 4.5,
+        "form": 2.0,
+        "other": 2.0
+      },
+      "odds_win": 4.6,
+      "odds_place": 1.6,
+      "jockey": "斎藤 新",
+      "sex_age": "牡4",
+      "weight": "454(-2)",
+      "load_weight": 57.0,
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=13.7(斎藤 新勝率0.137) fitness=4.5(同場なし, 同距離4戦平均4.2着) form=2.0(前走10週前2点) other=2.0(斤量57.0kg(平均±1.6kg)2点)",
+      "past_races": [
+        {
+          "date": "2025/12/06",
+          "venue": "5中京1",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "斎藤新",
+          "jockey_id": "01178",
+          "margin": "0.6",
+          "time": "1:59.6",
+          "last3f": "34.1",
+          "position": "5-6-6-7"
+        },
+        {
+          "date": "2025/10/26",
+          "venue": "4新潟4",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 3,
+          "jockey_name": "斎藤新",
+          "jockey_id": "01178",
+          "margin": "0.2",
+          "time": "2:01.7",
+          "last3f": "34.6",
+          "position": "3-3"
+        },
+        {
+          "date": "2025/10/05",
+          "venue": "3京都2",
+          "race": "3歳以上1勝クラス",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 4,
+          "jockey_name": "横山武史",
+          "jockey_id": "01170",
+          "margin": "0.5",
+          "time": "2:00.6",
+          "last3f": "35.1",
+          "position": "3-3-2-4"
+        },
+        {
+          "date": "2025/07/12",
+          "venue": "1函館9",
+          "race": "北斗特別(1勝クラス)",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 6,
+          "jockey_name": "鮫島克駿",
+          "jockey_id": "01157",
+          "margin": "0.6",
+          "time": "2:00.4",
+          "last3f": "34.4",
+          "position": "11-11-11-11"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.13699999999999998,
+        "place_rate": 0.233,
+        "wins": 10,
+        "races": 73
+      }
+    },
+    {
+      "num": 16,
+      "name": "マイネルボス",
+      "score": 23.9,
+      "score_breakdown": {
+        "ability": 11.0,
+        "jockey": 3.4,
+        "fitness": 3.5,
+        "form": 4.0,
+        "other": 2.0
+      },
+      "odds_win": 33.9,
+      "odds_place": 6.3,
+      "jockey": "舟山 瑠泉",
+      "sex_age": "牡4",
+      "weight": "446(-2)",
+      "load_weight": 54.0,
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=3.4(舟山 瑠泉勝率0.034) fitness=3.5(同場なし, 同距離2戦平均5.5着) form=4.0(前走2週前4点) other=2.0(斤量54.0kg(平均±1.4kg)2点)",
+      "past_races": [
+        {
+          "date": "2026/02/01",
+          "venue": "1小倉4",
+          "race": "足立山特別(1勝クラス)",
+          "distance": "2600",
+          "surface": "芝",
+          "finish": 5,
+          "jockey_name": "野中悠太",
+          "jockey_id": "01158",
+          "margin": "1.4",
+          "time": "2:37.9",
+          "last3f": "35.8",
+          "position": "7-7-10-10"
+        },
+        {
+          "date": "2026/01/24",
+          "venue": "1小倉1",
+          "race": "4歳以上1勝クラス",
+          "distance": "2600",
+          "surface": "芝",
+          "finish": 12,
+          "jockey_name": "石川裕紀",
+          "jockey_id": "01150",
+          "margin": "1.1",
+          "time": "2:39.1",
+          "last3f": "35.3",
+          "position": "8-8-12-8"
+        },
+        {
+          "date": "2025/08/31",
+          "venue": "3新潟4",
+          "race": "3歳未勝利",
+          "distance": "2200",
+          "surface": "芝",
+          "finish": 9,
+          "jockey_name": "柴田大知",
+          "jockey_id": "01009",
+          "margin": "1.7",
+          "time": "2:15.0",
+          "last3f": "37.6",
+          "position": "8-9-9-10"
+        },
+        {
+          "date": "2025/08/16",
+          "venue": "2新潟7",
+          "race": "3歳未勝利",
+          "distance": "2000",
+          "surface": "芝",
+          "finish": 2,
+          "jockey_name": "柴田大知",
+          "jockey_id": "01009",
+          "margin": "0.2",
+          "time": "2:01.1",
+          "last3f": "35.3",
+          "position": "12-11-7-7"
+        }
+      ],
+      "jockey_stats": {
+        "win_rate": 0.034,
+        "place_rate": 0.19,
+        "wins": 2,
+        "races": 58
+      }
+    }
+  ],
+  "combo_odds": {
+    "quinella": [
+      {
+        "combo": [
+          1,
+          2
+        ],
+        "odds": 177.5
+      },
+      {
+        "combo": [
+          1,
+          3
+        ],
+        "odds": 508.5
+      },
+      {
+        "combo": [
+          1,
+          4
+        ],
+        "odds": 672.9
+      },
+      {
+        "combo": [
+          1,
+          5
+        ],
+        "odds": 348.2
+      },
+      {
+        "combo": [
+          1,
+          6
+        ],
+        "odds": 256.4
+      },
+      {
+        "combo": [
+          1,
+          7
+        ],
+        "odds": 316.2
+      },
+      {
+        "combo": [
+          1,
+          8
+        ],
+        "odds": 66.1
+      },
+      {
+        "combo": [
+          1,
+          9
+        ],
+        "odds": 191.2
+      },
+      {
+        "combo": [
+          1,
+          10
+        ],
+        "odds": 59.7
+      },
+      {
+        "combo": [
+          1,
+          11
+        ],
+        "odds": 208.6
+      },
+      {
+        "combo": [
+          1,
+          12
+        ],
+        "odds": 458.9
+      },
+      {
+        "combo": [
+          1,
+          13
+        ],
+        "odds": 299.3
+      },
+      {
+        "combo": [
+          1,
+          14
+        ],
+        "odds": 78.7
+      },
+      {
+        "combo": [
+          1,
+          15
+        ],
+        "odds": 71.7
+      },
+      {
+        "combo": [
+          1,
+          16
+        ],
+        "odds": 456.6
+      },
+      {
+        "combo": [
+          2,
+          3
+        ],
+        "odds": 438.7
+      },
+      {
+        "combo": [
+          2,
+          4
+        ],
+        "odds": 678.0
+      },
+      {
+        "combo": [
+          2,
+          5
+        ],
+        "odds": 380.8
+      },
+      {
+        "combo": [
+          2,
+          6
+        ],
+        "odds": 170.8
+      },
+      {
+        "combo": [
+          2,
+          7
+        ],
+        "odds": 193.3
+      },
+      {
+        "combo": [
+          2,
+          8
+        ],
+        "odds": 53.8
+      },
+      {
+        "combo": [
+          2,
+          9
+        ],
+        "odds": 288.7
+      },
+      {
+        "combo": [
+          2,
+          10
+        ],
+        "odds": 49.0
+      },
+      {
+        "combo": [
+          2,
+          11
+        ],
+        "odds": 184.5
+      },
+      {
+        "combo": [
+          2,
+          12
+        ],
+        "odds": 379.2
+      },
+      {
+        "combo": [
+          2,
+          13
+        ],
+        "odds": 502.8
+      },
+      {
+        "combo": [
+          2,
+          14
+        ],
+        "odds": 49.7
+      },
+      {
+        "combo": [
+          2,
+          15
+        ],
+        "odds": 58.8
+      },
+      {
+        "combo": [
+          2,
+          16
+        ],
+        "odds": 306.5
+      },
+      {
+        "combo": [
+          3,
+          4
+        ],
+        "odds": 972.8
+      },
+      {
+        "combo": [
+          3,
+          5
+        ],
+        "odds": 570.0
+      },
+      {
+        "combo": [
+          3,
+          6
+        ],
+        "odds": 392.5
+      },
+      {
+        "combo": [
+          3,
+          7
+        ],
+        "odds": 678.0
+      },
+      {
+        "combo": [
+          3,
+          8
+        ],
+        "odds": 181.9
+      },
+      {
+        "combo": [
+          3,
+          9
+        ],
+        "odds": 500.0
+      },
+      {
+        "combo": [
+          3,
+          10
+        ],
+        "odds": 217.2
+      },
+      {
+        "combo": [
+          3,
+          11
+        ],
+        "odds": 643.9
+      },
+      {
+        "combo": [
+          3,
+          12
+        ],
+        "odds": 1065.5
+      },
+      {
+        "combo": [
+          3,
+          13
+        ],
+        "odds": 792.0
+      },
+      {
+        "combo": [
+          3,
+          14
+        ],
+        "odds": 229.4
+      },
+      {
+        "combo": [
+          3,
+          15
+        ],
+        "odds": 247.2
+      },
+      {
+        "combo": [
+          3,
+          16
+        ],
+        "odds": 813.6
+      },
+      {
+        "combo": [
+          4,
+          5
+        ],
+        "odds": 1118.7
+      },
+      {
+        "combo": [
+          4,
+          6
+        ],
+        "odds": 836.4
+      },
+      {
+        "combo": [
+          4,
+          7
+        ],
+        "odds": 983.5
+      },
+      {
+        "combo": [
+          4,
+          8
+        ],
+        "odds": 264.8
+      },
+      {
+        "combo": [
+          4,
+          9
+        ],
+        "odds": 799.1
+      },
+      {
+        "combo": [
+          4,
+          10
+        ],
+        "odds": 392.5
+      },
+      {
+        "combo": [
+          4,
+          11
+        ],
+        "odds": 771.5
+      },
+      {
+        "combo": [
+          4,
+          12
+        ],
+        "odds": 1598.2
+      },
+      {
+        "combo": [
+          4,
+          13
+        ],
+        "odds": 1543.1
+      },
+      {
+        "combo": [
+          4,
+          14
+        ],
+        "odds": 408.6
+      },
+      {
+        "combo": [
+          4,
+          15
+        ],
+        "odds": 491.7
+      },
+      {
+        "combo": [
+          4,
+          16
+        ],
+        "odds": 1040.7
+      },
+      {
+        "combo": [
+          5,
+          6
+        ],
+        "odds": 292.4
+      },
+      {
+        "combo": [
+          5,
+          7
+        ],
+        "odds": 549.1
+      },
+      {
+        "combo": [
+          5,
+          8
+        ],
+        "odds": 132.4
+      },
+      {
+        "combo": [
+          5,
+          9
+        ],
+        "odds": 365.3
+      },
+      {
+        "combo": [
+          5,
+          10
+        ],
+        "odds": 133.1
+      },
+      {
+        "combo": [
+          5,
+          11
+        ],
+        "odds": 326.6
+      },
+      {
+        "combo": [
+          5,
+          12
+        ],
+        "odds": 952.1
+      },
+      {
+        "combo": [
+          5,
+          13
+        ],
+        "odds": 1052.9
+      },
+      {
+        "combo": [
+          5,
+          14
+        ],
+        "odds": 134.5
+      },
+      {
+        "combo": [
+          5,
+          15
+        ],
+        "odds": 170.8
+      },
+      {
+        "combo": [
+          5,
+          16
+        ],
+        "odds": 699.2
+      },
+      {
+        "combo": [
+          6,
+          7
+        ],
+        "odds": 216.1
+      },
+      {
+        "combo": [
+          6,
+          8
+        ],
+        "odds": 62.1
+      },
+      {
+        "combo": [
+          6,
+          9
+        ],
+        "odds": 291.5
+      },
+      {
+        "combo": [
+          6,
+          10
+        ],
+        "odds": 54.5
+      },
+      {
+        "combo": [
+          6,
+          11
+        ],
+        "odds": 151.7
+      },
+      {
+        "combo": [
+          6,
+          12
+        ],
+        "odds": 458.9
+      },
+      {
+        "combo": [
+          6,
+          13
+        ],
+        "odds": 584.9
+      },
+      {
+        "combo": [
+          6,
+          14
+        ],
+        "odds": 67.5
+      },
+      {
+        "combo": [
+          6,
+          15
+        ],
+        "odds": 81.2
+      },
+      {
+        "combo": [
+          6,
+          16
+        ],
+        "odds": 337.7
+      },
+      {
+        "combo": [
+          7,
+          8
+        ],
+        "odds": 53.7
+      },
+      {
+        "combo": [
+          7,
+          9
+        ],
+        "odds": 285.0
+      },
+      {
+        "combo": [
+          7,
+          10
+        ],
+        "odds": 60.3
+      },
+      {
+        "combo": [
+          7,
+          11
+        ],
+        "odds": 179.0
+      },
+      {
+        "combo": [
+          7,
+          12
+        ],
+        "odds": 581.1
+      },
+      {
+        "combo": [
+          7,
+          13
+        ],
+        "odds": 895.0
+      },
+      {
+        "combo": [
+          7,
+          14
+        ],
+        "odds": 62.5
+      },
+      {
+        "combo": [
+          7,
+          15
+        ],
+        "odds": 64.2
+      },
+      {
+        "combo": [
+          7,
+          16
+        ],
+        "odds": 295.3
+      },
+      {
+        "combo": [
+          8,
+          9
+        ],
+        "odds": 59.8
+      },
+      {
+        "combo": [
+          8,
+          10
+        ],
+        "odds": 11.3
+      },
+      {
+        "combo": [
+          8,
+          11
+        ],
+        "odds": 44.7
+      },
+      {
+        "combo": [
+          8,
+          12
+        ],
+        "odds": 123.9
+      },
+      {
+        "combo": [
+          8,
+          13
+        ],
+        "odds": 175.8
+      },
+      {
+        "combo": [
+          8,
+          14
+        ],
+        "odds": 11.6
+      },
+      {
+        "combo": [
+          8,
+          15
+        ],
+        "odds": 13.5
+      },
+      {
+        "combo": [
+          8,
+          16
+        ],
+        "odds": 96.4
+      },
+      {
+        "combo": [
+          9,
+          10
+        ],
+        "odds": 65.3
+      },
+      {
+        "combo": [
+          9,
+          11
+        ],
+        "odds": 231.8
+      },
+      {
+        "combo": [
+          9,
+          12
+        ],
+        "odds": 588.8
+      },
+      {
+        "combo": [
+          9,
+          13
+        ],
+        "odds": 733.6
+      },
+      {
+        "combo": [
+          9,
+          14
+        ],
+        "odds": 78.5
+      },
+      {
+        "combo": [
+          9,
+          15
+        ],
+        "odds": 81.0
+      },
+      {
+        "combo": [
+          9,
+          16
+        ],
+        "odds": 394.2
+      },
+      {
+        "combo": [
+          10,
+          11
+        ],
+        "odds": 31.3
+      },
+      {
+        "combo": [
+          10,
+          12
+        ],
+        "odds": 184.5
+      },
+      {
+        "combo": [
+          10,
+          13
+        ],
+        "odds": 192.4
+      },
+      {
+        "combo": [
+          10,
+          14
+        ],
+        "odds": 9.0
+      },
+      {
+        "combo": [
+          10,
+          15
+        ],
+        "odds": 10.9
+      },
+      {
+        "combo": [
+          10,
+          16
+        ],
+        "odds": 87.5
+      },
+      {
+        "combo": [
+          11,
+          12
+        ],
+        "odds": 438.7
+      },
+      {
+        "combo": [
+          11,
+          13
+        ],
+        "odds": 473.5
+      },
+      {
+        "combo": [
+          11,
+          14
+        ],
+        "odds": 36.0
+      },
+      {
+        "combo": [
+          11,
+          15
+        ],
+        "odds": 47.5
+      },
+      {
+        "combo": [
+          11,
+          16
+        ],
+        "odds": 276.2
+      },
+      {
+        "combo": [
+          12,
+          13
+        ],
+        "odds": 785.1
+      },
+      {
+        "combo": [
+          12,
+          14
+        ],
+        "odds": 184.1
+      },
+      {
+        "combo": [
+          12,
+          15
+        ],
+        "odds": 186.0
+      },
+      {
+        "combo": [
+          12,
+          16
+        ],
+        "odds": 693.8
+      },
+      {
+        "combo": [
+          13,
+          14
+        ],
+        "odds": 163.9
+      },
+      {
+        "combo": [
+          13,
+          15
+        ],
+        "odds": 165.7
+      },
+      {
+        "combo": [
+          13,
+          16
+        ],
+        "odds": 559.3
+      },
+      {
+        "combo": [
+          14,
+          15
+        ],
+        "odds": 9.8
+      },
+      {
+        "combo": [
+          14,
+          16
+        ],
+        "odds": 75.9
+      },
+      {
+        "combo": [
+          15,
+          16
+        ],
+        "odds": 98.3
+      }
+    ],
+    "wide": [
+      {
+        "combo": [
+          1,
+          2
+        ],
+        "odds": 52.0
+      },
+      {
+        "combo": [
+          1,
+          3
+        ],
+        "odds": 142.2
+      },
+      {
+        "combo": [
+          1,
+          4
+        ],
+        "odds": 232.9
+      },
+      {
+        "combo": [
+          1,
+          5
+        ],
+        "odds": 86.5
+      },
+      {
+        "combo": [
+          1,
+          6
+        ],
+        "odds": 50.8
+      },
+      {
+        "combo": [
+          1,
+          7
+        ],
+        "odds": 84.7
+      },
+      {
+        "combo": [
+          1,
+          8
+        ],
+        "odds": 26.6
+      },
+      {
+        "combo": [
+          1,
+          9
+        ],
+        "odds": 42.2
+      },
+      {
+        "combo": [
+          1,
+          10
+        ],
+        "odds": 21.4
+      },
+      {
+        "combo": [
+          1,
+          11
+        ],
+        "odds": 65.6
+      },
+      {
+        "combo": [
+          1,
+          12
+        ],
+        "odds": 163.2
+      },
+      {
+        "combo": [
+          1,
+          13
+        ],
+        "odds": 84.8
+      },
+      {
+        "combo": [
+          1,
+          14
+        ],
+        "odds": 27.6
+      },
+      {
+        "combo": [
+          1,
+          15
+        ],
+        "odds": 19.6
+      },
+      {
+        "combo": [
+          1,
+          16
+        ],
+        "odds": 96.8
+      },
+      {
+        "combo": [
+          2,
+          3
+        ],
+        "odds": 154.4
+      },
+      {
+        "combo": [
+          2,
+          4
+        ],
+        "odds": 223.4
+      },
+      {
+        "combo": [
+          2,
+          5
+        ],
+        "odds": 101.4
+      },
+      {
+        "combo": [
+          2,
+          6
+        ],
+        "odds": 50.5
+      },
+      {
+        "combo": [
+          2,
+          7
+        ],
+        "odds": 48.7
+      },
+      {
+        "combo": [
+          2,
+          8
+        ],
+        "odds": 20.0
+      },
+      {
+        "combo": [
+          2,
+          9
+        ],
+        "odds": 64.4
+      },
+      {
+        "combo": [
+          2,
+          10
+        ],
+        "odds": 14.6
+      },
+      {
+        "combo": [
+          2,
+          11
+        ],
+        "odds": 43.3
+      },
+      {
+        "combo": [
+          2,
+          12
+        ],
+        "odds": 84.2
+      },
+      {
+        "combo": [
+          2,
+          13
+        ],
+        "odds": 115.7
+      },
+      {
+        "combo": [
+          2,
+          14
+        ],
+        "odds": 16.0
+      },
+      {
+        "combo": [
+          2,
+          15
+        ],
+        "odds": 18.6
+      },
+      {
+        "combo": [
+          2,
+          16
+        ],
+        "odds": 70.0
+      },
+      {
+        "combo": [
+          3,
+          4
+        ],
+        "odds": 315.7
+      },
+      {
+        "combo": [
+          3,
+          5
+        ],
+        "odds": 156.1
+      },
+      {
+        "combo": [
+          3,
+          6
+        ],
+        "odds": 135.3
+      },
+      {
+        "combo": [
+          3,
+          7
+        ],
+        "odds": 186.8
+      },
+      {
+        "combo": [
+          3,
+          8
+        ],
+        "odds": 52.5
+      },
+      {
+        "combo": [
+          3,
+          9
+        ],
+        "odds": 164.2
+      },
+      {
+        "combo": [
+          3,
+          10
+        ],
+        "odds": 51.0
+      },
+      {
+        "combo": [
+          3,
+          11
+        ],
+        "odds": 188.7
+      },
+      {
+        "combo": [
+          3,
+          12
+        ],
+        "odds": 266.9
+      },
+      {
+        "combo": [
+          3,
+          13
+        ],
+        "odds": 150.6
+      },
+      {
+        "combo": [
+          3,
+          14
+        ],
+        "odds": 56.8
+      },
+      {
+        "combo": [
+          3,
+          15
+        ],
+        "odds": 71.1
+      },
+      {
+        "combo": [
+          3,
+          16
+        ],
+        "odds": 275.6
+      },
+      {
+        "combo": [
+          4,
+          5
+        ],
+        "odds": 318.6
+      },
+      {
+        "combo": [
+          4,
+          6
+        ],
+        "odds": 190.2
+      },
+      {
+        "combo": [
+          4,
+          7
+        ],
+        "odds": 281.1
+      },
+      {
+        "combo": [
+          4,
+          8
+        ],
+        "odds": 82.0
+      },
+      {
+        "combo": [
+          4,
+          9
+        ],
+        "odds": 215.9
+      },
+      {
+        "combo": [
+          4,
+          10
+        ],
+        "odds": 85.2
+      },
+      {
+        "combo": [
+          4,
+          11
+        ],
+        "odds": 283.0
+      },
+      {
+        "combo": [
+          4,
+          12
+        ],
+        "odds": 379.9
+      },
+      {
+        "combo": [
+          4,
+          13
+        ],
+        "odds": 435.5
+      },
+      {
+        "combo": [
+          4,
+          14
+        ],
+        "odds": 110.4
+      },
+      {
+        "combo": [
+          4,
+          15
+        ],
+        "odds": 149.3
+      },
+      {
+        "combo": [
+          4,
+          16
+        ],
+        "odds": 295.2
+      },
+      {
+        "combo": [
+          5,
+          6
+        ],
+        "odds": 90.5
+      },
+      {
+        "combo": [
+          5,
+          7
+        ],
+        "odds": 109.8
+      },
+      {
+        "combo": [
+          5,
+          8
+        ],
+        "odds": 41.4
+      },
+      {
+        "combo": [
+          5,
+          9
+        ],
+        "odds": 96.3
+      },
+      {
+        "combo": [
+          5,
+          10
+        ],
+        "odds": 33.5
+      },
+      {
+        "combo": [
+          5,
+          11
+        ],
+        "odds": 67.7
+      },
+      {
+        "combo": [
+          5,
+          12
+        ],
+        "odds": 145.9
+      },
+      {
+        "combo": [
+          5,
+          13
+        ],
+        "odds": 206.9
+      },
+      {
+        "combo": [
+          5,
+          14
+        ],
+        "odds": 31.4
+      },
+      {
+        "combo": [
+          5,
+          15
+        ],
+        "odds": 39.9
+      },
+      {
+        "combo": [
+          5,
+          16
+        ],
+        "odds": 142.4
+      },
+      {
+        "combo": [
+          6,
+          7
+        ],
+        "odds": 43.8
+      },
+      {
+        "combo": [
+          6,
+          8
+        ],
+        "odds": 21.2
+      },
+      {
+        "combo": [
+          6,
+          9
+        ],
+        "odds": 57.4
+      },
+      {
+        "combo": [
+          6,
+          10
+        ],
+        "odds": 13.9
+      },
+      {
+        "combo": [
+          6,
+          11
+        ],
+        "odds": 38.4
+      },
+      {
+        "combo": [
+          6,
+          12
+        ],
+        "odds": 84.0
+      },
+      {
+        "combo": [
+          6,
+          13
+        ],
+        "odds": 88.9
+      },
+      {
+        "combo": [
+          6,
+          14
+        ],
+        "odds": 16.4
+      },
+      {
+        "combo": [
+          6,
+          15
+        ],
+        "odds": 18.2
+      },
+      {
+        "combo": [
+          6,
+          16
+        ],
+        "odds": 58.2
+      },
+      {
+        "combo": [
+          7,
+          8
+        ],
+        "odds": 16.9
+      },
+      {
+        "combo": [
+          7,
+          9
+        ],
+        "odds": 58.6
+      },
+      {
+        "combo": [
+          7,
+          10
+        ],
+        "odds": 17.6
+      },
+      {
+        "combo": [
+          7,
+          11
+        ],
+        "odds": 43.6
+      },
+      {
+        "combo": [
+          7,
+          12
+        ],
+        "odds": 119.6
+      },
+      {
+        "combo": [
+          7,
+          13
+        ],
+        "odds": 163.1
+      },
+      {
+        "combo": [
+          7,
+          14
+        ],
+        "odds": 19.8
+      },
+      {
+        "combo": [
+          7,
+          15
+        ],
+        "odds": 16.8
+      },
+      {
+        "combo": [
+          7,
+          16
+        ],
+        "odds": 50.8
+      },
+      {
+        "combo": [
+          8,
+          9
+        ],
+        "odds": 20.6
+      },
+      {
+        "combo": [
+          8,
+          10
+        ],
+        "odds": 5.8
+      },
+      {
+        "combo": [
+          8,
+          11
+        ],
+        "odds": 19.5
+      },
+      {
+        "combo": [
+          8,
+          12
+        ],
+        "odds": 45.2
+      },
+      {
+        "combo": [
+          8,
+          13
+        ],
+        "odds": 45.9
+      },
+      {
+        "combo": [
+          8,
+          14
+        ],
+        "odds": 5.5
+      },
+      {
+        "combo": [
+          8,
+          15
+        ],
+        "odds": 6.2
+      },
+      {
+        "combo": [
+          8,
+          16
+        ],
+        "odds": 27.0
+      },
+      {
+        "combo": [
+          9,
+          10
+        ],
+        "odds": 20.6
+      },
+      {
+        "combo": [
+          9,
+          11
+        ],
+        "odds": 55.9
+      },
+      {
+        "combo": [
+          9,
+          12
+        ],
+        "odds": 127.0
+      },
+      {
+        "combo": [
+          9,
+          13
+        ],
+        "odds": 185.7
+      },
+      {
+        "combo": [
+          9,
+          14
+        ],
+        "odds": 24.4
+      },
+      {
+        "combo": [
+          9,
+          15
+        ],
+        "odds": 28.1
+      },
+      {
+        "combo": [
+          9,
+          16
+        ],
+        "odds": 71.3
+      },
+      {
+        "combo": [
+          10,
+          11
+        ],
+        "odds": 12.2
+      },
+      {
+        "combo": [
+          10,
+          12
+        ],
+        "odds": 41.7
+      },
+      {
+        "combo": [
+          10,
+          13
+        ],
+        "odds": 34.0
+      },
+      {
+        "combo": [
+          10,
+          14
+        ],
+        "odds": 4.2
+      },
+      {
+        "combo": [
+          10,
+          15
+        ],
+        "odds": 4.3
+      },
+      {
+        "combo": [
+          10,
+          16
+        ],
+        "odds": 19.8
+      },
+      {
+        "combo": [
+          11,
+          12
+        ],
+        "odds": 96.0
+      },
+      {
+        "combo": [
+          11,
+          13
+        ],
+        "odds": 136.8
+      },
+      {
+        "combo": [
+          11,
+          14
+        ],
+        "odds": 12.4
+      },
+      {
+        "combo": [
+          11,
+          15
+        ],
+        "odds": 13.3
+      },
+      {
+        "combo": [
+          11,
+          16
+        ],
+        "odds": 59.1
+      },
+      {
+        "combo": [
+          12,
+          13
+        ],
+        "odds": 187.4
+      },
+      {
+        "combo": [
+          12,
+          14
+        ],
+        "odds": 33.9
+      },
+      {
+        "combo": [
+          12,
+          15
+        ],
+        "odds": 42.2
+      },
+      {
+        "combo": [
+          12,
+          16
+        ],
+        "odds": 136.6
+      },
+      {
+        "combo": [
+          13,
+          14
+        ],
+        "odds": 35.6
+      },
+      {
+        "combo": [
+          13,
+          15
+        ],
+        "odds": 38.1
+      },
+      {
+        "combo": [
+          13,
+          16
+        ],
+        "odds": 116.7
+      },
+      {
+        "combo": [
+          14,
+          15
+        ],
+        "odds": 4.3
+      },
+      {
+        "combo": [
+          14,
+          16
+        ],
+        "odds": 16.1
+      },
+      {
+        "combo": [
+          15,
+          16
+        ],
+        "odds": 20.7
+      }
+    ],
+    "trio": [
+      {
+        "combo": [
+          1,
+          2,
+          3
+        ],
+        "odds": 1707.6
+      },
+      {
+        "combo": [
+          1,
+          2,
+          4
+        ],
+        "odds": 2087.1
+      },
+      {
+        "combo": [
+          1,
+          2,
+          5
+        ],
+        "odds": 1322.8
+      },
+      {
+        "combo": [
+          1,
+          2,
+          6
+        ],
+        "odds": 973.2
+      },
+      {
+        "combo": [
+          1,
+          2,
+          7
+        ],
+        "odds": 1055.2
+      },
+      {
+        "combo": [
+          1,
+          2,
+          8
+        ],
+        "odds": 353.0
+      },
+      {
+        "combo": [
+          1,
+          2,
+          9
+        ],
+        "odds": 1118.0
+      },
+      {
+        "combo": [
+          1,
+          2,
+          10
+        ],
+        "odds": 261.9
+      },
+      {
+        "combo": [
+          1,
+          2,
+          11
+        ],
+        "odds": 1085.7
+      },
+      {
+        "combo": [
+          1,
+          2,
+          12
+        ],
+        "odds": 2263.1
+      },
+      {
+        "combo": [
+          1,
+          2,
+          13
+        ],
+        "odds": 2762.3
+      },
+      {
+        "combo": [
+          1,
+          2,
+          14
+        ],
+        "odds": 414.6
+      },
+      {
+        "combo": [
+          1,
+          2,
+          15
+        ],
+        "odds": 426.9
+      },
+      {
+        "combo": [
+          1,
+          2,
+          16
+        ],
+        "odds": 2236.1
+      },
+      {
+        "combo": [
+          1,
+          3,
+          4
+        ],
+        "odds": 4174.2
+      },
+      {
+        "combo": [
+          1,
+          3,
+          5
+        ],
+        "odds": 2722.3
+      },
+      {
+        "combo": [
+          1,
+          3,
+          6
+        ],
+        "odds": 2722.3
+      },
+      {
+        "combo": [
+          1,
+          3,
+          7
+        ],
+        "odds": 2504.5
+      },
+      {
+        "combo": [
+          1,
+          3,
+          8
+        ],
+        "odds": 1061.2
+      },
+      {
+        "combo": [
+          1,
+          3,
+          9
+        ],
+        "odds": 2889.8
+      },
+      {
+        "combo": [
+          1,
+          3,
+          10
+        ],
+        "odds": 1322.8
+      },
+      {
+        "combo": [
+          1,
+          3,
+          11
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          1,
+          3,
+          12
+        ],
+        "odds": 8166.9
+      },
+      {
+        "combo": [
+          1,
+          3,
+          13
+        ],
+        "odds": 1552.4
+      },
+      {
+        "combo": [
+          1,
+          3,
+          14
+        ],
+        "odds": 2263.1
+      },
+      {
+        "combo": [
+          1,
+          3,
+          15
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          1,
+          3,
+          16
+        ],
+        "odds": 7224.6
+      },
+      {
+        "combo": [
+          1,
+          4,
+          5
+        ],
+        "odds": 3544.1
+      },
+      {
+        "combo": [
+          1,
+          4,
+          6
+        ],
+        "odds": 3029.6
+      },
+      {
+        "combo": [
+          1,
+          4,
+          7
+        ],
+        "odds": 2935.0
+      },
+      {
+        "combo": [
+          1,
+          4,
+          8
+        ],
+        "odds": 1841.5
+      },
+      {
+        "combo": [
+          1,
+          4,
+          9
+        ],
+        "odds": 2348.0
+      },
+      {
+        "combo": [
+          1,
+          4,
+          10
+        ],
+        "odds": 2019.7
+      },
+      {
+        "combo": [
+          1,
+          4,
+          11
+        ],
+        "odds": 8166.9
+      },
+      {
+        "combo": [
+          1,
+          4,
+          12
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          1,
+          4,
+          13
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          1,
+          4,
+          14
+        ],
+        "odds": 2803.5
+      },
+      {
+        "combo": [
+          1,
+          4,
+          15
+        ],
+        "odds": 4269.1
+      },
+      {
+        "combo": [
+          1,
+          4,
+          16
+        ],
+        "odds": 10435.5
+      },
+      {
+        "combo": [
+          1,
+          5,
+          6
+        ],
+        "odds": 2159.0
+      },
+      {
+        "combo": [
+          1,
+          5,
+          7
+        ],
+        "odds": 2846.0
+      },
+      {
+        "combo": [
+          1,
+          5,
+          8
+        ],
+        "odds": 865.6
+      },
+      {
+        "combo": [
+          1,
+          5,
+          9
+        ],
+        "odds": 1977.2
+      },
+      {
+        "combo": [
+          1,
+          5,
+          10
+        ],
+        "odds": 725.2
+      },
+      {
+        "combo": [
+          1,
+          5,
+          11
+        ],
+        "odds": 2236.1
+      },
+      {
+        "combo": [
+          1,
+          5,
+          12
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          1,
+          5,
+          13
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          1,
+          5,
+          14
+        ],
+        "odds": 1092.0
+      },
+      {
+        "combo": [
+          1,
+          5,
+          15
+        ],
+        "odds": 1055.2
+      },
+      {
+        "combo": [
+          1,
+          5,
+          16
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          1,
+          6,
+          7
+        ],
+        "odds": 1104.9
+      },
+      {
+        "combo": [
+          1,
+          6,
+          8
+        ],
+        "odds": 507.6
+      },
+      {
+        "combo": [
+          1,
+          6,
+          9
+        ],
+        "odds": 1159.5
+      },
+      {
+        "combo": [
+          1,
+          6,
+          10
+        ],
+        "odds": 291.6
+      },
+      {
+        "combo": [
+          1,
+          6,
+          11
+        ],
+        "odds": 1188.8
+      },
+      {
+        "combo": [
+          1,
+          6,
+          12
+        ],
+        "odds": 3544.1
+      },
+      {
+        "combo": [
+          1,
+          6,
+          13
+        ],
+        "odds": 3996.6
+      },
+      {
+        "combo": [
+          1,
+          6,
+          14
+        ],
+        "odds": 588.8
+      },
+      {
+        "combo": [
+          1,
+          6,
+          15
+        ],
+        "odds": 495.6
+      },
+      {
+        "combo": [
+          1,
+          6,
+          16
+        ],
+        "odds": 1619.3
+      },
+      {
+        "combo": [
+          1,
+          7,
+          8
+        ],
+        "odds": 476.7
+      },
+      {
+        "combo": [
+          1,
+          7,
+          9
+        ],
+        "odds": 1196.4
+      },
+      {
+        "combo": [
+          1,
+          7,
+          10
+        ],
+        "odds": 300.0
+      },
+      {
+        "combo": [
+          1,
+          7,
+          11
+        ],
+        "odds": 1539.6
+      },
+      {
+        "combo": [
+          1,
+          7,
+          12
+        ],
+        "odds": 4269.1
+      },
+      {
+        "combo": [
+          1,
+          7,
+          13
+        ],
+        "odds": 4696.0
+      },
+      {
+        "combo": [
+          1,
+          7,
+          14
+        ],
+        "odds": 594.4
+      },
+      {
+        "combo": [
+          1,
+          7,
+          15
+        ],
+        "odds": 634.5
+      },
+      {
+        "combo": [
+          1,
+          7,
+          16
+        ],
+        "odds": 2981.5
+      },
+      {
+        "combo": [
+          1,
+          8,
+          9
+        ],
+        "odds": 500.9
+      },
+      {
+        "combo": [
+          1,
+          8,
+          10
+        ],
+        "odds": 93.3
+      },
+      {
+        "combo": [
+          1,
+          8,
+          11
+        ],
+        "odds": 410.1
+      },
+      {
+        "combo": [
+          1,
+          8,
+          12
+        ],
+        "odds": 1433.8
+      },
+      {
+        "combo": [
+          1,
+          8,
+          13
+        ],
+        "odds": 1211.8
+      },
+      {
+        "combo": [
+          1,
+          8,
+          14
+        ],
+        "odds": 111.6
+      },
+      {
+        "combo": [
+          1,
+          8,
+          15
+        ],
+        "odds": 126.6
+      },
+      {
+        "combo": [
+          1,
+          8,
+          16
+        ],
+        "odds": 869.6
+      },
+      {
+        "combo": [
+          1,
+          9,
+          10
+        ],
+        "odds": 444.0
+      },
+      {
+        "combo": [
+          1,
+          9,
+          11
+        ],
+        "odds": 1619.3
+      },
+      {
+        "combo": [
+          1,
+          9,
+          12
+        ],
+        "odds": 3612.3
+      },
+      {
+        "combo": [
+          1,
+          9,
+          13
+        ],
+        "odds": 2377.7
+      },
+      {
+        "combo": [
+          1,
+          9,
+          14
+        ],
+        "odds": 565.7
+      },
+      {
+        "combo": [
+          1,
+          9,
+          15
+        ],
+        "odds": 490.4
+      },
+      {
+        "combo": [
+          1,
+          9,
+          16
+        ],
+        "odds": 1707.6
+      },
+      {
+        "combo": [
+          1,
+          10,
+          11
+        ],
+        "odds": 222.0
+      },
+      {
+        "combo": [
+          1,
+          10,
+          12
+        ],
+        "odds": 1159.5
+      },
+      {
+        "combo": [
+          1,
+          10,
+          13
+        ],
+        "odds": 813.1
+      },
+      {
+        "combo": [
+          1,
+          10,
+          14
+        ],
+        "odds": 82.8
+      },
+      {
+        "combo": [
+          1,
+          10,
+          15
+        ],
+        "odds": 93.2
+      },
+      {
+        "combo": [
+          1,
+          10,
+          16
+        ],
+        "odds": 834.8
+      },
+      {
+        "combo": [
+          1,
+          11,
+          12
+        ],
+        "odds": 3029.6
+      },
+      {
+        "combo": [
+          1,
+          11,
+          13
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          1,
+          11,
+          14
+        ],
+        "odds": 337.2
+      },
+      {
+        "combo": [
+          1,
+          11,
+          15
+        ],
+        "odds": 409.2
+      },
+      {
+        "combo": [
+          1,
+          11,
+          16
+        ],
+        "odds": 2290.7
+      },
+      {
+        "combo": [
+          1,
+          12,
+          13
+        ],
+        "odds": 3996.6
+      },
+      {
+        "combo": [
+          1,
+          12,
+          14
+        ],
+        "odds": 1456.1
+      },
+      {
+        "combo": [
+          1,
+          12,
+          15
+        ],
+        "odds": 1662.3
+      },
+      {
+        "combo": [
+          1,
+          12,
+          16
+        ],
+        "odds": 5076.7
+      },
+      {
+        "combo": [
+          1,
+          13,
+          14
+        ],
+        "odds": 999.1
+      },
+      {
+        "combo": [
+          1,
+          13,
+          15
+        ],
+        "odds": 968.2
+      },
+      {
+        "combo": [
+          1,
+          13,
+          16
+        ],
+        "odds": 3833.4
+      },
+      {
+        "combo": [
+          1,
+          14,
+          15
+        ],
+        "odds": 95.4
+      },
+      {
+        "combo": [
+          1,
+          14,
+          16
+        ],
+        "odds": 728.0
+      },
+      {
+        "combo": [
+          1,
+          15,
+          16
+        ],
+        "odds": 939.2
+      },
+      {
+        "combo": [
+          2,
+          3,
+          4
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          2,
+          3,
+          5
+        ],
+        "odds": 2263.1
+      },
+      {
+        "combo": [
+          2,
+          3,
+          6
+        ],
+        "odds": 1916.7
+      },
+      {
+        "combo": [
+          2,
+          3,
+          7
+        ],
+        "odds": 3029.6
+      },
+      {
+        "combo": [
+          2,
+          3,
+          8
+        ],
+        "odds": 1145.3
+      },
+      {
+        "combo": [
+          2,
+          3,
+          9
+        ],
+        "odds": 2889.8
+      },
+      {
+        "combo": [
+          2,
+          3,
+          10
+        ],
+        "odds": 1004.4
+      },
+      {
+        "combo": [
+          2,
+          3,
+          11
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          2,
+          3,
+          12
+        ],
+        "odds": 5217.7
+      },
+      {
+        "combo": [
+          2,
+          3,
+          13
+        ],
+        "odds": 4581.4
+      },
+      {
+        "combo": [
+          2,
+          3,
+          14
+        ],
+        "odds": 1433.8
+      },
+      {
+        "combo": [
+          2,
+          3,
+          15
+        ],
+        "odds": 1878.4
+      },
+      {
+        "combo": [
+          2,
+          3,
+          16
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          2,
+          4,
+          5
+        ],
+        "odds": 2087.1
+      },
+      {
+        "combo": [
+          2,
+          4,
+          6
+        ],
+        "odds": 3415.2
+      },
+      {
+        "combo": [
+          2,
+          4,
+          7
+        ],
+        "odds": 2981.5
+      },
+      {
+        "combo": [
+          2,
+          4,
+          8
+        ],
+        "odds": 1552.4
+      },
+      {
+        "combo": [
+          2,
+          4,
+          9
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          2,
+          4,
+          10
+        ],
+        "odds": 1823.6
+      },
+      {
+        "combo": [
+          2,
+          4,
+          11
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          2,
+          4,
+          12
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          2,
+          4,
+          13
+        ],
+        "odds": 11740.0
+      },
+      {
+        "combo": [
+          2,
+          4,
+          14
+        ],
+        "odds": 2439.4
+      },
+      {
+        "combo": [
+          2,
+          4,
+          15
+        ],
+        "odds": 3756.8
+      },
+      {
+        "combo": [
+          2,
+          4,
+          16
+        ],
+        "odds": 11740.0
+      },
+      {
+        "combo": [
+          2,
+          5,
+          6
+        ],
+        "odds": 1061.2
+      },
+      {
+        "combo": [
+          2,
+          5,
+          7
+        ],
+        "odds": 2236.1
+      },
+      {
+        "combo": [
+          2,
+          5,
+          8
+        ],
+        "odds": 939.2
+      },
+      {
+        "combo": [
+          2,
+          5,
+          9
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          2,
+          5,
+          10
+        ],
+        "odds": 719.6
+      },
+      {
+        "combo": [
+          2,
+          5,
+          11
+        ],
+        "odds": 2236.1
+      },
+      {
+        "combo": [
+          2,
+          5,
+          12
+        ],
+        "odds": 3183.7
+      },
+      {
+        "combo": [
+          2,
+          5,
+          13
+        ],
+        "odds": 4581.4
+      },
+      {
+        "combo": [
+          2,
+          5,
+          14
+        ],
+        "odds": 916.2
+      },
+      {
+        "combo": [
+          2,
+          5,
+          15
+        ],
+        "odds": 1159.5
+      },
+      {
+        "combo": [
+          2,
+          5,
+          16
+        ],
+        "odds": 3756.8
+      },
+      {
+        "combo": [
+          2,
+          6,
+          7
+        ],
+        "odds": 751.3
+      },
+      {
+        "combo": [
+          2,
+          6,
+          8
+        ],
+        "odds": 339.0
+      },
+      {
+        "combo": [
+          2,
+          6,
+          9
+        ],
+        "odds": 1235.7
+      },
+      {
+        "combo": [
+          2,
+          6,
+          10
+        ],
+        "odds": 208.4
+      },
+      {
+        "combo": [
+          2,
+          6,
+          11
+        ],
+        "odds": 813.1
+      },
+      {
+        "combo": [
+          2,
+          6,
+          12
+        ],
+        "odds": 2064.1
+      },
+      {
+        "combo": [
+          2,
+          6,
+          13
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          2,
+          6,
+          14
+        ],
+        "odds": 333.6
+      },
+      {
+        "combo": [
+          2,
+          6,
+          15
+        ],
+        "odds": 380.2
+      },
+      {
+        "combo": [
+          2,
+          6,
+          16
+        ],
+        "odds": 1565.3
+      },
+      {
+        "combo": [
+          2,
+          7,
+          8
+        ],
+        "odds": 351.7
+      },
+      {
+        "combo": [
+          2,
+          7,
+          9
+        ],
+        "odds": 1479.0
+      },
+      {
+        "combo": [
+          2,
+          7,
+          10
+        ],
+        "odds": 235.0
+      },
+      {
+        "combo": [
+          2,
+          7,
+          11
+        ],
+        "odds": 1124.7
+      },
+      {
+        "combo": [
+          2,
+          7,
+          12
+        ],
+        "odds": 2538.3
+      },
+      {
+        "combo": [
+          2,
+          7,
+          13
+        ],
+        "odds": 3183.7
+      },
+      {
+        "combo": [
+          2,
+          7,
+          14
+        ],
+        "odds": 336.6
+      },
+      {
+        "combo": [
+          2,
+          7,
+          15
+        ],
+        "odds": 366.8
+      },
+      {
+        "combo": [
+          2,
+          7,
+          16
+        ],
+        "odds": 1739.2
+      },
+      {
+        "combo": [
+          2,
+          8,
+          9
+        ],
+        "odds": 526.1
+      },
+      {
+        "combo": [
+          2,
+          8,
+          10
+        ],
+        "odds": 65.6
+      },
+      {
+        "combo": [
+          2,
+          8,
+          11
+        ],
+        "odds": 353.7
+      },
+      {
+        "combo": [
+          2,
+          8,
+          12
+        ],
+        "odds": 973.2
+      },
+      {
+        "combo": [
+          2,
+          8,
+          13
+        ],
+        "odds": 1502.7
+      },
+      {
+        "combo": [
+          2,
+          8,
+          14
+        ],
+        "odds": 71.8
+      },
+      {
+        "combo": [
+          2,
+          8,
+          15
+        ],
+        "odds": 83.5
+      },
+      {
+        "combo": [
+          2,
+          8,
+          16
+        ],
+        "odds": 695.7
+      },
+      {
+        "combo": [
+          2,
+          9,
+          10
+        ],
+        "odds": 412.8
+      },
+      {
+        "combo": [
+          2,
+          9,
+          11
+        ],
+        "odds": 1444.9
+      },
+      {
+        "combo": [
+          2,
+          9,
+          12
+        ],
+        "odds": 3079.3
+      },
+      {
+        "combo": [
+          2,
+          9,
+          13
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          2,
+          9,
+          14
+        ],
+        "odds": 546.0
+      },
+      {
+        "combo": [
+          2,
+          9,
+          15
+        ],
+        "odds": 507.6
+      },
+      {
+        "combo": [
+          2,
+          9,
+          16
+        ],
+        "odds": 2408.2
+      },
+      {
+        "combo": [
+          2,
+          10,
+          11
+        ],
+        "odds": 203.0
+      },
+      {
+        "combo": [
+          2,
+          10,
+          12
+        ],
+        "odds": 939.2
+      },
+      {
+        "combo": [
+          2,
+          10,
+          13
+        ],
+        "odds": 988.6
+      },
+      {
+        "combo": [
+          2,
+          10,
+          14
+        ],
+        "odds": 52.5
+      },
+      {
+        "combo": [
+          2,
+          10,
+          15
+        ],
+        "odds": 61.5
+      },
+      {
+        "combo": [
+          2,
+          10,
+          16
+        ],
+        "odds": 498.2
+      },
+      {
+        "combo": [
+          2,
+          11,
+          12
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          2,
+          11,
+          13
+        ],
+        "odds": 3029.6
+      },
+      {
+        "combo": [
+          2,
+          11,
+          14
+        ],
+        "odds": 268.3
+      },
+      {
+        "combo": [
+          2,
+          11,
+          15
+        ],
+        "odds": 335.4
+      },
+      {
+        "combo": [
+          2,
+          11,
+          16
+        ],
+        "odds": 1723.3
+      },
+      {
+        "combo": [
+          2,
+          12,
+          13
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          2,
+          12,
+          14
+        ],
+        "odds": 988.6
+      },
+      {
+        "combo": [
+          2,
+          12,
+          15
+        ],
+        "odds": 877.7
+      },
+      {
+        "combo": [
+          2,
+          12,
+          16
+        ],
+        "odds": 3544.1
+      },
+      {
+        "combo": [
+          2,
+          13,
+          14
+        ],
+        "odds": 958.3
+      },
+      {
+        "combo": [
+          2,
+          13,
+          15
+        ],
+        "odds": 1032.0
+      },
+      {
+        "combo": [
+          2,
+          13,
+          16
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          2,
+          14,
+          15
+        ],
+        "odds": 59.1
+      },
+      {
+        "combo": [
+          2,
+          14,
+          16
+        ],
+        "odds": 450.4
+      },
+      {
+        "combo": [
+          2,
+          15,
+          16
+        ],
+        "odds": 636.7
+      },
+      {
+        "combo": [
+          3,
+          4,
+          5
+        ],
+        "odds": 6059.3
+      },
+      {
+        "combo": [
+          3,
+          4,
+          6
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          3,
+          4,
+          7
+        ],
+        "odds": 9392.0
+      },
+      {
+        "combo": [
+          3,
+          4,
+          8
+        ],
+        "odds": 3183.7
+      },
+      {
+        "combo": [
+          3,
+          4,
+          9
+        ],
+        "odds": 5076.7
+      },
+      {
+        "combo": [
+          3,
+          4,
+          10
+        ],
+        "odds": 2935.0
+      },
+      {
+        "combo": [
+          3,
+          4,
+          11
+        ],
+        "odds": 8538.2
+      },
+      {
+        "combo": [
+          3,
+          4,
+          12
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          3,
+          4,
+          13
+        ],
+        "odds": 6261.3
+      },
+      {
+        "combo": [
+          3,
+          4,
+          14
+        ],
+        "odds": 5076.7
+      },
+      {
+        "combo": [
+          3,
+          4,
+          15
+        ],
+        "odds": 10435.5
+      },
+      {
+        "combo": [
+          3,
+          4,
+          16
+        ],
+        "odds": 17076.4
+      },
+      {
+        "combo": [
+          3,
+          5,
+          6
+        ],
+        "odds": 4696.0
+      },
+      {
+        "combo": [
+          3,
+          5,
+          7
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          3,
+          5,
+          8
+        ],
+        "odds": 1433.8
+      },
+      {
+        "combo": [
+          3,
+          5,
+          9
+        ],
+        "odds": 2504.5
+      },
+      {
+        "combo": [
+          3,
+          5,
+          10
+        ],
+        "odds": 1677.1
+      },
+      {
+        "combo": [
+          3,
+          5,
+          11
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          3,
+          5,
+          12
+        ],
+        "odds": 11740.0
+      },
+      {
+        "combo": [
+          3,
+          5,
+          13
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          3,
+          5,
+          14
+        ],
+        "odds": 1916.7
+      },
+      {
+        "combo": [
+          3,
+          5,
+          15
+        ],
+        "odds": 2471.5
+      },
+      {
+        "combo": [
+          3,
+          5,
+          16
+        ],
+        "odds": 6261.3
+      },
+      {
+        "combo": [
+          3,
+          6,
+          7
+        ],
+        "odds": 4174.2
+      },
+      {
+        "combo": [
+          3,
+          6,
+          8
+        ],
+        "odds": 1166.7
+      },
+      {
+        "combo": [
+          3,
+          6,
+          9
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          3,
+          6,
+          10
+        ],
+        "odds": 1092.0
+      },
+      {
+        "combo": [
+          3,
+          6,
+          11
+        ],
+        "odds": 4174.2
+      },
+      {
+        "combo": [
+          3,
+          6,
+          12
+        ],
+        "odds": 4943.1
+      },
+      {
+        "combo": [
+          3,
+          6,
+          13
+        ],
+        "odds": 2608.8
+      },
+      {
+        "combo": [
+          3,
+          6,
+          14
+        ],
+        "odds": 1479.0
+      },
+      {
+        "combo": [
+          3,
+          6,
+          15
+        ],
+        "odds": 1295.4
+      },
+      {
+        "combo": [
+          3,
+          6,
+          16
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          3,
+          7,
+          8
+        ],
+        "odds": 1936.5
+      },
+      {
+        "combo": [
+          3,
+          7,
+          9
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          3,
+          7,
+          10
+        ],
+        "odds": 1456.1
+      },
+      {
+        "combo": [
+          3,
+          7,
+          11
+        ],
+        "odds": 5524.7
+      },
+      {
+        "combo": [
+          3,
+          7,
+          12
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          3,
+          7,
+          13
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          3,
+          7,
+          14
+        ],
+        "odds": 1956.6
+      },
+      {
+        "combo": [
+          3,
+          7,
+          15
+        ],
+        "odds": 2319.0
+      },
+      {
+        "combo": [
+          3,
+          7,
+          16
+        ],
+        "odds": 7826.6
+      },
+      {
+        "combo": [
+          3,
+          8,
+          9
+        ],
+        "odds": 1633.3
+      },
+      {
+        "combo": [
+          3,
+          8,
+          10
+        ],
+        "odds": 327.2
+      },
+      {
+        "combo": [
+          3,
+          8,
+          11
+        ],
+        "odds": 1841.5
+      },
+      {
+        "combo": [
+          3,
+          8,
+          12
+        ],
+        "odds": 3833.4
+      },
+      {
+        "combo": [
+          3,
+          8,
+          13
+        ],
+        "odds": 2573.1
+      },
+      {
+        "combo": [
+          3,
+          8,
+          14
+        ],
+        "odds": 381.0
+      },
+      {
+        "combo": [
+          3,
+          8,
+          15
+        ],
+        "odds": 481.6
+      },
+      {
+        "combo": [
+          3,
+          8,
+          16
+        ],
+        "odds": 2722.3
+      },
+      {
+        "combo": [
+          3,
+          9,
+          10
+        ],
+        "odds": 1552.4
+      },
+      {
+        "combo": [
+          3,
+          9,
+          11
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          3,
+          9,
+          12
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          3,
+          9,
+          13
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          3,
+          9,
+          14
+        ],
+        "odds": 1823.6
+      },
+      {
+        "combo": [
+          3,
+          9,
+          15
+        ],
+        "odds": 2683.4
+      },
+      {
+        "combo": [
+          3,
+          9,
+          16
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          3,
+          10,
+          11
+        ],
+        "odds": 1211.8
+      },
+      {
+        "combo": [
+          3,
+          10,
+          12
+        ],
+        "odds": 2889.8
+      },
+      {
+        "combo": [
+          3,
+          10,
+          13
+        ],
+        "odds": 1591.8
+      },
+      {
+        "combo": [
+          3,
+          10,
+          14
+        ],
+        "odds": 316.7
+      },
+      {
+        "combo": [
+          3,
+          10,
+          15
+        ],
+        "odds": 412.8
+      },
+      {
+        "combo": [
+          3,
+          10,
+          16
+        ],
+        "odds": 2209.8
+      },
+      {
+        "combo": [
+          3,
+          11,
+          12
+        ],
+        "odds": 8538.2
+      },
+      {
+        "combo": [
+          3,
+          11,
+          13
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          3,
+          11,
+          14
+        ],
+        "odds": 1433.8
+      },
+      {
+        "combo": [
+          3,
+          11,
+          15
+        ],
+        "odds": 2608.8
+      },
+      {
+        "combo": [
+          3,
+          11,
+          16
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          3,
+          12,
+          13
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          3,
+          12,
+          14
+        ],
+        "odds": 3478.5
+      },
+      {
+        "combo": [
+          3,
+          12,
+          15
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          3,
+          12,
+          16
+        ],
+        "odds": 11049.4
+      },
+      {
+        "combo": [
+          3,
+          13,
+          14
+        ],
+        "odds": 2538.3
+      },
+      {
+        "combo": [
+          3,
+          13,
+          15
+        ],
+        "odds": 2538.3
+      },
+      {
+        "combo": [
+          3,
+          13,
+          16
+        ],
+        "odds": 7224.6
+      },
+      {
+        "combo": [
+          3,
+          14,
+          15
+        ],
+        "odds": 322.1
+      },
+      {
+        "combo": [
+          3,
+          14,
+          16
+        ],
+        "odds": 1707.6
+      },
+      {
+        "combo": [
+          3,
+          15,
+          16
+        ],
+        "odds": 2683.4
+      },
+      {
+        "combo": [
+          4,
+          5,
+          6
+        ],
+        "odds": 7224.6
+      },
+      {
+        "combo": [
+          4,
+          5,
+          7
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          4,
+          5,
+          8
+        ],
+        "odds": 5217.7
+      },
+      {
+        "combo": [
+          4,
+          5,
+          9
+        ],
+        "odds": 5076.7
+      },
+      {
+        "combo": [
+          4,
+          5,
+          10
+        ],
+        "odds": 3478.5
+      },
+      {
+        "combo": [
+          4,
+          5,
+          11
+        ],
+        "odds": 11740.0
+      },
+      {
+        "combo": [
+          4,
+          5,
+          12
+        ],
+        "odds": 26834.3
+      },
+      {
+        "combo": [
+          4,
+          5,
+          13
+        ],
+        "odds": 10435.5
+      },
+      {
+        "combo": [
+          4,
+          5,
+          14
+        ],
+        "odds": 4943.1
+      },
+      {
+        "combo": [
+          4,
+          5,
+          15
+        ],
+        "odds": 8538.2
+      },
+      {
+        "combo": [
+          4,
+          5,
+          16
+        ],
+        "odds": 18784.0
+      },
+      {
+        "combo": [
+          4,
+          6,
+          7
+        ],
+        "odds": 6477.2
+      },
+      {
+        "combo": [
+          4,
+          6,
+          8
+        ],
+        "odds": 2110.5
+      },
+      {
+        "combo": [
+          4,
+          6,
+          9
+        ],
+        "odds": 5076.7
+      },
+      {
+        "combo": [
+          4,
+          6,
+          10
+        ],
+        "odds": 1998.3
+      },
+      {
+        "combo": [
+          4,
+          6,
+          11
+        ],
+        "odds": 4083.4
+      },
+      {
+        "combo": [
+          4,
+          6,
+          12
+        ],
+        "odds": 2935.0
+      },
+      {
+        "combo": [
+          4,
+          6,
+          13
+        ],
+        "odds": 7826.6
+      },
+      {
+        "combo": [
+          4,
+          6,
+          14
+        ],
+        "odds": 2762.3
+      },
+      {
+        "combo": [
+          4,
+          6,
+          15
+        ],
+        "odds": 3612.3
+      },
+      {
+        "combo": [
+          4,
+          6,
+          16
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          4,
+          7,
+          8
+        ],
+        "odds": 3130.6
+      },
+      {
+        "combo": [
+          4,
+          7,
+          9
+        ],
+        "odds": 6059.3
+      },
+      {
+        "combo": [
+          4,
+          7,
+          10
+        ],
+        "odds": 2184.1
+      },
+      {
+        "combo": [
+          4,
+          7,
+          11
+        ],
+        "odds": 6059.3
+      },
+      {
+        "combo": [
+          4,
+          7,
+          12
+        ],
+        "odds": 11740.0
+      },
+      {
+        "combo": [
+          4,
+          7,
+          13
+        ],
+        "odds": 13417.1
+      },
+      {
+        "combo": [
+          4,
+          7,
+          14
+        ],
+        "odds": 2377.7
+      },
+      {
+        "combo": [
+          4,
+          7,
+          15
+        ],
+        "odds": 4368.3
+      },
+      {
+        "combo": [
+          4,
+          7,
+          16
+        ],
+        "odds": 10435.5
+      },
+      {
+        "combo": [
+          4,
+          8,
+          9
+        ],
+        "odds": 1977.2
+      },
+      {
+        "combo": [
+          4,
+          8,
+          10
+        ],
+        "odds": 530.6
+      },
+      {
+        "combo": [
+          4,
+          8,
+          11
+        ],
+        "odds": 3079.3
+      },
+      {
+        "combo": [
+          4,
+          8,
+          12
+        ],
+        "odds": 3415.2
+      },
+      {
+        "combo": [
+          4,
+          8,
+          13
+        ],
+        "odds": 4368.3
+      },
+      {
+        "combo": [
+          4,
+          8,
+          14
+        ],
+        "odds": 617.8
+      },
+      {
+        "combo": [
+          4,
+          8,
+          15
+        ],
+        "odds": 869.6
+      },
+      {
+        "combo": [
+          4,
+          8,
+          16
+        ],
+        "odds": 3130.6
+      },
+      {
+        "combo": [
+          4,
+          9,
+          10
+        ],
+        "odds": 2290.7
+      },
+      {
+        "combo": [
+          4,
+          9,
+          11
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          4,
+          9,
+          12
+        ],
+        "odds": 6477.2
+      },
+      {
+        "combo": [
+          4,
+          9,
+          13
+        ],
+        "odds": 6059.3
+      },
+      {
+        "combo": [
+          4,
+          9,
+          14
+        ],
+        "odds": 2722.3
+      },
+      {
+        "combo": [
+          4,
+          9,
+          15
+        ],
+        "odds": 4368.3
+      },
+      {
+        "combo": [
+          4,
+          9,
+          16
+        ],
+        "odds": 7224.6
+      },
+      {
+        "combo": [
+          4,
+          10,
+          11
+        ],
+        "odds": 1591.8
+      },
+      {
+        "combo": [
+          4,
+          10,
+          12
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          4,
+          10,
+          13
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          4,
+          10,
+          14
+        ],
+        "odds": 552.4
+      },
+      {
+        "combo": [
+          4,
+          10,
+          15
+        ],
+        "odds": 795.9
+      },
+      {
+        "combo": [
+          4,
+          10,
+          16
+        ],
+        "odds": 2722.3
+      },
+      {
+        "combo": [
+          4,
+          11,
+          12
+        ],
+        "odds": 9392.0
+      },
+      {
+        "combo": [
+          4,
+          11,
+          13
+        ],
+        "odds": 9886.3
+      },
+      {
+        "combo": [
+          4,
+          11,
+          14
+        ],
+        "odds": 1723.3
+      },
+      {
+        "combo": [
+          4,
+          11,
+          15
+        ],
+        "odds": 3415.2
+      },
+      {
+        "combo": [
+          4,
+          11,
+          16
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          4,
+          12,
+          13
+        ],
+        "odds": 10435.5
+      },
+      {
+        "combo": [
+          4,
+          12,
+          14
+        ],
+        "odds": 3478.5
+      },
+      {
+        "combo": [
+          4,
+          12,
+          15
+        ],
+        "odds": 4269.1
+      },
+      {
+        "combo": [
+          4,
+          12,
+          16
+        ],
+        "odds": 12522.7
+      },
+      {
+        "combo": [
+          4,
+          13,
+          14
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          4,
+          13,
+          15
+        ],
+        "odds": 7224.6
+      },
+      {
+        "combo": [
+          4,
+          13,
+          16
+        ],
+        "odds": 17076.4
+      },
+      {
+        "combo": [
+          4,
+          14,
+          15
+        ],
+        "odds": 619.9
+      },
+      {
+        "combo": [
+          4,
+          14,
+          16
+        ],
+        "odds": 1692.2
+      },
+      {
+        "combo": [
+          4,
+          15,
+          16
+        ],
+        "odds": 3996.6
+      },
+      {
+        "combo": [
+          5,
+          6,
+          7
+        ],
+        "odds": 1381.1
+      },
+      {
+        "combo": [
+          5,
+          6,
+          8
+        ],
+        "odds": 846.1
+      },
+      {
+        "combo": [
+          5,
+          6,
+          9
+        ],
+        "odds": 2236.1
+      },
+      {
+        "combo": [
+          5,
+          6,
+          10
+        ],
+        "odds": 659.0
+      },
+      {
+        "combo": [
+          5,
+          6,
+          11
+        ],
+        "odds": 1235.7
+      },
+      {
+        "combo": [
+          5,
+          6,
+          12
+        ],
+        "odds": 3295.4
+      },
+      {
+        "combo": [
+          5,
+          6,
+          13
+        ],
+        "odds": 4269.1
+      },
+      {
+        "combo": [
+          5,
+          6,
+          14
+        ],
+        "odds": 581.5
+      },
+      {
+        "combo": [
+          5,
+          6,
+          15
+        ],
+        "odds": 827.4
+      },
+      {
+        "combo": [
+          5,
+          6,
+          16
+        ],
+        "odds": 3130.6
+      },
+      {
+        "combo": [
+          5,
+          7,
+          8
+        ],
+        "odds": 1304.4
+      },
+      {
+        "combo": [
+          5,
+          7,
+          9
+        ],
+        "odds": 3683.1
+      },
+      {
+        "combo": [
+          5,
+          7,
+          10
+        ],
+        "odds": 602.0
+      },
+      {
+        "combo": [
+          5,
+          7,
+          11
+        ],
+        "odds": 2471.5
+      },
+      {
+        "combo": [
+          5,
+          7,
+          12
+        ],
+        "odds": 4581.4
+      },
+      {
+        "combo": [
+          5,
+          7,
+          13
+        ],
+        "odds": 5870.0
+      },
+      {
+        "combo": [
+          5,
+          7,
+          14
+        ],
+        "odds": 613.8
+      },
+      {
+        "combo": [
+          5,
+          7,
+          15
+        ],
+        "odds": 1479.0
+      },
+      {
+        "combo": [
+          5,
+          7,
+          16
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          5,
+          8,
+          9
+        ],
+        "odds": 1061.2
+      },
+      {
+        "combo": [
+          5,
+          8,
+          10
+        ],
+        "odds": 223.6
+      },
+      {
+        "combo": [
+          5,
+          8,
+          11
+        ],
+        "odds": 939.2
+      },
+      {
+        "combo": [
+          5,
+          8,
+          12
+        ],
+        "odds": 943.9
+      },
+      {
+        "combo": [
+          5,
+          8,
+          13
+        ],
+        "odds": 2439.4
+      },
+      {
+        "combo": [
+          5,
+          8,
+          14
+        ],
+        "odds": 176.0
+      },
+      {
+        "combo": [
+          5,
+          8,
+          15
+        ],
+        "odds": 261.9
+      },
+      {
+        "combo": [
+          5,
+          8,
+          16
+        ],
+        "odds": 1619.3
+      },
+      {
+        "combo": [
+          5,
+          9,
+          10
+        ],
+        "odds": 842.3
+      },
+      {
+        "combo": [
+          5,
+          9,
+          11
+        ],
+        "odds": 2087.1
+      },
+      {
+        "combo": [
+          5,
+          9,
+          12
+        ],
+        "odds": 4083.4
+      },
+      {
+        "combo": [
+          5,
+          9,
+          13
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          5,
+          9,
+          14
+        ],
+        "odds": 588.8
+      },
+      {
+        "combo": [
+          5,
+          9,
+          15
+        ],
+        "odds": 1009.8
+      },
+      {
+        "combo": [
+          5,
+          9,
+          16
+        ],
+        "odds": 4083.4
+      },
+      {
+        "combo": [
+          5,
+          10,
+          11
+        ],
+        "odds": 457.0
+      },
+      {
+        "combo": [
+          5,
+          10,
+          12
+        ],
+        "odds": 1514.8
+      },
+      {
+        "combo": [
+          5,
+          10,
+          13
+        ],
+        "odds": 1772.0
+      },
+      {
+        "combo": [
+          5,
+          10,
+          14
+        ],
+        "odds": 143.8
+      },
+      {
+        "combo": [
+          5,
+          10,
+          15
+        ],
+        "odds": 199.4
+      },
+      {
+        "combo": [
+          5,
+          10,
+          16
+        ],
+        "odds": 1181.3
+      },
+      {
+        "combo": [
+          5,
+          11,
+          12
+        ],
+        "odds": 4174.2
+      },
+      {
+        "combo": [
+          5,
+          11,
+          13
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          5,
+          11,
+          14
+        ],
+        "odds": 364.0
+      },
+      {
+        "combo": [
+          5,
+          11,
+          15
+        ],
+        "odds": 838.5
+      },
+      {
+        "combo": [
+          5,
+          11,
+          16
+        ],
+        "odds": 2290.7
+      },
+      {
+        "combo": [
+          5,
+          12,
+          13
+        ],
+        "odds": 5870.0
+      },
+      {
+        "combo": [
+          5,
+          12,
+          14
+        ],
+        "odds": 861.6
+      },
+      {
+        "combo": [
+          5,
+          12,
+          15
+        ],
+        "odds": 958.3
+      },
+      {
+        "combo": [
+          5,
+          12,
+          16
+        ],
+        "odds": 5524.7
+      },
+      {
+        "combo": [
+          5,
+          13,
+          14
+        ],
+        "odds": 2504.5
+      },
+      {
+        "combo": [
+          5,
+          13,
+          15
+        ],
+        "odds": 2762.3
+      },
+      {
+        "combo": [
+          5,
+          13,
+          16
+        ],
+        "odds": 7513.6
+      },
+      {
+        "combo": [
+          5,
+          14,
+          15
+        ],
+        "odds": 158.7
+      },
+      {
+        "combo": [
+          5,
+          14,
+          16
+        ],
+        "odds": 869.6
+      },
+      {
+        "combo": [
+          5,
+          15,
+          16
+        ],
+        "odds": 1662.3
+      },
+      {
+        "combo": [
+          6,
+          7,
+          8
+        ],
+        "odds": 300.0
+      },
+      {
+        "combo": [
+          6,
+          7,
+          9
+        ],
+        "odds": 1159.5
+      },
+      {
+        "combo": [
+          6,
+          7,
+          10
+        ],
+        "odds": 212.9
+      },
+      {
+        "combo": [
+          6,
+          7,
+          11
+        ],
+        "odds": 869.6
+      },
+      {
+        "combo": [
+          6,
+          7,
+          12
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          6,
+          7,
+          13
+        ],
+        "odds": 2645.6
+      },
+      {
+        "combo": [
+          6,
+          7,
+          14
+        ],
+        "odds": 313.0
+      },
+      {
+        "combo": [
+          6,
+          7,
+          15
+        ],
+        "odds": 424.9
+      },
+      {
+        "combo": [
+          6,
+          7,
+          16
+        ],
+        "odds": 1166.7
+      },
+      {
+        "combo": [
+          6,
+          8,
+          9
+        ],
+        "odds": 628.2
+      },
+      {
+        "combo": [
+          6,
+          8,
+          10
+        ],
+        "odds": 72.3
+      },
+      {
+        "combo": [
+          6,
+          8,
+          11
+        ],
+        "odds": 345.9
+      },
+      {
+        "combo": [
+          6,
+          8,
+          12
+        ],
+        "odds": 1152.3
+      },
+      {
+        "combo": [
+          6,
+          8,
+          13
+        ],
+        "odds": 1391.4
+      },
+      {
+        "combo": [
+          6,
+          8,
+          14
+        ],
+        "odds": 86.7
+      },
+      {
+        "combo": [
+          6,
+          8,
+          15
+        ],
+        "odds": 110.4
+      },
+      {
+        "combo": [
+          6,
+          8,
+          16
+        ],
+        "odds": 708.8
+      },
+      {
+        "combo": [
+          6,
+          9,
+          10
+        ],
+        "odds": 469.6
+      },
+      {
+        "combo": [
+          6,
+          9,
+          11
+        ],
+        "odds": 1755.5
+      },
+      {
+        "combo": [
+          6,
+          9,
+          12
+        ],
+        "odds": 3833.4
+      },
+      {
+        "combo": [
+          6,
+          9,
+          13
+        ],
+        "odds": 4816.4
+      },
+      {
+        "combo": [
+          6,
+          9,
+          14
+        ],
+        "odds": 577.9
+      },
+      {
+        "combo": [
+          6,
+          9,
+          15
+        ],
+        "odds": 579.7
+      },
+      {
+        "combo": [
+          6,
+          9,
+          16
+        ],
+        "odds": 1479.0
+      },
+      {
+        "combo": [
+          6,
+          10,
+          11
+        ],
+        "odds": 180.4
+      },
+      {
+        "combo": [
+          6,
+          10,
+          12
+        ],
+        "odds": 925.3
+      },
+      {
+        "combo": [
+          6,
+          10,
+          13
+        ],
+        "odds": 894.4
+      },
+      {
+        "combo": [
+          6,
+          10,
+          14
+        ],
+        "odds": 59.1
+      },
+      {
+        "combo": [
+          6,
+          10,
+          15
+        ],
+        "odds": 73.2
+      },
+      {
+        "combo": [
+          6,
+          10,
+          16
+        ],
+        "odds": 375.6
+      },
+      {
+        "combo": [
+          6,
+          11,
+          12
+        ],
+        "odds": 2573.1
+      },
+      {
+        "combo": [
+          6,
+          11,
+          13
+        ],
+        "odds": 2471.5
+      },
+      {
+        "combo": [
+          6,
+          11,
+          14
+        ],
+        "odds": 240.2
+      },
+      {
+        "combo": [
+          6,
+          11,
+          15
+        ],
+        "odds": 327.8
+      },
+      {
+        "combo": [
+          6,
+          11,
+          16
+        ],
+        "odds": 1227.7
+      },
+      {
+        "combo": [
+          6,
+          12,
+          13
+        ],
+        "odds": 4696.0
+      },
+      {
+        "combo": [
+          6,
+          12,
+          14
+        ],
+        "odds": 934.5
+      },
+      {
+        "combo": [
+          6,
+          12,
+          15
+        ],
+        "odds": 1286.5
+      },
+      {
+        "combo": [
+          6,
+          12,
+          16
+        ],
+        "odds": 3756.8
+      },
+      {
+        "combo": [
+          6,
+          13,
+          14
+        ],
+        "odds": 1138.4
+      },
+      {
+        "combo": [
+          6,
+          13,
+          15
+        ],
+        "odds": 1152.3
+      },
+      {
+        "combo": [
+          6,
+          13,
+          16
+        ],
+        "odds": 3612.3
+      },
+      {
+        "combo": [
+          6,
+          14,
+          15
+        ],
+        "odds": 79.5
+      },
+      {
+        "combo": [
+          6,
+          14,
+          16
+        ],
+        "odds": 426.9
+      },
+      {
+        "combo": [
+          6,
+          15,
+          16
+        ],
+        "odds": 624.0
+      },
+      {
+        "combo": [
+          7,
+          8,
+          9
+        ],
+        "odds": 430.8
+      },
+      {
+        "combo": [
+          7,
+          8,
+          10
+        ],
+        "odds": 72.8
+      },
+      {
+        "combo": [
+          7,
+          8,
+          11
+        ],
+        "odds": 304.9
+      },
+      {
+        "combo": [
+          7,
+          8,
+          12
+        ],
+        "odds": 703.5
+      },
+      {
+        "combo": [
+          7,
+          8,
+          13
+        ],
+        "odds": 1479.0
+      },
+      {
+        "combo": [
+          7,
+          8,
+          14
+        ],
+        "odds": 83.0
+      },
+      {
+        "combo": [
+          7,
+          8,
+          15
+        ],
+        "odds": 92.3
+      },
+      {
+        "combo": [
+          7,
+          8,
+          16
+        ],
+        "odds": 572.6
+      },
+      {
+        "combo": [
+          7,
+          9,
+          10
+        ],
+        "odds": 394.6
+      },
+      {
+        "combo": [
+          7,
+          9,
+          11
+        ],
+        "odds": 1527.1
+      },
+      {
+        "combo": [
+          7,
+          9,
+          12
+        ],
+        "odds": 5692.1
+      },
+      {
+        "combo": [
+          7,
+          9,
+          13
+        ],
+        "odds": 5366.8
+      },
+      {
+        "combo": [
+          7,
+          9,
+          14
+        ],
+        "odds": 445.1
+      },
+      {
+        "combo": [
+          7,
+          9,
+          15
+        ],
+        "odds": 474.3
+      },
+      {
+        "combo": [
+          7,
+          9,
+          16
+        ],
+        "odds": 1916.7
+      },
+      {
+        "combo": [
+          7,
+          10,
+          11
+        ],
+        "odds": 192.0
+      },
+      {
+        "combo": [
+          7,
+          10,
+          12
+        ],
+        "odds": 929.9
+      },
+      {
+        "combo": [
+          7,
+          10,
+          13
+        ],
+        "odds": 1073.3
+      },
+      {
+        "combo": [
+          7,
+          10,
+          14
+        ],
+        "odds": 57.2
+      },
+      {
+        "combo": [
+          7,
+          10,
+          15
+        ],
+        "odds": 72.9
+      },
+      {
+        "combo": [
+          7,
+          10,
+          16
+        ],
+        "odds": 356.4
+      },
+      {
+        "combo": [
+          7,
+          11,
+          12
+        ],
+        "odds": 3354.2
+      },
+      {
+        "combo": [
+          7,
+          11,
+          13
+        ],
+        "odds": 3683.1
+      },
+      {
+        "combo": [
+          7,
+          11,
+          14
+        ],
+        "odds": 250.7
+      },
+      {
+        "combo": [
+          7,
+          11,
+          15
+        ],
+        "odds": 357.7
+      },
+      {
+        "combo": [
+          7,
+          11,
+          16
+        ],
+        "odds": 1243.9
+      },
+      {
+        "combo": [
+          7,
+          12,
+          13
+        ],
+        "odds": 8166.9
+      },
+      {
+        "combo": [
+          7,
+          12,
+          14
+        ],
+        "odds": 873.6
+      },
+      {
+        "combo": [
+          7,
+          12,
+          15
+        ],
+        "odds": 1304.4
+      },
+      {
+        "combo": [
+          7,
+          12,
+          16
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          7,
+          13,
+          14
+        ],
+        "odds": 1181.3
+      },
+      {
+        "combo": [
+          7,
+          13,
+          15
+        ],
+        "odds": 1552.4
+      },
+      {
+        "combo": [
+          7,
+          13,
+          16
+        ],
+        "odds": 4472.3
+      },
+      {
+        "combo": [
+          7,
+          14,
+          15
+        ],
+        "odds": 75.1
+      },
+      {
+        "combo": [
+          7,
+          14,
+          16
+        ],
+        "odds": 397.9
+      },
+      {
+        "combo": [
+          7,
+          15,
+          16
+        ],
+        "odds": 518.8
+      },
+      {
+        "combo": [
+          8,
+          9,
+          10
+        ],
+        "odds": 89.5
+      },
+      {
+        "combo": [
+          8,
+          9,
+          11
+        ],
+        "odds": 533.6
+      },
+      {
+        "combo": [
+          8,
+          9,
+          12
+        ],
+        "odds": 1152.3
+      },
+      {
+        "combo": [
+          8,
+          9,
+          13
+        ],
+        "odds": 1707.6
+      },
+      {
+        "combo": [
+          8,
+          9,
+          14
+        ],
+        "odds": 116.5
+      },
+      {
+        "combo": [
+          8,
+          9,
+          15
+        ],
+        "odds": 133.5
+      },
+      {
+        "combo": [
+          8,
+          9,
+          16
+        ],
+        "odds": 886.0
+      },
+      {
+        "combo": [
+          8,
+          10,
+          11
+        ],
+        "odds": 55.5
+      },
+      {
+        "combo": [
+          8,
+          10,
+          12
+        ],
+        "odds": 210.1
+      },
+      {
+        "combo": [
+          8,
+          10,
+          13
+        ],
+        "odds": 283.3
+      },
+      {
+        "combo": [
+          8,
+          10,
+          14
+        ],
+        "odds": 14.3
+      },
+      {
+        "combo": [
+          8,
+          10,
+          15
+        ],
+        "odds": 17.0
+      },
+      {
+        "combo": [
+          8,
+          10,
+          16
+        ],
+        "odds": 125.7
+      },
+      {
+        "combo": [
+          8,
+          11,
+          12
+        ],
+        "odds": 711.5
+      },
+      {
+        "combo": [
+          8,
+          11,
+          13
+        ],
+        "odds": 1313.5
+      },
+      {
+        "combo": [
+          8,
+          11,
+          14
+        ],
+        "odds": 63.4
+      },
+      {
+        "combo": [
+          8,
+          11,
+          15
+        ],
+        "odds": 76.7
+      },
+      {
+        "combo": [
+          8,
+          11,
+          16
+        ],
+        "odds": 574.4
+      },
+      {
+        "combo": [
+          8,
+          12,
+          13
+        ],
+        "odds": 2041.7
+      },
+      {
+        "combo": [
+          8,
+          12,
+          14
+        ],
+        "odds": 200.2
+      },
+      {
+        "combo": [
+          8,
+          12,
+          15
+        ],
+        "odds": 227.6
+      },
+      {
+        "combo": [
+          8,
+          12,
+          16
+        ],
+        "odds": 1423.0
+      },
+      {
+        "combo": [
+          8,
+          13,
+          14
+        ],
+        "odds": 318.3
+      },
+      {
+        "combo": [
+          8,
+          13,
+          15
+        ],
+        "odds": 327.8
+      },
+      {
+        "combo": [
+          8,
+          13,
+          16
+        ],
+        "odds": 1755.5
+      },
+      {
+        "combo": [
+          8,
+          14,
+          15
+        ],
+        "odds": 16.3
+      },
+      {
+        "combo": [
+          8,
+          14,
+          16
+        ],
+        "odds": 125.7
+      },
+      {
+        "combo": [
+          8,
+          15,
+          16
+        ],
+        "odds": 172.3
+      },
+      {
+        "combo": [
+          9,
+          10,
+          11
+        ],
+        "odds": 269.4
+      },
+      {
+        "combo": [
+          9,
+          10,
+          12
+        ],
+        "odds": 1118.0
+      },
+      {
+        "combo": [
+          9,
+          10,
+          13
+        ],
+        "odds": 1391.4
+      },
+      {
+        "combo": [
+          9,
+          10,
+          14
+        ],
+        "odds": 90.7
+      },
+      {
+        "combo": [
+          9,
+          10,
+          15
+        ],
+        "odds": 96.8
+      },
+      {
+        "combo": [
+          9,
+          10,
+          16
+        ],
+        "odds": 560.7
+      },
+      {
+        "combo": [
+          9,
+          11,
+          12
+        ],
+        "odds": 3913.3
+      },
+      {
+        "combo": [
+          9,
+          11,
+          13
+        ],
+        "odds": 3415.2
+      },
+      {
+        "combo": [
+          9,
+          11,
+          14
+        ],
+        "odds": 292.5
+      },
+      {
+        "combo": [
+          9,
+          11,
+          15
+        ],
+        "odds": 371.2
+      },
+      {
+        "combo": [
+          9,
+          11,
+          16
+        ],
+        "odds": 1692.2
+      },
+      {
+        "combo": [
+          9,
+          12,
+          13
+        ],
+        "odds": 6957.0
+      },
+      {
+        "combo": [
+          9,
+          12,
+          14
+        ],
+        "odds": 1032.0
+      },
+      {
+        "combo": [
+          9,
+          12,
+          15
+        ],
+        "odds": 1539.6
+      },
+      {
+        "combo": [
+          9,
+          12,
+          16
+        ],
+        "odds": 3238.6
+      },
+      {
+        "combo": [
+          9,
+          13,
+          14
+        ],
+        "odds": 1341.7
+      },
+      {
+        "combo": [
+          9,
+          13,
+          15
+        ],
+        "odds": 1260.6
+      },
+      {
+        "combo": [
+          9,
+          13,
+          16
+        ],
+        "odds": 4696.0
+      },
+      {
+        "combo": [
+          9,
+          14,
+          15
+        ],
+        "odds": 100.9
+      },
+      {
+        "combo": [
+          9,
+          14,
+          16
+        ],
+        "odds": 641.0
+      },
+      {
+        "combo": [
+          9,
+          15,
+          16
+        ],
+        "odds": 958.3
+      },
+      {
+        "combo": [
+          10,
+          11,
+          12
+        ],
+        "odds": 736.6
+      },
+      {
+        "combo": [
+          10,
+          11,
+          13
+        ],
+        "odds": 685.5
+      },
+      {
+        "combo": [
+          10,
+          11,
+          14
+        ],
+        "odds": 39.2
+      },
+      {
+        "combo": [
+          10,
+          11,
+          15
+        ],
+        "odds": 52.1
+      },
+      {
+        "combo": [
+          10,
+          11,
+          16
+        ],
+        "odds": 308.9
+      },
+      {
+        "combo": [
+          10,
+          12,
+          13
+        ],
+        "odds": 1633.3
+      },
+      {
+        "combo": [
+          10,
+          12,
+          14
+        ],
+        "odds": 218.1
+      },
+      {
+        "combo": [
+          10,
+          12,
+          15
+        ],
+        "odds": 259.8
+      },
+      {
+        "combo": [
+          10,
+          12,
+          16
+        ],
+        "odds": 1098.4
+      },
+      {
+        "combo": [
+          10,
+          13,
+          14
+        ],
+        "odds": 219.9
+      },
+      {
+        "combo": [
+          10,
+          13,
+          15
+        ],
+        "odds": 259.4
+      },
+      {
+        "combo": [
+          10,
+          13,
+          16
+        ],
+        "odds": 1118.0
+      },
+      {
+        "combo": [
+          10,
+          14,
+          15
+        ],
+        "odds": 13.0
+      },
+      {
+        "combo": [
+          10,
+          14,
+          16
+        ],
+        "odds": 88.6
+      },
+      {
+        "combo": [
+          10,
+          15,
+          16
+        ],
+        "odds": 114.0
+      },
+      {
+        "combo": [
+          11,
+          12,
+          13
+        ],
+        "odds": 2762.3
+      },
+      {
+        "combo": [
+          11,
+          12,
+          14
+        ],
+        "odds": 760.4
+      },
+      {
+        "combo": [
+          11,
+          12,
+          15
+        ],
+        "odds": 988.6
+      },
+      {
+        "combo": [
+          11,
+          12,
+          16
+        ],
+        "odds": 3183.7
+      },
+      {
+        "combo": [
+          11,
+          13,
+          14
+        ],
+        "odds": 766.6
+      },
+      {
+        "combo": [
+          11,
+          13,
+          15
+        ],
+        "odds": 877.7
+      },
+      {
+        "combo": [
+          11,
+          13,
+          16
+        ],
+        "odds": 3544.1
+      },
+      {
+        "combo": [
+          11,
+          14,
+          15
+        ],
+        "odds": 51.1
+      },
+      {
+        "combo": [
+          11,
+          14,
+          16
+        ],
+        "odds": 305.4
+      },
+      {
+        "combo": [
+          11,
+          15,
+          16
+        ],
+        "odds": 459.2
+      },
+      {
+        "combo": [
+          12,
+          13,
+          14
+        ],
+        "odds": 1322.8
+      },
+      {
+        "combo": [
+          12,
+          13,
+          15
+        ],
+        "odds": 1490.7
+      },
+      {
+        "combo": [
+          12,
+          13,
+          16
+        ],
+        "odds": 4696.0
+      },
+      {
+        "combo": [
+          12,
+          14,
+          15
+        ],
+        "odds": 190.7
+      },
+      {
+        "combo": [
+          12,
+          14,
+          16
+        ],
+        "odds": 806.1
+      },
+      {
+        "combo": [
+          12,
+          15,
+          16
+        ],
+        "odds": 1204.1
+      },
+      {
+        "combo": [
+          13,
+          14,
+          15
+        ],
+        "odds": 190.5
+      },
+      {
+        "combo": [
+          13,
+          14,
+          16
+        ],
+        "odds": 978.3
+      },
+      {
+        "combo": [
+          13,
+          15,
+          16
+        ],
+        "odds": 1235.7
+      },
+      {
+        "combo": [
+          14,
+          15,
+          16
+        ],
+        "odds": 87.4
+      }
+    ]
+  }
+}

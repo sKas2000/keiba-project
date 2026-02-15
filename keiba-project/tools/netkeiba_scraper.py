@@ -26,7 +26,7 @@ v0.2の改善点:
   python netkeiba_scraper.py <input.jsonのパス>
 """
 
-VERSION = "0.5"
+VERSION = "0.5.3"
 
 import asyncio
 import json
@@ -672,7 +672,9 @@ class NetkeibaScraper:
                 # netkeibaの検索はスペースなしの方が精度が高い
                 # また、外国人騎手はJRAが半角（C.ルメール）、netkeibaが全角（Ｃ．ルメール）
                 # のため、イニシャル部分を全角に変換する
-                search_name = jockey_name.replace(" ", "").replace("　", "")
+                # 減量騎手マーク（★▲△☆◇）を除去
+                search_name = re.sub(r'[★▲△☆◇]', '', jockey_name)
+                search_name = search_name.replace(" ", "").replace("　", "")
                 # 外国人騎手の半角イニシャルを全角に変換（例: "C." → "Ｃ．"）
                 search_name = re.sub(
                     r'^([A-Za-z])\.',
