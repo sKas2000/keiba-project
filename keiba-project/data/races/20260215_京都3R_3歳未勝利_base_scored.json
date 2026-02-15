@@ -104,10 +104,10 @@
     {
       "num": 2,
       "name": "フラゲルムデイ",
-      "score": 8.0,
+      "score": 12.2,
       "score_breakdown": {
         "ability": 3.0,
-        "jockey": 0.0,
+        "jockey": 4.2,
         "fitness": 0.0,
         "form": 3.0,
         "other": 2.0
@@ -118,7 +118,7 @@
       "sex_age": "牝3",
       "weight": "468(-4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=3.0(3着内率0/3, 着差評価3.0点, 同条件なし) jockey=0.0(中井 裕二勝率0.000) fitness=0.0(同場なし, 同距離3戦平均14.0着) form=3.0(前走5週前3点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
+      "note": "[AUTO] ability=3.0(3着内率0/3, 着差評価3.0点, 同条件なし) jockey=4.2(中井 裕二勝率0.042) fitness=0.0(同場なし, 同距離3戦平均14.0着) form=3.0(前走5週前3点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
       "past_races": [
         {
           "date": "2026/01/10",
@@ -164,19 +164,19 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.042,
+        "place_rate": 0.125,
+        "wins": 1,
+        "races": 24
       }
     },
     {
       "num": 3,
       "name": "レッドパラジウム",
-      "score": 9.0,
+      "score": 24.2,
       "score_breakdown": {
         "ability": 3.0,
-        "jockey": 0.0,
+        "jockey": 15.2,
         "fitness": 0.0,
         "form": 4.0,
         "other": 2.0
@@ -187,7 +187,7 @@
       "sex_age": "牡3",
       "weight": "478(-2)",
       "load_weight": 57.0,
-      "note": "[AUTO] ability=3.0(3着内率0/2, 着差評価3.0点, 同条件なし) jockey=0.0(西村 淳也勝率0.000) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
+      "note": "[AUTO] ability=3.0(3着内率0/2, 着差評価3.0点, 同条件なし) jockey=15.2(西村 淳也勝率0.152) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
       "past_races": [
         {
           "date": "2026/01/25",
@@ -219,19 +219,19 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.152,
+        "place_rate": 0.359,
+        "wins": 14,
+        "races": 92
       }
     },
     {
       "num": 4,
       "name": "テイエムプレミラン",
-      "score": 16.7,
+      "score": 20.9,
       "score_breakdown": {
         "ability": 8.8,
-        "jockey": 0.0,
+        "jockey": 4.2,
         "fitness": 1.9,
         "form": 4.0,
         "other": 2.0
@@ -242,7 +242,7 @@
       "sex_age": "牡3",
       "weight": "488(-6)",
       "load_weight": 57.0,
-      "note": "[AUTO] ability=8.8(3着内率1/4, 着差評価3.8点, 同条件なし) jockey=0.0(古川 吉洋勝率0.000) fitness=1.9(同場なし, 同距離2戦平均7.5着) form=4.0(前走2週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
+      "note": "[AUTO] ability=8.8(3着内率1/4, 着差評価3.8点, 同条件なし) jockey=4.2(古川 吉洋勝率0.042) fitness=1.9(同場なし, 同距離2戦平均7.5着) form=4.0(前走2週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
       "past_races": [
         {
           "date": "2026/01/31",
@@ -302,10 +302,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.042,
+        "place_rate": 0.062,
+        "wins": 2,
+        "races": 48
       }
     },
     {
@@ -366,10 +366,10 @@
     {
       "num": 6,
       "name": "センリョウヤクシャ",
-      "score": 16.8,
+      "score": 19.7,
       "score_breakdown": {
         "ability": 11.0,
-        "jockey": 0.0,
+        "jockey": 2.9,
         "fitness": 1.8,
         "form": 2.0,
         "other": 2.0
@@ -380,7 +380,7 @@
       "sex_age": "牡3",
       "weight": "452(0)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=0.0(永島 まなみ勝率0.000) fitness=1.8(同場なし, 同距離4戦平均7.8着) form=2.0(前走1772週前2点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
+      "note": "[AUTO] ability=11.0(3着内率1/4, 着差評価6.0点, 同条件なし) jockey=2.9(永島 まなみ勝率0.029) fitness=1.8(同場なし, 同距離4戦平均7.8着) form=2.0(前走1772週前2点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
       "past_races": [
         {
           "date": "1992/03/01",
@@ -440,19 +440,19 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.028999999999999998,
+        "place_rate": 0.08800000000000001,
+        "wins": 1,
+        "races": 34
       }
     },
     {
       "num": 7,
       "name": "ダイイズキャスト",
-      "score": 9.0,
+      "score": 20.4,
       "score_breakdown": {
         "ability": 3.0,
-        "jockey": 0.0,
+        "jockey": 11.4,
         "fitness": 0.0,
         "form": 4.0,
         "other": 2.0
@@ -463,7 +463,7 @@
       "sex_age": "牡3",
       "weight": "508(-16)",
       "load_weight": 57.0,
-      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=0.0(武 豊勝率0.000) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
+      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=11.4(武 豊勝率0.114) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
       "past_races": [
         {
           "date": "2026/01/24",
@@ -481,10 +481,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.114,
+        "place_rate": 0.405,
+        "wins": 9,
+        "races": 79
       }
     },
     {
@@ -545,10 +545,10 @@
     {
       "num": 9,
       "name": "デアプリームス",
-      "score": 9.0,
+      "score": 17.1,
       "score_breakdown": {
         "ability": 3.0,
-        "jockey": 0.0,
+        "jockey": 8.1,
         "fitness": 0.0,
         "form": 4.0,
         "other": 2.0
@@ -559,7 +559,7 @@
       "sex_age": "牝3",
       "weight": "444(+6)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=0.0(池添 謙一勝率0.000) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
+      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=8.1(池添 謙一勝率0.081) fitness=0.0(同場なし, 同距離なし) form=4.0(前走3週前4点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
       "past_races": [
         {
           "date": "2026/01/24",
@@ -577,10 +577,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.081,
+        "place_rate": 0.258,
+        "wins": 5,
+        "races": 62
       }
     },
     {
@@ -635,7 +635,7 @@
         "win_rate": 0.0,
         "place_rate": 0.0,
         "wins": 0,
-        "races": 0
+        "races": 20
       }
     },
     {
@@ -724,10 +724,10 @@
     {
       "num": 12,
       "name": "ビーウィナー",
-      "score": 9.0,
+      "score": 10.9,
       "score_breakdown": {
         "ability": 3.0,
-        "jockey": 0.0,
+        "jockey": 1.9,
         "fitness": 0.0,
         "form": 4.0,
         "other": 2.0
@@ -738,7 +738,7 @@
       "sex_age": "牡3",
       "weight": "532(-8)",
       "load_weight": 57.0,
-      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=0.0(国分 優作勝率0.000) fitness=0.0(同場なし, 同距離1戦平均11.0着) form=4.0(前走2週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
+      "note": "[AUTO] ability=3.0(3着内率0/1, 着差評価3.0点, 同条件なし) jockey=1.9(国分 優作勝率0.019) fitness=0.0(同場なし, 同距離1戦平均11.0着) form=4.0(前走2週前4点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
       "past_races": [
         {
           "date": "2026/02/01",
@@ -756,10 +756,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.019,
+        "place_rate": 0.09300000000000001,
+        "wins": 1,
+        "races": 54
       }
     },
     {
@@ -944,10 +944,10 @@
     {
       "num": 16,
       "name": "ジャズホリック",
-      "score": 20.1,
+      "score": 26.8,
       "score_breakdown": {
         "ability": 12.0,
-        "jockey": 0.0,
+        "jockey": 6.7,
         "fitness": 3.1,
         "form": 3.0,
         "other": 2.0
@@ -958,7 +958,7 @@
       "sex_age": "牝3",
       "weight": "452(-4)",
       "load_weight": 55.0,
-      "note": "[AUTO] ability=12.0(3着内率1/3, 着差評価5.3点, 同条件なし) jockey=0.0(幸 英明勝率0.000) fitness=3.1(同場なし, 同距離2戦平均6.0着) form=3.0(前走4週前3点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
+      "note": "[AUTO] ability=12.0(3着内率1/3, 着差評価5.3点, 同条件なし) jockey=6.7(幸 英明勝率0.067) fitness=3.1(同場なし, 同距離2戦平均6.0着) form=3.0(前走4週前3点) other=2.0(斤量55.0kg(平均±0.8kg)2点)",
       "past_races": [
         {
           "date": "2026/01/14",
@@ -1004,10 +1004,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.067,
+        "place_rate": 0.16699999999999998,
+        "wins": 2,
+        "races": 30
       }
     }
   ],

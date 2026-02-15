@@ -26,7 +26,7 @@ v0.2の改善点:
   python netkeiba_scraper.py <input.jsonのパス>
 """
 
-VERSION = "0.3"
+VERSION = "0.5"
 
 import asyncio
 import json
@@ -665,9 +665,12 @@ class NetkeibaScraper:
                     return result
 
                 # フォーム内のword inputに入力
+                # JRAデータの騎手名にはスペースが含まれる（例: "武 豊"）が、
+                # netkeibaの検索はスペースなしの方が精度が高い
+                search_name = jockey_name.replace(" ", "").replace("　", "")
                 word_input = jockey_form.locator('input[name="word"]')
-                await word_input.fill(jockey_name)
-                self.log(f"  フォーム入力 (騎手検索): {jockey_name}")
+                await word_input.fill(search_name)
+                self.log(f"  フォーム入力 (騎手検索): {search_name}")
 
                 # submitボタンをクリック
                 await asyncio.sleep(1)
@@ -675,62 +678,51 @@ class NetkeibaScraper:
                 await submit_button.click()
                 await asyncio.sleep(3)
 
-                # 検索結果から騎手ページのリンクを取得
-                links = await self.page.locator("table a[href*='/jockey/']").all()
-                if not links:
+                # フォーム送信後のURLをチェック
+                # 検索結果が1件の場合、直接騎手ページにリダイレクトされる
+                # 例: https://db.netkeiba.com/jockey/00666/
+                current_url = self.page.url
+                jockey_redirect = re.search(r'/jockey/(\d{5})/?$', current_url)
+
+                if jockey_redirect:
+                    # 直接騎手ページに遷移した → そのまま成績を取得
+                    jockey_id = jockey_redirect.group(1)
+                    self.log(f"  [OK] 騎手ページに直接遷移 (ID: {jockey_id}): {current_url}")
+                    result = await self._parse_jockey_stats_from_page()
+                else:
+                    # 検索結果一覧ページ → リンクから騎手を探す
                     links = await self.page.locator("a[href*='/jockey/']").all()
+                    self.log(f"  検索結果リンク数: {len(links)}個")
 
-                self.log(f"  検索結果リンク数: {len(links)}個")
+                    jockey_page_url = None
+                    normalized_search_name = normalize_jockey_name(jockey_name)
 
-                jockey_page_url = None
+                    for link in links:
+                        href = await link.get_attribute("href")
+                        if href and "/jockey/" in href:
+                            if any(x in href for x in ["search_detail", "top.html", "leading"]):
+                                continue
+                            # 末尾スラッシュあり/なし両方に対応
+                            if re.search(r'/jockey/\d{5}/?$', href):
+                                link_text = await link.text_content()
+                                if link_text:
+                                    normalized_link_text = normalize_jockey_name(link_text.strip())
+                                    if normalized_link_text == normalized_search_name:
+                                        if href.startswith("/"):
+                                            href = f"https://db.netkeiba.com{href}"
+                                        self.log(f"  [OK] 騎手ページ発見（名前一致）: {href}")
+                                        jockey_page_url = href
+                                        break
 
-                # 騎手名を正規化（比較用）
-                normalized_search_name = normalize_jockey_name(jockey_name)
-                self.log(f"  正規化された検索名: {normalized_search_name}")
+                    if not jockey_page_url:
+                        self.log(f"  [!] 騎手が見つかりません: {jockey_name}")
+                        self.jockey_cache[jockey_name] = result
+                        return result
 
-                self.log(f"  検索結果の最初の10件:")
-                for idx, link in enumerate(links[:10]):
-                    href = await link.get_attribute("href")
-                    text = await link.text_content()
-                    link_text = text.strip() if text else ""
-                    self.log(f"    [{idx+1}] {href} | テキスト: {link_text}")
-
-                for link in links:
-                    href = await link.get_attribute("href")
-                    if href and "/jockey/" in href:
-                        # 不要なページを除外
-                        if any(x in href for x in ["search_detail", "top.html", "leading"]):
-                            continue
-                        # 騎手IDパターンをチェック（5桁の数字、末尾スラッシュなし）
-                        if re.search(r'/jockey/\d{5}$', href):
-                            # リンクテキストを取得して名前を照合
-                            link_text = await link.text_content()
-                            if link_text:
-                                normalized_link_text = normalize_jockey_name(link_text.strip())
-                                self.log(f"  名前照合: '{normalized_link_text}' vs '{normalized_search_name}'")
-
-                                # 名前が一致するか確認
-                                if normalized_link_text == normalized_search_name:
-                                    if href.startswith("/"):
-                                        href = f"https://db.netkeiba.com{href}"
-                                    self.log(f"  [OK] 騎手ページ発見（名前一致）: {href}")
-                                    jockey_page_url = href
-                                    break
-                                else:
-                                    self.log(f"  スキップ (名前不一致): {link_text.strip()}")
-                            else:
-                                self.log(f"  スキップ (リンクテキストなし): {href}")
-
-                if not jockey_page_url:
-                    self.log(f"  [!] 騎手が見つかりません: {jockey_name}")
-                    self.jockey_cache[jockey_name] = result
-                    return result
-
-                # 騎手ページから成績を取得（テーブルセル方式）
-                await self.page.goto(jockey_page_url, wait_until="domcontentloaded")
-                await asyncio.sleep(1.5)
-
-                result = await self._parse_jockey_stats_from_page()
+                    # 騎手ページから成績を取得（テーブルセル方式）
+                    await self.page.goto(jockey_page_url, wait_until="domcontentloaded")
+                    await asyncio.sleep(1.5)
+                    result = await self._parse_jockey_stats_from_page()
 
                 if result["win_rate"] > 0 or result["place_rate"] > 0:
                     self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")

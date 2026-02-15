@@ -164,10 +164,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.042,
+        "place_rate": 0.125,
+        "wins": 1,
+        "races": 24
       }
     },
     {
@@ -219,10 +219,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.152,
+        "place_rate": 0.359,
+        "wins": 14,
+        "races": 92
       }
     },
     {
@@ -302,10 +302,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.042,
+        "place_rate": 0.062,
+        "wins": 2,
+        "races": 48
       }
     },
     {
@@ -440,10 +440,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.028999999999999998,
+        "place_rate": 0.08800000000000001,
+        "wins": 1,
+        "races": 34
       }
     },
     {
@@ -481,10 +481,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.114,
+        "place_rate": 0.405,
+        "wins": 9,
+        "races": 79
       }
     },
     {
@@ -577,10 +577,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.081,
+        "place_rate": 0.258,
+        "wins": 5,
+        "races": 62
       }
     },
     {
@@ -635,7 +635,7 @@
         "win_rate": 0.0,
         "place_rate": 0.0,
         "wins": 0,
-        "races": 0
+        "races": 20
       }
     },
     {
@@ -756,10 +756,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.019,
+        "place_rate": 0.09300000000000001,
+        "wins": 1,
+        "races": 54
       }
     },
     {
@@ -1004,10 +1004,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.067,
+        "place_rate": 0.16699999999999998,
+        "wins": 2,
+        "races": 30
       }
     }
   ],
