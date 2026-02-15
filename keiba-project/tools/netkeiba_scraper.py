@@ -494,6 +494,7 @@ class NetkeibaScraper:
             {"win_rate": 0.303, "place_rate": 0.652, "wins": 20, "races": 66}
         """
         result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
+        found_2026 = False
 
         tables = await self.page.locator("table").all()
 
@@ -539,13 +540,15 @@ class NetkeibaScraper:
                 if not cells or len(cells) <= win_rate_idx:
                     continue
 
-                # 年度セルを確認（「2026」の行を優先、なければ「累計」）
+                # 年度セルを確認（「2026」の行を優先）
                 first_cell_text = await cells[0].text_content()
                 first_cell_text = first_cell_text.strip() if first_cell_text else ""
 
                 # 2026年の行を探す
                 if first_cell_text == "2026":
-                    # 勝率（例: "7.0％" → 0.070）
+                    found_2026 = True
+
+                    # 勝率（例: "7.0％" → 0.070、"0.0％" → 0.0）
                     win_text = await cells[win_rate_idx].text_content()
                     win_text = win_text.strip().replace("％", "").replace("%", "") if win_text else "0"
                     result["win_rate"] = safe_float(win_text) / 100.0
@@ -569,8 +572,8 @@ class NetkeibaScraper:
 
                     break
 
-            # 2026年データが見つかったら終了
-            if result["win_rate"] > 0 or result["wins"] > 0:
+            # 2026年の行が見つかったら終了（0勝でもデータあり）
+            if found_2026:
                 break
 
         return result
@@ -605,7 +608,7 @@ class NetkeibaScraper:
             # テーブルセル方式で成績を取得
             result = await self._parse_jockey_stats_from_page()
 
-            if result["win_rate"] > 0 or result["place_rate"] > 0:
+            if result["races"] > 0:
                 self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f} ({result['wins']}勝/{result['races']}騎乗)")
             else:
                 self.log(f"  [!] 成績データが見つかりません")
@@ -732,8 +735,8 @@ class NetkeibaScraper:
                     await asyncio.sleep(1.5)
                     result = await self._parse_jockey_stats_from_page()
 
-                if result["win_rate"] > 0 or result["place_rate"] > 0:
-                    self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
+                if result["races"] > 0:
+                    self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f} ({result['wins']}勝/{result['races']}騎乗)")
                 else:
                     self.log(f"  [!] 成績データが見つかりません")
 
