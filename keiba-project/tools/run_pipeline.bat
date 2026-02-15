@@ -25,7 +25,7 @@ if not exist "jra_scraper.py" (
 REM Step 1: JRAオッズ取得
 echo [Step 1/4] JRAオッズ取得
 echo ------------------------------------------------------------
-python jra_scraper.py
+python jra_scraper.py --non-interactive --headless --yes
 if errorlevel 1 (
     echo [ERROR] jra_scraper.py でエラーが発生しました
     exit /b 1

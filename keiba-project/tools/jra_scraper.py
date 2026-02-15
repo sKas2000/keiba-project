@@ -22,6 +22,7 @@ import re
 import sys
 from datetime import datetime
 from pathlib import Path
+import argparse
 
 # Windows環境での文字化け対策
 if sys.platform == 'win32':
@@ -517,14 +518,14 @@ def build_json(scraped, race_info):
 # メイン
 # ============================================================
 
-async def main():
+async def main(args):
     print()
     print("=" * 60)
     print(f"  JRA スクレイパー v{VERSION}")
     print("=" * 60)
     print()
 
-    scraper = JRAScraper(headless=False, debug=True)
+    scraper = JRAScraper(headless=args.headless, debug=True)
 
     try:
         await scraper.start()
@@ -541,23 +542,41 @@ async def main():
         for i, m in enumerate(meetings):
             print(f"  [{i+1}] {m['text']}")
 
-        while True:
-            c = input(f"\n開催を選択 (1-{len(meetings)}): ").strip()
-            if c.isdigit() and 1 <= int(c) <= len(meetings):
-                mi = int(c) - 1
-                break
-            print("  無効")
+        mi = None
+        if args.meeting_index is not None:
+            if 1 <= args.meeting_index <= len(meetings):
+                mi = args.meeting_index - 1
+            else:
+                print(f"[ERROR] meeting-index {args.meeting_index} は無効です")
+                return
+        elif args.non_interactive:
+            mi = 0
+        else:
+            while True:
+                c = input(f"\n開催を選択 (1-{len(meetings)}): ").strip()
+                if c.isdigit() and 1 <= int(c) <= len(meetings):
+                    mi = int(c) - 1
+                    break
+                print("  無効")
 
         meeting_text = meetings[mi]["text"]
         await scraper.select_meeting(meetings[mi]["element"])
 
         # --- レース選択 ---
-        while True:
-            c = input("レース番号 (1-12): ").strip()
-            if c.isdigit() and 1 <= int(c) <= 12:
-                rn = int(c)
-                break
-            print("  無効")
+        if args.race is not None:
+            rn = args.race
+            if not (1 <= rn <= 12):
+                print(f"[ERROR] race {rn} は無効です")
+                return
+        elif args.non_interactive:
+            rn = 1
+        else:
+            while True:
+                c = input("レース番号 (1-12): ").strip()
+                if c.isdigit() and 1 <= int(c) <= 12:
+                    rn = int(c)
+                    break
+                print("  無効")
 
         print(f"\n{rn}R を選択中...")
         await scraper.select_race(rn)
@@ -580,30 +599,31 @@ async def main():
         print(f"  距離:     {distance or '（未検出）'}{'m' if distance else ''}")
         print(f"  グレード: {grade or '（未検出）'}")
 
-        # 未検出項目のみ手動入力
-        if not venue:
+        # 未検出項目のみ手動入力（non-interactive 時はスキップし、空欄のまま保存）
+        if not venue and not args.non_interactive:
             venue = input("\n  → 競馬場を入力 (例: 東京): ").strip()
             race_info["venue"] = venue
-        if not name:
+        if not name and not args.non_interactive:
             name = input(f"  → レース名 (例: {rn}R): ").strip() or f"{rn}R"
             race_info["name"] = name
-        if not surface:
+        if not surface and not args.non_interactive:
             surface = input("  → 馬場 (芝/ダート): ").strip()
             race_info["surface"] = surface
-        if not distance:
+        if not distance and not args.non_interactive:
             d = input("  → 距離 (例: 1400): ").strip()
             race_info["distance"] = int(d) if d.isdigit() else 0
-        if not direction:
+        if not direction and not args.non_interactive:
             direction = input("  → 回り (右/左): ").strip()
             race_info["direction"] = direction
-        if not grade:
+        if not grade and not args.non_interactive:
             grade = input("  → グレード (G1/G2/G3/OP/3勝/2勝/1勝/未勝利/新馬): ").strip()
             race_info["grade"] = grade
 
-        confirm = input("\n[OK] 取得開始 (Enter / n でキャンセル): ").strip()
-        if confirm.lower() == "n":
-            print("キャンセル")
-            return
+        if not args.yes and not args.non_interactive:
+            confirm = input("\n[OK] 取得開始 (Enter / n でキャンセル): ").strip()
+            if confirm.lower() == "n":
+                print("キャンセル")
+                return
 
         # === オッズ取得 ===
         print("\n単勝・複勝を取得中...")
@@ -677,4 +697,12 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    parser = argparse.ArgumentParser(description="JRA オッズスクレイパー")
+    parser.add_argument("--non-interactive", action="store_true", help="対話入力をスキップして自動実行する")
+    parser.add_argument("--meeting-index", type=int, help="開催の番号 (1-based) を指定")
+    parser.add_argument("--race", type=int, help="レース番号 (1-12)")
+    parser.add_argument("--yes", action="store_true", help="全ての確認プロンプトをスキップ (OK を自動承認)")
+    parser.add_argument("--headless", action="store_true", help="Playwright をヘッドレスで実行する")
+    args = parser.parse_args()
+
+    asyncio.run(main(args))
