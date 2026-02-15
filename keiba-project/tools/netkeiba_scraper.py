@@ -667,7 +667,15 @@ class NetkeibaScraper:
                 # フォーム内のword inputに入力
                 # JRAデータの騎手名にはスペースが含まれる（例: "武 豊"）が、
                 # netkeibaの検索はスペースなしの方が精度が高い
+                # また、外国人騎手はJRAが半角（C.ルメール）、netkeibaが全角（Ｃ．ルメール）
+                # のため、イニシャル部分を全角に変換する
                 search_name = jockey_name.replace(" ", "").replace("　", "")
+                # 外国人騎手の半角イニシャルを全角に変換（例: "C." → "Ｃ．"）
+                search_name = re.sub(
+                    r'^([A-Za-z])\.',
+                    lambda m: chr(ord(m.group(1).upper()) - ord('A') + ord('Ａ')) + '．',
+                    search_name
+                )
                 word_input = jockey_form.locator('input[name="word"]')
                 await word_input.fill(search_name)
                 self.log(f"  フォーム入力 (騎手検索): {search_name}")

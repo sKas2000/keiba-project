@@ -490,10 +490,10 @@
     {
       "num": 8,
       "name": "ナルキッソス",
-      "score": 27.2,
+      "score": 33.5,
       "score_breakdown": {
         "ability": 17.5,
-        "jockey": 0.0,
+        "jockey": 6.3,
         "fitness": 4.7,
         "form": 3.0,
         "other": 2.0
@@ -504,7 +504,7 @@
       "sex_age": "牡3",
       "weight": "484(-4)",
       "load_weight": 57.0,
-      "note": "[AUTO] ability=17.5(3着内率1/2, 着差評価7.5点, 同条件なし) jockey=0.0(T.ハマーハンセン勝率0.000) fitness=4.7(同場なし, 同距離2戦平均4.0着) form=3.0(前走7週前3点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
+      "note": "[AUTO] ability=17.5(3着内率1/2, 着差評価7.5点, 同条件なし) jockey=6.3(T.ハマーハンセン勝率0.063) fitness=4.7(同場なし, 同距離2戦平均4.0着) form=3.0(前走7週前3点) other=2.0(斤量57.0kg(平均±1.2kg)2点)",
       "past_races": [
         {
           "date": "2025/12/27",
@@ -536,10 +536,10 @@
         }
       ],
       "jockey_stats": {
-        "win_rate": 0.0,
-        "place_rate": 0.0,
-        "wins": 0,
-        "races": 0
+        "win_rate": 0.063,
+        "place_rate": 0.19,
+        "wins": 5,
+        "races": 79
       }
     },
     {
