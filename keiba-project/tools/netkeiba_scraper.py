@@ -157,12 +157,13 @@ class NetkeibaScraper:
     # 馬名検索 → 馬詳細ページ取得
     # ----------------------------------------------------------
 
-    async def search_horse(self, horse_name: str) -> str:
+    async def search_horse(self, horse_name: str, birth_year: int = 0) -> str:
         """
         netkeibaで馬名検索し、馬詳細ページのURLを返す
+        birth_year: 生年（0の場合はフィルタリングなし）
         Returns: 馬詳細ページURL or ""
         """
-        self.log(f"馬名検索: {horse_name}")
+        self.log(f"馬名検索: {horse_name}" + (f" (生年{birth_year})" if birth_year else ""))
 
         for attempt in range(self.max_retries):
             try:
@@ -233,6 +234,8 @@ class NetkeibaScraper:
                     self.log(f"  検索結果リンク数: {len(links)}")
 
                 # 有効な馬ページのURLを探す
+                # 生年が指定されている場合、馬IDの先頭4桁（生年）でフィルタリング
+                candidates = []
                 for link in links:
                     href = await link.get_attribute("href")
                     if href and "/horse/" in href:
@@ -240,14 +243,35 @@ class NetkeibaScraper:
                         if any(x in href for x in ["search_detail", "top.html", "sire/", "bms_", "leading"]):
                             continue
                         # 馬IDパターンをチェック（/horse/数字10桁/）
-                        if re.search(r'/horse/\d{10}', href):
+                        m = re.search(r'/horse/(\d{10})', href)
+                        if m:
+                            horse_id = m.group(1)
+                            id_birth_year = int(horse_id[:4])
                             if href.startswith("/"):
                                 href = f"https://db.netkeiba.com{href}"
-                            self.log(f"  [OK] 馬ページ発見: {href}")
-                            return href
+                            candidates.append((href, id_birth_year))
 
-                self.log(f"  [!] 有効な馬ページが見つかりません: {horse_name}")
-                return ""
+                if not candidates:
+                    self.log(f"  [!] 有効な馬ページが見つかりません: {horse_name}")
+                    return ""
+
+                # 生年フィルタリング: 一致する馬を優先
+                if birth_year > 0:
+                    matched = [c for c in candidates if c[1] == birth_year]
+                    if matched:
+                        self.log(f"  [OK] 馬ページ発見（生年{birth_year}一致）: {matched[0][0]}")
+                        return matched[0][0]
+                    # 完全一致がない場合、±1年を許容
+                    close = [c for c in candidates if abs(c[1] - birth_year) <= 1]
+                    if close:
+                        self.log(f"  [OK] 馬ページ発見（生年{close[0][1]}≈{birth_year}）: {close[0][0]}")
+                        return close[0][0]
+                    self.log(f"  [!] 生年{birth_year}に該当する馬なし、最新の候補を使用")
+
+                # 生年指定なし or フィルタリング失敗時: 最も新しい馬を選択
+                candidates.sort(key=lambda c: c[1], reverse=True)
+                self.log(f"  [OK] 馬ページ発見: {candidates[0][0]}")
+                return candidates[0][0]
 
             except Exception as e:
                 self.log(f"  [ERROR] 馬検索エラー (試行{attempt+1}/{self.max_retries}): {e}")
@@ -810,8 +834,17 @@ async def enrich_race_data(input_path: str):
                 horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
                 continue
 
+            # sex_ageから生年を計算（例: "牝4" → レース年2026 - 4 = 2022年生）
+            birth_year = 0
+            sex_age = horse.get("sex_age", "")
+            race_year_str = data.get("race", {}).get("date", "")[:4]
+            if sex_age and race_year_str:
+                age_match = re.search(r'(\d+)', sex_age)
+                if age_match:
+                    birth_year = int(race_year_str) - int(age_match.group(1))
+
             # 馬詳細ページ取得
-            horse_url = await scraper.search_horse(horse_name)
+            horse_url = await scraper.search_horse(horse_name, birth_year=birth_year)
 
             if horse_url:
                 # 過去走データ取得
