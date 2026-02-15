@@ -476,6 +476,106 @@ class NetkeibaScraper:
         return ""
 
     # ----------------------------------------------------------
+    # 騎手成績パース（共通処理）
+    # ----------------------------------------------------------
+
+    async def _parse_jockey_stats_from_page(self) -> dict:
+        """
+        現在表示中の騎手ページからテーブルセルを直接解析して成績を取得。
+        regex方式ではなく、ヘッダーのカラムインデックスを特定して
+        対応するセルを読む方式。
+
+        テーブル構造（netkeiba騎手ページ）:
+          ヘッダー: 年度, 順位, 1着, 2着, 3着, 4着〜, 騎乗回数, ..., 勝率, 連対率, 複勝率, 代表馬
+          累計行:   累計, ,     2134, ...,                              22.4％, 38.4％, 50.1％, ...
+          年度行:   2026, 1,    20, ...,                                30.3％, 50.0％, 65.2％, ...
+
+        Returns:
+            {"win_rate": 0.303, "place_rate": 0.652, "wins": 20, "races": 66}
+        """
+        result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
+
+        tables = await self.page.locator("table").all()
+
+        for table in tables:
+            # ヘッダー(th)を取得
+            ths = await table.locator("th").all()
+            if not ths:
+                continue
+
+            header_texts = []
+            for th in ths:
+                t = await th.text_content()
+                header_texts.append(t.strip() if t else "")
+
+            # 「勝率」と「騎乗回数」を含むテーブルを探す（JRA平地成績）
+            win_rate_idx = -1
+            place_rate_idx = -1
+            wins_idx = -1  # 1着
+            races_idx = -1  # 騎乗回数
+
+            for i, ht in enumerate(header_texts):
+                if ht == "勝率":
+                    win_rate_idx = i
+                elif ht == "複勝率":
+                    place_rate_idx = i
+                elif ht == "1着":
+                    wins_idx = i
+                elif "騎乗回数" in ht or ht == "回数":
+                    races_idx = i
+
+            if win_rate_idx == -1:
+                continue
+
+            # 騎乗回数があるテーブル = JRA平地成績（最初のテーブル）
+            if races_idx == -1:
+                continue
+
+            # データ行を取得
+            rows = await table.locator("tr").all()
+
+            for row in rows:
+                cells = await row.locator("td").all()
+                if not cells or len(cells) <= win_rate_idx:
+                    continue
+
+                # 年度セルを確認（「2026」の行を優先、なければ「累計」）
+                first_cell_text = await cells[0].text_content()
+                first_cell_text = first_cell_text.strip() if first_cell_text else ""
+
+                # 2026年の行を探す
+                if first_cell_text == "2026":
+                    # 勝率（例: "7.0％" → 0.070）
+                    win_text = await cells[win_rate_idx].text_content()
+                    win_text = win_text.strip().replace("％", "").replace("%", "") if win_text else "0"
+                    result["win_rate"] = safe_float(win_text) / 100.0
+
+                    # 複勝率
+                    if place_rate_idx >= 0 and len(cells) > place_rate_idx:
+                        place_text = await cells[place_rate_idx].text_content()
+                        place_text = place_text.strip().replace("％", "").replace("%", "") if place_text else "0"
+                        result["place_rate"] = safe_float(place_text) / 100.0
+
+                    # 1着数
+                    if wins_idx >= 0 and len(cells) > wins_idx:
+                        wins_text = await cells[wins_idx].text_content()
+                        result["wins"] = safe_int(wins_text.strip() if wins_text else "0")
+
+                    # 騎乗回数
+                    if races_idx >= 0 and len(cells) > races_idx:
+                        races_text = await cells[races_idx].text_content()
+                        races_text = races_text.strip().replace(",", "") if races_text else "0"
+                        result["races"] = safe_int(races_text)
+
+                    break
+
+            # 2026年データが見つかったら終了
+            if result["win_rate"] > 0 or result["wins"] > 0:
+                break
+
+        return result
+
+    # ----------------------------------------------------------
     # 騎手ID → 年間成績取得（直接アクセス）
     # ----------------------------------------------------------
 
@@ -502,54 +602,11 @@ class NetkeibaScraper:
             await self.page.goto(jockey_url, wait_until="domcontentloaded", timeout=30000)
             await asyncio.sleep(1.5)
 
-            # 年間成績を探す
-            tables = await self.page.locator("table").all()
-
-            for table in tables:
-                text = await table.text_content()
-
-                # 本年成績や通算成績のセクションを探す
-                if "本年" in text or "2026年" in text or "成績" in text:
-                    # 勝率の抽出
-                    win_match = re.search(r'勝率[^\d]*([\d.]+)', text)
-                    if win_match:
-                        win_val = safe_float(win_match.group(1))
-                        result["win_rate"] = win_val / 100 if win_val > 1 else win_val
-
-                    # 複勝率の抽出
-                    place_match = re.search(r'複勝率[^\d]*([\d.]+)', text)
-                    if place_match:
-                        place_val = safe_float(place_match.group(1))
-                        result["place_rate"] = place_val / 100 if place_val > 1 else place_val
-
-                    # 勝利数と出走数
-                    wins_match = re.search(r'(\d+)\s*勝', text)
-                    if wins_match:
-                        result["wins"] = safe_int(wins_match.group(1))
-
-                    races_match = re.search(r'(\d+)\s*戦', text)
-                    if races_match:
-                        result["races"] = safe_int(races_match.group(1))
-
-                    if result["win_rate"] > 0:
-                        break
-
-            # 方法2: 勝率が取得できなかった場合、ページ全体から探す
-            if result["win_rate"] == 0:
-                page_text = await self.page.text_content("body")
-
-                win_match = re.search(r'勝率[^\d]*([\d.]+)', page_text)
-                if win_match:
-                    win_val = safe_float(win_match.group(1))
-                    result["win_rate"] = win_val / 100 if win_val > 1 else win_val
-
-                place_match = re.search(r'複勝率[^\d]*([\d.]+)', page_text)
-                if place_match:
-                    place_val = safe_float(place_match.group(1))
-                    result["place_rate"] = place_val / 100 if place_val > 1 else place_val
+            # テーブルセル方式で成績を取得
+            result = await self._parse_jockey_stats_from_page()
 
             if result["win_rate"] > 0 or result["place_rate"] > 0:
-                self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
+                self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f} ({result['wins']}勝/{result['races']}騎乗)")
             else:
                 self.log(f"  [!] 成績データが見つかりません")
 
@@ -669,58 +726,11 @@ class NetkeibaScraper:
                     self.jockey_cache[jockey_name] = result
                     return result
 
-                # 騎手ページから成績を取得
+                # 騎手ページから成績を取得（テーブルセル方式）
                 await self.page.goto(jockey_page_url, wait_until="domcontentloaded")
                 await asyncio.sleep(1.5)
 
-                # 年間成績を探す
-                # 方法1: テーブルから勝率・複勝率を直接取得
-                tables = await self.page.locator("table").all()
-
-                for table in tables:
-                    text = await table.text_content()
-
-                    # 本年成績や通算成績のセクションを探す
-                    if "本年" in text or "2026年" in text or "成績" in text:
-                        # 勝率の抽出（例: "勝率 0.150" or "15.0%"）
-                        win_match = re.search(r'勝率[^\d]*([\d.]+)', text)
-                        if win_match:
-                            win_val = safe_float(win_match.group(1))
-                            # パーセント表記（15.0）か小数表記（0.15）か判定
-                            result["win_rate"] = win_val / 100 if win_val > 1 else win_val
-
-                        # 複勝率の抽出
-                        place_match = re.search(r'複勝率[^\d]*([\d.]+)', text)
-                        if place_match:
-                            place_val = safe_float(place_match.group(1))
-                            result["place_rate"] = place_val / 100 if place_val > 1 else place_val
-
-                        # 勝利数と出走数
-                        wins_match = re.search(r'(\d+)\s*勝', text)
-                        if wins_match:
-                            result["wins"] = safe_int(wins_match.group(1))
-
-                        races_match = re.search(r'(\d+)\s*戦', text)
-                        if races_match:
-                            result["races"] = safe_int(races_match.group(1))
-
-                        if result["win_rate"] > 0:
-                            break
-
-                # 方法2: 勝率が取得できなかった場合、ページ全体から探す
-                if result["win_rate"] == 0:
-                    page_text = await self.page.text_content("body")
-
-                    # 全体から勝率を検索
-                    win_match = re.search(r'勝率[^\d]*([\d.]+)', page_text)
-                    if win_match:
-                        win_val = safe_float(win_match.group(1))
-                        result["win_rate"] = win_val / 100 if win_val > 1 else win_val
-
-                    place_match = re.search(r'複勝率[^\d]*([\d.]+)', page_text)
-                    if place_match:
-                        place_val = safe_float(place_match.group(1))
-                        result["place_rate"] = place_val / 100 if place_val > 1 else place_val
+                result = await self._parse_jockey_stats_from_page()
 
                 if result["win_rate"] > 0 or result["place_rate"] > 0:
                     self.log(f"  [OK] 勝率{result['win_rate']:.3f} 複勝率{result['place_rate']:.3f}")
