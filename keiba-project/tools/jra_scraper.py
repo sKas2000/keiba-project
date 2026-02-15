@@ -637,8 +637,8 @@ async def main():
         out = build_json(scraped, race_info)
 
         date_str = datetime.now().strftime("%Y%m%d")
-        safe_name = re.sub(r'[\\/:*?"<>|\s]', '_', name or f"{rn}R")
-        fname = f"{date_str}_{venue}_{safe_name}_input.json"
+        safe_name = re.sub(r'[\\/:*?"<>|\s]', '_', name or "不明")
+        fname = f"{date_str}_{venue}{rn}R_{safe_name}_input.json"
 
         script_dir = Path(__file__).resolve().parent
         out_dir = script_dir.parent / "data" / "races"
