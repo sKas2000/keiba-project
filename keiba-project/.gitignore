@@ -7,3 +7,7 @@ __pycache__/
 .claude/
 test_*.json
 data/
+models/
+logs/
+.test_tmp/
+.pytest_cache/

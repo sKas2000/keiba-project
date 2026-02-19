@@ -1,0 +1,19 @@
+[project]
+name = "keiba-ai"
+version = "1.0.0"
+description = "Japanese horse racing analysis with rule-based and ML prediction"
+requires-python = ">=3.11"
+dependencies = [
+    "playwright>=1.40.0",
+    "pandas>=2.0.0",
+    "numpy>=1.24.0",
+    "lightgbm>=4.0.0",
+    "scikit-learn>=1.3.0",
+    "optuna>=3.0.0",
+]
+
+[project.scripts]
+keiba = "main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]

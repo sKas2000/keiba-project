@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""
+keiba-ai CLI エントリポイント
+"""
+import asyncio
+import sys
+from argparse import ArgumentParser
+
+from config.settings import setup_encoding
+
+
+def cmd_run(args):
+    """ルールベースパイプライン実行"""
+    from src.pipeline import run_rule_pipeline
+    asyncio.run(run_rule_pipeline(
+        meeting_index=args.meeting_index,
+        race=args.race,
+        non_interactive=args.non_interactive,
+        headless=not args.no_headless,
+    ))
+
+
+def cmd_ml(args):
+    """MLパイプライン実行"""
+    from src.pipeline import run_ml_pipeline
+    asyncio.run(run_ml_pipeline(
+        input_file=args.input,
+        meeting_index=args.meeting_index,
+        race=args.race,
+        non_interactive=args.non_interactive,
+        headless=not args.no_headless,
+    ))
+
+
+def cmd_score(args):
+    """既存JSONにスコアリング"""
+    from src.pipeline import run_score
+    run_score(args.input, mode=args.mode)
+
+
+def cmd_feature(args):
+    """特徴量エンジニアリング"""
+    from src.pipeline import run_feature_pipeline
+    run_feature_pipeline(input_path=args.input, output_path=args.output)
+
+
+def cmd_train(args):
+    """モデル学習"""
+    from src.pipeline import run_train_pipeline
+    run_train_pipeline(
+        input_path=args.input,
+        val_start=args.val_start,
+        tune=args.tune,
+    )
+
+
+def cmd_backtest(args):
+    """バックテスト"""
+    from src.pipeline import run_backtest_pipeline
+    run_backtest_pipeline(
+        input_path=args.input,
+        model_dir=args.model_dir,
+        val_start=args.val_start,
+        threshold=args.threshold,
+        top_n=args.top_n,
+        save=args.save,
+    )
+
+
+def cmd_collect(args):
+    """過去レース収集"""
+    from src.pipeline import run_collect_pipeline
+    asyncio.run(run_collect_pipeline(
+        start_date=args.start,
+        end_date=args.end,
+        output_path=args.output,
+        headless=not args.no_headless,
+    ))
+
+
+def main():
+    setup_encoding()
+
+    parser = ArgumentParser(description="keiba-ai 競馬分析CLI")
+    sub = parser.add_subparsers(dest="command", help="実行コマンド")
+
+    # run: ルールベースパイプライン
+    p_run = sub.add_parser("run", help="ルールベースパイプライン（スクレイピング→スコア→EV）")
+    p_run.add_argument("--meeting-index", type=int, help="開催インデックス（1始まり）")
+    p_run.add_argument("--race", type=int, help="レース番号（1-12）")
+    p_run.add_argument("--non-interactive", action="store_true", help="非対話モード")
+    p_run.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
+    p_run.set_defaults(func=cmd_run)
+
+    # ml: MLパイプライン
+    p_ml = sub.add_parser("ml", help="MLパイプライン（スクレイピング or JSON→ML予測→EV）")
+    p_ml.add_argument("--input", help="enriched_input.json（指定しない場合はスクレイピングから開始）")
+    p_ml.add_argument("--meeting-index", type=int, help="開催インデックス（1始まり）")
+    p_ml.add_argument("--race", type=int, help="レース番号（1-12）")
+    p_ml.add_argument("--non-interactive", action="store_true", help="非対話モード")
+    p_ml.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
+    p_ml.set_defaults(func=cmd_ml)
+
+    # score: 既存JSONにスコアリング
+    p_score = sub.add_parser("score", help="既存JSONにスコアリング実行")
+    p_score.add_argument("input", help="enriched_input.json パス")
+    p_score.add_argument("--mode", choices=["rule", "ml"], default="rule", help="スコアリング方式")
+    p_score.set_defaults(func=cmd_score)
+
+    # feature: 特徴量エンジニアリング
+    p_feat = sub.add_parser("feature", help="results.csvから特徴量作成")
+    p_feat.add_argument("--input", help="入力CSV")
+    p_feat.add_argument("--output", help="出力CSV")
+    p_feat.set_defaults(func=cmd_feature)
+
+    # train: モデル学習
+    p_train = sub.add_parser("train", help="LightGBMモデル学習")
+    p_train.add_argument("--input", help="特徴量CSV")
+    p_train.add_argument("--val-start", default="2025-01-01", help="検証開始日")
+    p_train.add_argument("--tune", action="store_true", help="Optuna最適化")
+    p_train.set_defaults(func=cmd_train)
+
+    # backtest: バックテスト
+    p_bt = sub.add_parser("backtest", help="バックテスト実行")
+    p_bt.add_argument("--input", help="特徴量CSV")
+    p_bt.add_argument("--model-dir", help="モデルディレクトリ")
+    p_bt.add_argument("--val-start", default="2025-01-01", help="検証開始日")
+    p_bt.add_argument("--threshold", type=float, default=0.35, help="購入閾値")
+    p_bt.add_argument("--top-n", type=int, default=3, help="上位N頭を対象")
+    p_bt.add_argument("--save", action="store_true", help="結果をJSON保存")
+    p_bt.set_defaults(func=cmd_backtest)
+
+    # collect: レース結果収集
+    p_col = sub.add_parser("collect", help="過去レース結果収集")
+    p_col.add_argument("--start", required=True, help="開始日 (YYYY-MM-DD)")
+    p_col.add_argument("--end", required=True, help="終了日 (YYYY-MM-DD)")
+    p_col.add_argument("--output", help="出力CSVパス")
+    p_col.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
+    p_col.set_defaults(func=cmd_collect)
+
+    args = parser.parse_args()
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+
+    args.func(args)
+
+
+if __name__ == "__main__":
+    main()

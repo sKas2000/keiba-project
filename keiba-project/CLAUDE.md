@@ -1,64 +1,89 @@
-# 競馬分析プロジェクト
+# 競馬分析プロジェクト (keiba-ai)
 
 ## プロジェクト概要
 日本競馬のレースを体系的に分析し、期待値に基づいた馬券購入判断を行う。
 詳細な指示書: `docs/project_instructions_v3.md`
 
-## 現在の状況（2026-02-15時点）
-
-### 🎉 全自動パイプライン完成！
-
-**ステータス**: ✅ 全4ステップが正常動作
-
-1. ✅ **jra_scraper.py v1.4.1** - オッズ・馬情報取得
-   - 対象券種: 単勝・複勝・馬連・ワイド・3連複
-   - 馬単・3連単は対象外
-
-2. ✅ **netkeiba_scraper.py v0.5** - 過去走・騎手成績取得
-   - v0.2: 16/16頭の過去走データ取得成功
-   - v0.3: 騎手検索精度を大幅改善（「全騎手が同じID」問題を解決）
-   - v0.4: 勝率パースをテーブルセル方式に修正（regex誤取得を解消）
-   - v0.5: 騎手検索のリダイレクト検出+スペース除去（6/16→14/16取得）
-   - 処理時間: 約3分/16頭
-
-3. ✅ **scoring_engine.py v0.1** - 基礎点自動算出
-   - 再現性100%（同じデータ→同じスコア）
-   - 計算根拠をnote欄に記録
-
-4. ✅ **ev_calculator.py v0.1** - 期待値計算・推奨買い目生成
-   - Softmax確率分布による期待値計算
-   - S/A/B/C級ランク付け
-
-### 最新の統合テスト結果
-
-- **日時**: 2026年2月15日
-- **対象**: デイリー杯クイーンカップ（東京11R、OP、芝1600m、16頭）
-- **結果**: 全ステップ成功 ✅
-- **推奨買い目**: 3連複 6-13-16 (EV 18.22, S級)
-- **詳細**: `docs/integration_test_result_20260215_v2.md`、`docs/project_status_20260215.md`
-
-### 既知の課題
-
-- ✅ ~~リーディング外騎手の成績が0.0になる~~ → v0.5で解決（14/16取得成功）
-- ⚠️ **同名馬問題**: センリョウヤクシャ(1986)など古い同名馬にヒット
-- ⚠️ **短期免許騎手**: T.ハマーハンセンなどnetkeibaに未登録の場合0.0
-- ⚠️ 馬体重・調教タイム未実装（scoring_engine v0.2で対応予定）
-
-### 次のステップ
-
-1. **10レースデータ蓄積**（次回開催日〜）
-2. **スコア配点の検証・最適化**（10レース後）
-3. **Claude API連携**（オプション）
-
 ## ディレクトリ構成
 ```
 keiba-project/
-├── CLAUDE.md              ← このファイル（Claude Codeが自動読込）
-├── docs/                  # 設計ドキュメント
-├── tools/                 # スクレイパー・計算ツール
-├── data/races/            # レース分析データ（JSON）
-└── data/templates/        # データテンプレート
+├── config/
+│   ├── settings.py          # 全定数・パス・マップを一元管理
+│   └── logging.conf         # ログ設定
+├── src/
+│   ├── scraping/
+│   │   ├── base.py          # 共通Playwright管理（リトライ、レート制限）
+│   │   ├── calendar.py      # 開催日・レース選択UI
+│   │   ├── race.py          # 過去レース結果取得
+│   │   ├── horse.py         # 馬の過去成績・騎手成績取得
+│   │   ├── odds.py          # JRAオッズ取得
+│   │   └── parsers.py       # HTML解析ユーティリティ
+│   ├── data/
+│   │   ├── storage.py       # JSON/CSV読み書き
+│   │   ├── preprocessing.py # データ前処理・バリデーション
+│   │   └── feature.py       # 特徴量作成（CSV/JSON両対応）
+│   ├── model/
+│   │   ├── trainer.py       # LightGBM学習
+│   │   ├── predictor.py     # ルールベース＋ML予測＋EV計算
+│   │   └── evaluator.py     # バックテスト・評価
+│   └── pipeline.py          # パイプラインオーケストレーション
+├── tests/                   # pytest テスト
+├── tools/                   # 旧スクリプト（移行元、参照用）
+├── data/
+│   ├── raw/                 # ML生データ（results.csv）
+│   ├── processed/           # 前処理済みデータ
+│   ├── features/            # 特徴量データ
+│   └── races/               # レース分析JSON
+├── models/                  # 学習済みモデル
+├── logs/                    # 実行ログ
+├── docs/                    # 設計ドキュメント
+├── main.py                  # CLIエントリポイント
+├── pyproject.toml
+└── requirements.txt
 ```
+
+## CLI 使い方
+```bash
+# ルールベースパイプライン（スクレイピング→スコア→EV）
+python main.py run [--meeting-index N] [--race N] [--non-interactive]
+
+# MLパイプライン
+python main.py ml [--input enriched_input.json]
+
+# 既存JSONにスコアリング
+python main.py score <enriched_input.json> [--mode rule|ml]
+
+# 特徴量エンジニアリング
+python main.py feature [--input results.csv] [--output features.csv]
+
+# モデル学習
+python main.py train [--tune] [--val-start 2025-01-01]
+
+# バックテスト
+python main.py backtest [--save]
+
+# 過去レース収集
+python main.py collect --start 2024-01-01 --end 2024-12-31
+
+# テスト実行
+python -m pytest tests/ -v
+```
+
+## アーキテクチャ
+
+### 定数管理
+- 全定数は `config/settings.py` に集約（Single Source of Truth）
+- `FEATURE_COLUMNS`（33特徴量）、エンコーディングマップ等
+
+### 予測方式（2系統）
+1. **ルールベース**: 100点満点（実力50+騎手20+適性15+調子10+他5）
+2. **ML**: LightGBM二値分類（3着以内） + LambdaRankランキング
+
+### パイプライン（4ステップ）
+1. `src/scraping/odds.py` → input.json（JRAオッズ取得）
+2. `src/scraping/horse.py` → enriched_input.json（過去走・騎手追加）
+3. `src/model/predictor.py` → base_scored.json（スコアリング）
+4. `src/model/predictor.py` → ev_results.json（EV計算）
 
 ## 主要ルール
 1. 評価点は100点満点（実力50+騎手20+適性15+調子10+他5）
@@ -67,41 +92,9 @@ keiba-project/
 4. 1レースの結果で評価基準を大幅変更しない（10レース単位）
 5. 本命は必ず1頭
 
-## 優先課題（完了済み）
-
-1. ✅ **評価点の定量化**（完了）
-   - scoring_engine.py v0.1完成
-   - 基礎点自動算出（実力50+騎手20+適性15+調子10+他5）
-   - 再現性100%、計算根拠の透明化
-
-2. ✅ **全自動Pythonパイプライン実装**（完了）
-   - ✅ jra_scraper.py v1.4.1 → input.json
-   - ✅ netkeiba_scraper.py v0.3 → enriched_input.json
-   - ✅ scoring_engine.py v0.1 → base_scored.json
-   - ✅ ev_calculator.py v0.1 → ev_results.json
-
-3. ✅ **統合テスト実施**（完了）
-   - 2026-02-15: 全ステップ成功
-   - netkeiba_scraper v0.2 → v0.3 改善完了
-   - 「全騎手が同じID」問題を解決
-
-## 次のフェーズ
-
-### フェーズ1: データ蓄積（次回開催日〜）
-- 10レース分のデータを蓄積
-- スコア配点の妥当性検証
-- 温度パラメータの最適化
-
-### フェーズ2: 精度向上（10レース後）
-- 騎手マッピングデータベース構築（netkeiba_scraper v0.4）
-- スコア配点の調整
-- 馬体重・調教データ追加（scoring_engine v0.2）
-
-### フェーズ3: Claude API連携（オプション）
-- base_scored.json → Claude補正 → final_scored.json
-- 定量評価では捉えきれない要素を補正
-
 ## 技術スタック
 - Python 3 + Playwright（スクレイパー）
-- Anthropic API（評価点付与、将来）
-- Git/GitHub（データ管理）
+- LightGBM + scikit-learn（ML予測）
+- pandas + numpy（データ処理）
+- pytest（テスト）
+- Git/GitHub（バージョン管理）
