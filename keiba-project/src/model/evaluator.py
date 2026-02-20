@@ -93,7 +93,15 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
 
     available = [c for c in FEATURE_COLUMNS if c in val_df.columns]
     X_val = val_df[available].values.astype(np.float32)
-    val_df["pred_prob"] = model.predict(X_val)
+    raw_probs = model.predict(X_val)
+
+    # Platt Scaling キャリブレーション（利用可能な場合）
+    from src.model.trainer import load_calibrator, calibrate_probs
+    calibrator = load_calibrator(model_dir)
+    if calibrator is not None:
+        val_df["pred_prob"] = calibrate_probs(raw_probs, calibrator)
+    else:
+        val_df["pred_prob"] = raw_probs
 
     # 払い戻しデータ読み込み
     returns = _load_returns(returns_path)
@@ -124,12 +132,17 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                 "place": {"count": 0, "invested": 0, "returned": 0, "hits": 0},
             }
 
-        # レース内のsoftmax勝率を計算（logit変換: sigmoid逆変換で元のスコアに復元）
+        # レース内の勝率を計算
         pred_probs = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
-        logits = np.log(pred_probs / (1 - pred_probs))
-        scores = logits / temperature
-        exp_s = np.exp(scores - scores.max())
-        win_probs = exp_s / exp_s.sum()
+        if calibrator is not None:
+            # キャリブレーション済み: 確率をそのまま正規化（温度不要）
+            win_probs = pred_probs / pred_probs.sum()
+        else:
+            # 未キャリブレーション: logit + 温度による softmax
+            logits = np.log(pred_probs / (1 - pred_probs))
+            scores = logits / temperature
+            exp_s = np.exp(scores - scores.max())
+            win_probs = exp_s / exp_s.sum()
         race_group = race_group.copy()
         race_group["win_prob"] = win_probs
 

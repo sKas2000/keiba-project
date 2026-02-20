@@ -68,17 +68,17 @@ SCORE_LIMITS = {
 
 EV_RANK_THRESHOLDS = {"S": 1.5, "A": 1.2, "B": 1.0}
 
-# バックテスト最適パラメータ（3-way split 検証済み）
-# Train: ~2024-12, Val: 2025-01~06（温度最適化用）, Test: 2025-07~
+# バックテスト最適パラメータ（Platt Scaling + class_change）
+# Train: ~2024-12, Val: 2025-01~06（キャリブレーター学習）, Test: 2025-07~
 BACKTEST_BEST_PARAMS = {
-    "temperature": 12.0,       # logitスケール（Val最適化）
-    "ev_threshold": 1.0,
+    "ev_threshold": 2.0,       # Platt Scaling使用時の最適閾値
     "top_n": 3,
-    "test_win_roi": 97.8,      # OOS Test set
-    "test_place_roi": 104.1,   # OOS Test set ← 黒字
+    "test_win_roi": 103.8,     # OOS Test set ← 黒字
+    "test_place_roi": 107.5,   # OOS Test set ← 黒字
+    "calibrated": True,        # Platt Scalingキャリブレーション済み
 }
 
-# ML用デフォルト温度（logitスケール）
+# ML用デフォルト温度（キャリブレーション未使用時のフォールバック）
 ML_TEMPERATURE_DEFAULT = 1.0
 
 # ============================================================
@@ -108,6 +108,8 @@ FEATURE_COLUMNS = [
     "track_cond_place_rate",
     "trainer_win_rate_365d", "trainer_place_rate_365d",
     "race_month",
+    # v3: クラス変動
+    "class_change",
 ]
 
 CATEGORICAL_FEATURES = [

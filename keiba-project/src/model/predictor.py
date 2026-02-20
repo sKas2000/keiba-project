@@ -242,7 +242,15 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
         df[col] = 0.0
     X = df[feature_names].values.astype(np.float32)
 
-    probs = binary_model.predict(X)
+    raw_probs = binary_model.predict(X)
+
+    # Platt Scaling キャリブレーション（利用可能な場合）
+    from src.model.trainer import load_calibrator, calibrate_probs
+    calibrator = load_calibrator(model_dir)
+    if calibrator is not None:
+        probs = calibrate_probs(raw_probs, calibrator)
+    else:
+        probs = raw_probs
 
     rank_model_path = model_dir / "ranking_model.txt"
     rank_scores = None
@@ -256,13 +264,15 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
             prob = float(probs[i])
             horse["score"] = round(prob * 100, 1)
             horse["ml_top3_prob"] = round(prob, 4)
+            horse["ml_calibrated"] = calibrator is not None
             if rank_scores is not None and i < len(rank_scores):
                 horse["ml_rank_score"] = round(float(rank_scores[i]), 4)
             horse["score_breakdown"] = {
                 "ml_binary": round(prob * 100, 1),
                 "ability": 0, "jockey": 0, "fitness": 0, "form": 0, "other": 0,
             }
-            horse["note"] = f"[ML] top3_prob={prob:.3f}"
+            cal_label = "calibrated" if calibrator is not None else "raw"
+            horse["note"] = f"[ML:{cal_label}] top3_prob={prob:.3f}"
 
     return data
 
@@ -374,10 +384,17 @@ def calculate_ev(data: dict) -> dict:
     budget = params.get("budget", 1500)
     top_n = params.get("top_n", 6)
 
-    # MLモード: logit変換で確率→元のスコアに復元してsoftmax
+    # MLモード: キャリブレーション済み確率をそのまま正規化（温度不要）
+    # 未キャリブレーション: logit変換 + 温度 softmax
     # ルールベース: スコア（0-100）をそのままsoftmax
     is_ml = any(h.get("ml_top3_prob") is not None for h in horses)
-    if is_ml:
+    is_calibrated = any(h.get("ml_calibrated") for h in horses)
+    if is_ml and is_calibrated:
+        # キャリブレーション済み: 正規化のみ
+        probs = [max(h.get("ml_top3_prob", 0.001), 0.001) for h in horses]
+        total = sum(probs)
+        win_probs = [p / total for p in probs]
+    elif is_ml:
         probs = [max(min(h.get("ml_top3_prob", 0.5), 0.999), 0.001) for h in horses]
         logits = [math.log(p / (1 - p)) for p in probs]
         win_probs = softmax(logits, temperature)

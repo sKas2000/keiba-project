@@ -1,14 +1,16 @@
 """
 モデル学習モジュール
-LightGBM 二値分類 + ランキング（LambdaRank）
+LightGBM 二値分類 + ランキング（LambdaRank） + Platt Scaling キャリブレーション
 """
 import json
+import pickle
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
-from sklearn.metrics import roc_auc_score, log_loss, accuracy_score
+from sklearn.metrics import roc_auc_score, log_loss, accuracy_score, brier_score_loss
+from sklearn.linear_model import LogisticRegression
 
 from config.settings import FEATURE_COLUMNS, CATEGORICAL_FEATURES, MODEL_DIR, PROCESSED_DIR
 
@@ -126,6 +128,67 @@ def _calc_top3_hit_rate(val_df: pd.DataFrame) -> float:
         hits += top3_pred["top3"].sum()
         total += 3
     return hits / total if total > 0 else 0.0
+
+
+# ============================================================
+# Platt Scaling キャリブレーション
+# ============================================================
+
+def fit_calibrator(model, val_df: pd.DataFrame,
+                   model_dir: Path = None) -> LogisticRegression:
+    """Platt Scaling: バリデーションセットで確率キャリブレーション
+
+    LightGBMの生予測確率をlogit変換し、LogisticRegressionで再キャリブレーション。
+    温度パラメータを不要にし、確率の信頼性を向上させる。
+    """
+    model_dir = model_dir or MODEL_DIR
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    available = [c for c in FEATURE_COLUMNS if c in val_df.columns]
+    X_val = val_df[available].values.astype(np.float32)
+    y_val = val_df["top3"].values
+
+    raw_probs = model.predict(X_val)
+    raw_probs_clipped = np.clip(raw_probs, 1e-6, 1 - 1e-6)
+    logits = np.log(raw_probs_clipped / (1 - raw_probs_clipped)).reshape(-1, 1)
+
+    calibrator = LogisticRegression(C=1e10, solver="lbfgs", max_iter=1000)
+    calibrator.fit(logits, y_val)
+
+    cal_path = model_dir / "calibrator.pkl"
+    with open(cal_path, "wb") as f:
+        pickle.dump(calibrator, f)
+
+    cal_probs = calibrator.predict_proba(logits)[:, 1]
+    raw_brier = brier_score_loss(y_val, raw_probs)
+    cal_brier = brier_score_loss(y_val, cal_probs)
+
+    print(f"  [Platt Scaling]")
+    print(f"    Brier Score (raw):        {raw_brier:.4f}")
+    print(f"    Brier Score (calibrated): {cal_brier:.4f}")
+    if raw_brier > 0:
+        print(f"    改善: {(raw_brier - cal_brier) / raw_brier * 100:.1f}%")
+    print(f"    係数: a={calibrator.coef_[0][0]:.4f}, b={calibrator.intercept_[0]:.4f}")
+    print(f"    保存: {cal_path}")
+
+    return calibrator
+
+
+def load_calibrator(model_dir: Path = None) -> LogisticRegression | None:
+    """保存済みキャリブレーターを読み込み"""
+    model_dir = model_dir or MODEL_DIR
+    cal_path = model_dir / "calibrator.pkl"
+    if not cal_path.exists():
+        return None
+    with open(cal_path, "rb") as f:
+        return pickle.load(f)
+
+
+def calibrate_probs(raw_probs: np.ndarray, calibrator: LogisticRegression) -> np.ndarray:
+    """生確率をキャリブレーション済み確率に変換"""
+    clipped = np.clip(raw_probs, 1e-6, 1 - 1e-6)
+    logits = np.log(clipped / (1 - clipped)).reshape(-1, 1)
+    return calibrator.predict_proba(logits)[:, 1]
 
 
 # ============================================================
@@ -391,6 +454,11 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
     print(f"\n  [特徴量重要度 Top10]")
     for _, row in fi.head(10).iterrows():
         print(f"    {row['feature']:30s} {row['importance_pct']:5.1f}%")
+
+    # Platt Scaling キャリブレーション
+    print(f"\n{'─' * 40}")
+    print(f"[Platt Scaling キャリブレーション]")
+    fit_calibrator(binary_model, val_df)
 
     # ランキングモデル
     print(f"\n{'─' * 40}")

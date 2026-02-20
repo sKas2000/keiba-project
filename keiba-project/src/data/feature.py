@@ -23,7 +23,8 @@ from src.scraping.parsers import safe_float, safe_int
 
 def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
     """各馬の過去成績から集約特徴量を計算（リーケージ防止）"""
-    df = df.sort_values(["race_date", "race_id"]).reset_index(drop=True)
+    # 決定論的ソート: race_date + race_id + finish_position で一意に決まる
+    df = df.sort_values(["race_date", "race_id", "finish_position"]).reset_index(drop=True)
 
     feature_cols = [
         "prev_finish_1", "prev_finish_2", "prev_finish_3",
@@ -38,6 +39,8 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         "distance_change",
         "running_style", "avg_early_position_last5",
         "track_cond_place_rate",
+        # v3: クラス変動特徴量
+        "class_change",
     ]
     for col in feature_cols:
         df[col] = 0.0
@@ -45,8 +48,13 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
     has_margin = "margin_float" in df.columns
     has_corner = "first_corner_pos" in df.columns
 
-    group_col = "horse_id" if "horse_id" in df.columns and df["horse_id"].notna().any() else "horse_name"
-    grouped = df.groupby(group_col)
+    # グルーピングキー: horse_id優先、NaN行はhorse_nameでフォールバック
+    if "horse_id" in df.columns and df["horse_id"].notna().any():
+        # NaN horse_id 行には horse_name を代入して統一
+        df["_group_key"] = df["horse_id"].fillna(df["horse_name"])
+    else:
+        df["_group_key"] = df["horse_name"]
+    grouped = df.groupby("_group_key", sort=False)
 
     for _, group in grouped:
         group = group.sort_values("race_date")
@@ -144,6 +152,14 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                     tc_f = tc_past["finish_position"].values
                     df.at[idx, "track_cond_place_rate"] = round((tc_f <= 3).mean(), 3)
 
+            # v3: クラス変動（升級=正, 降級=負）
+            if "race_class_code" in df.columns:
+                current_class = df.at[idx, "race_class_code"]
+                prev_class = past.iloc[-1]["race_class_code"] if "race_class_code" in past.columns else current_class
+                df.at[idx, "class_change"] = current_class - prev_class
+
+    # 一時カラム削除
+    df = df.drop(columns=["_group_key"])
     return df
 
 
@@ -157,7 +173,12 @@ def compute_jockey_features(df: pd.DataFrame) -> pd.DataFrame:
     df["jockey_place_rate_365d"] = 0.0
     df["jockey_ride_count_365d"] = 0
 
-    jockey_col = "jockey_id" if "jockey_id" in df.columns and df["jockey_id"].notna().any() else "jockey_name"
+    # 騎手キー: jockey_id 優先、NaN行は jockey_name でフォールバック
+    if "jockey_id" in df.columns and df["jockey_id"].notna().any():
+        df["_jockey_key"] = df["jockey_id"].fillna(df["jockey_name"])
+    else:
+        df["_jockey_key"] = df["jockey_name"]
+    jockey_col = "_jockey_key"
     dates = df["race_date"].unique()
 
     for date in sorted(dates):
@@ -179,6 +200,7 @@ def compute_jockey_features(df: pd.DataFrame) -> pd.DataFrame:
             df.loc[mask, "jockey_place_rate_365d"] = round(row["jockey_place_rate_365d"], 3)
             df.loc[mask, "jockey_ride_count_365d"] = int(row["jockey_ride_count_365d"])
 
+    df = df.drop(columns=["_jockey_key"])
     return df
 
 
@@ -265,6 +287,11 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
     print("[8/8] 特徴量選択・保存")
     df_features = select_features(df)
 
+    # 決定論的ソート（再現性保証）
+    sort_keys = ["race_date", "race_id", "finish_position"]
+    sort_keys = [k for k in sort_keys if k in df_features.columns]
+    df_features = df_features.sort_values(sort_keys).reset_index(drop=True)
+
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     df_features.to_csv(output_path, index=False)
 
@@ -304,7 +331,8 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                    "distance_cat_win_rate",
                    "prev_margin_1", "prev_last3f_1",
                    "distance_change", "running_style",
-                   "avg_early_position_last5", "track_cond_place_rate"]:
+                   "avg_early_position_last5", "track_cond_place_rate",
+                   "class_change"]:
             row[k] = 0
         row["days_since_last_race"] = 365
         return
@@ -436,6 +464,15 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
             row["track_cond_place_rate"] = 0
     else:
         row["track_cond_place_rate"] = 0
+
+    # v3: クラス変動（升級=正, 降級=負）
+    current_class = CLASS_MAP.get(race.get("grade", ""), 3)
+    if past_races:
+        prev_class_str = past_races[0].get("race_class", past_races[0].get("grade", ""))
+        prev_class = CLASS_MAP.get(prev_class_str, 3)
+        row["class_change"] = current_class - prev_class
+    else:
+        row["class_change"] = 0
 
 
 def _load_trainer_lookup(race_date_str: str) -> dict:
