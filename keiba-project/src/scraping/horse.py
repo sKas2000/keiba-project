@@ -231,6 +231,40 @@ class HorseScraper(BaseScraper):
         return past_races
 
     # ----------------------------------------------------------
+    # 調教師名抽出（馬詳細ページから）
+    # ----------------------------------------------------------
+
+    async def get_trainer_name(self) -> str:
+        """現在表示中の馬ページから調教師名を抽出"""
+        try:
+            # 馬プロフィールテーブルから「調教師」行を探す
+            profile = self.page.locator("table.db_prof_table, table.horse_prof_table, div.db_prof_area_02 table")
+            if await profile.count() > 0:
+                rows = await profile.first.locator("tr").all()
+                for row in rows:
+                    th = await row.locator("th").first.text_content()
+                    if th and "調教師" in th.strip():
+                        td = await row.locator("td").first.text_content()
+                        if td:
+                            name = td.strip()
+                            # "（栗東）田中克典" → "田中克典"
+                            name = re.sub(r'[（\(][^）\)]*[）\)]', '', name).strip()
+                            self.log(f"  調教師: {name}")
+                            return name
+
+            # フォールバック: リンクから調教師を探す
+            trainer_links = await self.page.locator("a[href*='/trainer/']").all()
+            for link in trainer_links:
+                text = await link.text_content()
+                if text and text.strip():
+                    name = text.strip()
+                    self.log(f"  調教師: {name}")
+                    return name
+        except Exception as e:
+            self.log(f"  [!] 調教師名取得失敗: {e}")
+        return ""
+
+    # ----------------------------------------------------------
     # 騎手ID抽出（過去走データから）
     # ----------------------------------------------------------
 
@@ -476,6 +510,10 @@ async def enrich_race_data(input_path: str):
             if horse_url:
                 past_races = await scraper.scrape_horse_past_races(horse_url)
                 horse["past_races"] = past_races
+                # 調教師名を馬ページから抽出（ページはまだ開いている）
+                trainer_name = await scraper.get_trainer_name()
+                if trainer_name:
+                    horse["trainer_name"] = trainer_name
             else:
                 horse["past_races"] = []
 
