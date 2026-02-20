@@ -68,14 +68,18 @@ SCORE_LIMITS = {
 
 EV_RANK_THRESHOLDS = {"S": 1.5, "A": 1.2, "B": 1.0}
 
-# バックテスト最適パラメータ（2025-08〜2026-02検証）
+# バックテスト最適パラメータ（3-way split 検証済み）
+# Train: ~2024-12, Val: 2025-01~06（温度最適化用）, Test: 2025-07~
 BACKTEST_BEST_PARAMS = {
-    "temperature": 20,
-    "ev_threshold": 1.8,
-    "top_n": 1,
-    "win_roi": 108.3,
-    "place_roi": 101.0,
+    "temperature": 12.0,       # logitスケール（Val最適化）
+    "ev_threshold": 1.0,
+    "top_n": 3,
+    "test_win_roi": 97.8,      # OOS Test set
+    "test_place_roi": 104.1,   # OOS Test set ← 黒字
 }
+
+# ML用デフォルト温度（logitスケール）
+ML_TEMPERATURE_DEFAULT = 1.0
 
 # ============================================================
 # ML特徴量カラム（Single Source of Truth）

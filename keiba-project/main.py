@@ -61,13 +61,14 @@ def cmd_backtest(args):
         input_path=args.input,
         model_dir=args.model_dir,
         val_start=args.val_start,
+        val_end=getattr(args, "val_end", None),
         threshold=args.threshold,
         top_n=args.top_n,
         save=args.save,
         ev_threshold=args.ev_threshold,
         compare_ev=args.compare_ev,
         optimize_temp=getattr(args, "optimize_temp", False),
-        temperature=getattr(args, "temperature", 20.0),
+        temperature=getattr(args, "temperature", 1.0),
     )
 
 
@@ -130,13 +131,14 @@ def main():
     p_bt.add_argument("--input", help="特徴量CSV")
     p_bt.add_argument("--model-dir", help="モデルディレクトリ")
     p_bt.add_argument("--val-start", default="2025-01-01", help="検証開始日")
+    p_bt.add_argument("--val-end", default=None, help="検証終了日（3-way split用）")
     p_bt.add_argument("--threshold", type=float, default=0.0, help="予測確率の購入閾値")
     p_bt.add_argument("--top-n", type=int, default=3, help="上位N頭を対象")
     p_bt.add_argument("--save", action="store_true", help="結果をJSON保存")
     p_bt.add_argument("--ev-threshold", type=float, default=0.0, help="EV閾値（0=フィルタなし）")
     p_bt.add_argument("--compare-ev", action="store_true", help="複数EV閾値で比較")
     p_bt.add_argument("--optimize-temp", action="store_true", help="温度パラメータ最適化")
-    p_bt.add_argument("--temperature", type=float, default=20.0, help="ソフトマックス温度")
+    p_bt.add_argument("--temperature", type=float, default=1.0, help="ソフトマックス温度（logitスケール）")
     p_bt.set_defaults(func=cmd_backtest)
 
     # collect: レース結果収集

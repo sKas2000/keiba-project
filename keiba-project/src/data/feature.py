@@ -247,6 +247,8 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
 
     print("[3/8] 基本特徴量追加")
     df["race_month"] = df["race_date"].dt.month
+    if "win_odds" in df.columns:
+        df["log_odds"] = np.log1p(df["win_odds"].clip(lower=0).fillna(0))
 
     print("[4/8] 過去成績集約特徴量を計算中...")
     df = compute_horse_history_features(df)
@@ -406,15 +408,17 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
     if early_positions:
         avg_pos = np.mean(early_positions)
         row["avg_early_position_last5"] = round(avg_pos, 2)
-        # 脚質分類: 逃げ=0, 先行=1, 差し=2, 追込=3
-        if avg_pos <= 2.0:
-            row["running_style"] = 0
-        elif avg_pos <= 5.0:
-            row["running_style"] = 1
-        elif avg_pos <= 10.0:
-            row["running_style"] = 2
+        # 脚質分類（比率ベース: CSV側と統一）
+        num_e = row.get("num_entries", 14)
+        ratio = avg_pos / max(num_e, 1)
+        if ratio <= 0.15:
+            row["running_style"] = 0  # 逃げ
+        elif ratio <= 0.35:
+            row["running_style"] = 1  # 先行
+        elif ratio <= 0.65:
+            row["running_style"] = 2  # 差し
         else:
-            row["running_style"] = 3
+            row["running_style"] = 3  # 追込
     else:
         row["running_style"] = 0
         row["avg_early_position_last5"] = 0
@@ -539,6 +543,9 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
 
         row["odds_win"] = horse.get("odds_win", 0)
         row["odds_place"] = horse.get("odds_place", 0)
+        row["win_odds"] = horse.get("odds_win", 0)
+        row["log_odds"] = float(np.log1p(max(horse.get("odds_win", 0), 0)))
+        row["popularity"] = horse.get("popularity", 0)
         row["num"] = horse.get("num", 0)
         row["name"] = horse.get("name", "")
 

@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 
 from config.settings import (
-    RACES_DIR, MODEL_DIR, GRADE_DEFAULTS,
+    RACES_DIR, MODEL_DIR, GRADE_DEFAULTS, ML_TEMPERATURE_DEFAULT,
     setup_encoding,
 )
 from src.data.storage import read_json, write_json, generate_output_filename
@@ -152,8 +152,8 @@ async def run_ml_pipeline(
         result = score_rule_based(data)
 
     grade = data.get("race", {}).get("grade", "")
-    temp, budget = GRADE_DEFAULTS.get(grade, (10, 1500))
-    result["parameters"] = {"temperature": temp, "budget": budget, "top_n": 6}
+    _, budget = GRADE_DEFAULTS.get(grade, (10, 1500))
+    result["parameters"] = {"temperature": ML_TEMPERATURE_DEFAULT, "budget": budget, "top_n": 6}
 
     scored_path = generate_output_filename(result, "ml_scored")
     write_json(result, scored_path)
@@ -201,12 +201,13 @@ def run_feature_pipeline(input_path: str = None, output_path: str = None):
 
 def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           val_start: str = "2025-01-01",
+                          val_end: str = None,
                           threshold: float = 0.0, top_n: int = 3,
                           save: bool = False,
                           ev_threshold: float = 0.0,
                           compare_ev: bool = False,
                           optimize_temp: bool = False,
-                          temperature: float = 20.0):
+                          temperature: float = 1.0):
     """バックテストパイプライン"""
     from src.model.evaluator import (
         run_backtest, print_backtest_report, save_backtest_report,
@@ -220,6 +221,7 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
             input_path=input_path,
             model_dir=model_path,
             val_start=val_start,
+            val_end=val_end,
             ev_threshold=ev_threshold,
         )
         return best
@@ -229,6 +231,7 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
             input_path=input_path,
             model_dir=model_path,
             val_start=val_start,
+            val_end=val_end,
             temperature=temperature,
         )
         print_ev_comparison(comparison)
@@ -238,6 +241,7 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
         input_path=input_path,
         model_dir=model_path,
         val_start=val_start,
+        val_end=val_end,
         bet_threshold=threshold,
         top_n=top_n,
         ev_threshold=ev_threshold,
@@ -288,6 +292,8 @@ def run_score(input_file: str, mode: str = "rule"):
 
     grade = data.get("race", {}).get("grade", "")
     temp, budget = GRADE_DEFAULTS.get(grade, (10, 1500))
+    if mode == "ml":
+        temp = ML_TEMPERATURE_DEFAULT
     result["parameters"] = {"temperature": temp, "budget": budget, "top_n": 6}
 
     suffix = "ml_scored" if mode == "ml" else "base_scored"

@@ -17,13 +17,25 @@ from config.settings import FEATURE_COLUMNS, CATEGORICAL_FEATURES, MODEL_DIR, PR
 # データ分割
 # ============================================================
 
-def time_based_split(df: pd.DataFrame, val_start: str = "2025-01-01") -> tuple:
-    """時系列ベースの学習・検証分割"""
+def time_based_split(df: pd.DataFrame, val_start: str = "2025-01-01",
+                     test_start: str = None) -> tuple:
+    """時系列ベースの学習・検証（・テスト）分割
+
+    Returns:
+        test_start指定時: (train, val, test) の3つ
+        test_start未指定: (train, val) の2つ（後方互換性）
+    """
     df["race_date"] = pd.to_datetime(df["race_date"])
     val_date = pd.Timestamp(val_start)
     train = df[df["race_date"] < val_date].copy()
-    val = df[df["race_date"] >= val_date].copy()
-    return train, val
+    if test_start:
+        test_date = pd.Timestamp(test_start)
+        val = df[(df["race_date"] >= val_date) & (df["race_date"] < test_date)].copy()
+        test = df[df["race_date"] >= test_date].copy()
+        return train, val, test
+    else:
+        val = df[df["race_date"] >= val_date].copy()
+        return train, val
 
 
 def prepare_data(df: pd.DataFrame) -> tuple:

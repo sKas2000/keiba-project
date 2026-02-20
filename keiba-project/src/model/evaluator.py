@@ -55,10 +55,11 @@ def _get_place_payout(returns: dict, race_id: str, horse_number: int) -> float:
 def run_backtest(input_path: str = None, model_dir: Path = None,
                  returns_path: str = None,
                  val_start: str = "2025-01-01",
+                 val_end: str = None,
                  ev_threshold: float = 0.0,
                  bet_threshold: float = 0.0,
                  top_n: int = 3,
-                 temperature: float = 20.0) -> dict:
+                 temperature: float = 1.0) -> dict:
     """
     EVフィルタ付きバックテスト
 
@@ -66,7 +67,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         ev_threshold: EV(予測勝率×オッズ)がこの値以上で購入（0=フィルタなし）
         bet_threshold: 予測確率がこの値以上で購入対象
         returns_path: returns.csv パス（複勝の実オッズ使用）
-        temperature: ソフトマックス温度パラメータ（低いほど鋭い分布）
+        val_end: 検証終了日（指定しない場合はデータ末尾まで）
+        temperature: ソフトマックス温度パラメータ（logitスケール、低いほど鋭い分布）
     """
     input_path = input_path or str(PROCESSED_DIR / "features.csv")
     model_dir = model_dir or MODEL_DIR
@@ -76,6 +78,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
     df["race_date"] = pd.to_datetime(df["race_date"])
 
     val_df = df[df["race_date"] >= pd.Timestamp(val_start)].copy()
+    if val_end:
+        val_df = val_df[val_df["race_date"] < pd.Timestamp(val_end)].copy()
     if len(val_df) == 0:
         print("[ERROR] 検証期間のデータがありません")
         return {}
@@ -120,8 +124,10 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                 "place": {"count": 0, "invested": 0, "returned": 0, "hits": 0},
             }
 
-        # レース内のsoftmax勝率を計算
-        scores = race_group["pred_prob"].values * 100 / temperature
+        # レース内のsoftmax勝率を計算（logit変換: sigmoid逆変換で元のスコアに復元）
+        pred_probs = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
+        logits = np.log(pred_probs / (1 - pred_probs))
+        scores = logits / temperature
         exp_s = np.exp(scores - scores.max())
         win_probs = exp_s / exp_s.sum()
         race_group = race_group.copy()
@@ -217,8 +223,9 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
 def compare_ev_thresholds(input_path: str = None, model_dir: Path = None,
                           returns_path: str = None,
                           val_start: str = "2025-01-01",
+                          val_end: str = None,
                           thresholds: list = None,
-                          temperature: float = 20.0) -> list:
+                          temperature: float = 1.0) -> list:
     """複数のEV閾値でバックテストを実行し比較"""
     thresholds = thresholds or [0.0, 0.8, 1.0, 1.2, 1.5, 2.0]
     comparison = []
@@ -227,6 +234,7 @@ def compare_ev_thresholds(input_path: str = None, model_dir: Path = None,
         res = run_backtest(
             input_path=input_path, model_dir=model_dir,
             returns_path=returns_path, val_start=val_start,
+            val_end=val_end,
             ev_threshold=t, top_n=3, temperature=temperature,
         )
         if not res:
@@ -255,12 +263,14 @@ def compare_ev_thresholds(input_path: str = None, model_dir: Path = None,
 def optimize_temperature(input_path: str = None, model_dir: Path = None,
                          returns_path: str = None,
                          val_start: str = "2025-01-01",
+                         val_end: str = None,
                          ev_threshold: float = 1.0) -> dict:
-    """ソフトマックス温度パラメータの最適化（グリッドサーチ）"""
-    temperatures = [5, 8, 10, 12, 15, 20, 25, 30, 40, 50]
-    best = {"temperature": 20, "win_roi": 0, "place_roi": 0}
+    """ソフトマックス温度パラメータの最適化（グリッドサーチ、logitスケール）"""
+    temperatures = [0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0]
+    best = {"temperature": 1.0, "win_roi": 0, "place_roi": 0}
 
-    print(f"\n  [温度パラメータ最適化] EV閾値={ev_threshold}")
+    period = f"{val_start}〜{val_end}" if val_end else f"{val_start}〜"
+    print(f"\n  [温度パラメータ最適化] EV閾値={ev_threshold} 期間={period}")
     print(f"    {'温度':>6s} {'単勝回数':>8s} {'単勝的中率':>10s} {'単勝回収率':>10s} "
           f"{'複勝回数':>8s} {'複勝的中率':>10s} {'複勝回収率':>10s}")
     print(f"    {'─' * 70}")
@@ -269,6 +279,7 @@ def optimize_temperature(input_path: str = None, model_dir: Path = None,
         res = run_backtest(
             input_path=input_path, model_dir=model_dir,
             returns_path=returns_path, val_start=val_start,
+            val_end=val_end,
             ev_threshold=ev_threshold, top_n=3, temperature=temp,
         )
         if not res:
@@ -286,7 +297,7 @@ def optimize_temperature(input_path: str = None, model_dir: Path = None,
                     "win_bets": bw["count"], "place_bets": bp["count"]}
             mark = " ★"
 
-        print(f"    {temp:>6d} {bw['count']:>8d} {hit_w:>9.1f}% {roi_win:>9.1f}%{mark}"
+        print(f"    {temp:>6.1f} {bw['count']:>8d} {hit_w:>9.1f}% {roi_win:>9.1f}%{mark}"
               f" {bp['count']:>8d} {hit_p:>9.1f}% {roi_place:>9.1f}%")
 
     print(f"\n  最適温度: {best['temperature']} (単勝回収率: {best['win_roi']:.1f}%)")

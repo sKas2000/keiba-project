@@ -374,8 +374,16 @@ def calculate_ev(data: dict) -> dict:
     budget = params.get("budget", 1500)
     top_n = params.get("top_n", 6)
 
-    scores = [h.get("score", 0) for h in horses]
-    win_probs = softmax(scores, temperature)
+    # MLモード: logit変換で確率→元のスコアに復元してsoftmax
+    # ルールベース: スコア（0-100）をそのままsoftmax
+    is_ml = any(h.get("ml_top3_prob") is not None for h in horses)
+    if is_ml:
+        probs = [max(min(h.get("ml_top3_prob", 0.5), 0.999), 0.001) for h in horses]
+        logits = [math.log(p / (1 - p)) for p in probs]
+        win_probs = softmax(logits, temperature)
+    else:
+        scores = [h.get("score", 0) for h in horses]
+        win_probs = softmax(scores, temperature)
     place_probs = calc_place_probs(win_probs)
 
     for idx, horse in enumerate(horses):
