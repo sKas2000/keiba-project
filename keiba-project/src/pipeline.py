@@ -201,17 +201,47 @@ def run_feature_pipeline(input_path: str = None, output_path: str = None):
 
 def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           val_start: str = "2025-01-01",
-                          threshold: float = 0.35, top_n: int = 3,
-                          save: bool = False):
+                          threshold: float = 0.0, top_n: int = 3,
+                          save: bool = False,
+                          ev_threshold: float = 0.0,
+                          compare_ev: bool = False,
+                          optimize_temp: bool = False,
+                          temperature: float = 20.0):
     """バックテストパイプライン"""
-    from src.model.evaluator import run_backtest, print_backtest_report, save_backtest_report
+    from src.model.evaluator import (
+        run_backtest, print_backtest_report, save_backtest_report,
+        compare_ev_thresholds, print_ev_comparison, optimize_temperature,
+    )
+
+    model_path = Path(model_dir) if model_dir else None
+
+    if optimize_temp:
+        best = optimize_temperature(
+            input_path=input_path,
+            model_dir=model_path,
+            val_start=val_start,
+            ev_threshold=ev_threshold,
+        )
+        return best
+
+    if compare_ev:
+        comparison = compare_ev_thresholds(
+            input_path=input_path,
+            model_dir=model_path,
+            val_start=val_start,
+            temperature=temperature,
+        )
+        print_ev_comparison(comparison)
+        return comparison
 
     results = run_backtest(
         input_path=input_path,
-        model_dir=Path(model_dir) if model_dir else None,
+        model_dir=model_path,
         val_start=val_start,
         bet_threshold=threshold,
         top_n=top_n,
+        ev_threshold=ev_threshold,
+        temperature=temperature,
     )
     print_backtest_report(results)
 
@@ -227,12 +257,14 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
 
 async def run_collect_pipeline(start_date: str, end_date: str,
                                output_path: str = None,
-                               headless: bool = True):
+                               headless: bool = True,
+                               append: bool = False):
     """過去レース結果収集"""
     from src.scraping.race import collect_races
     await collect_races(
         start_date=start_date, end_date=end_date,
         output_path=output_path, headless=headless,
+        append=append,
     )
 
 

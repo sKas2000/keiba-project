@@ -10,7 +10,7 @@ import pandas as pd
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score, log_loss, accuracy_score
 
-from config.settings import FEATURE_COLUMNS, MODEL_DIR, PROCESSED_DIR
+from config.settings import FEATURE_COLUMNS, CATEGORICAL_FEATURES, MODEL_DIR, PROCESSED_DIR
 
 
 # ============================================================
@@ -33,6 +33,11 @@ def prepare_data(df: pd.DataFrame) -> tuple:
     y = df["top3"].values if "top3" in df.columns else None
     groups = df["race_id"].values if "race_id" in df.columns else None
     return X, y, groups, available
+
+
+def _get_categorical_indices(feature_names: list) -> list:
+    """カテゴリカル特徴量のインデックスを返す"""
+    return [i for i, f in enumerate(feature_names) if f in CATEGORICAL_FEATURES]
 
 
 # ============================================================
@@ -64,7 +69,10 @@ def train_binary_model(train_df: pd.DataFrame, val_df: pd.DataFrame,
     X_train, y_train, _, feature_names = prepare_data(train_df)
     X_val, y_val, _, _ = prepare_data(val_df)
 
-    dtrain = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
+    cat_indices = _get_categorical_indices(feature_names)
+
+    dtrain = lgb.Dataset(X_train, label=y_train, feature_name=feature_names,
+                         categorical_feature=cat_indices if cat_indices else "auto")
     dval = lgb.Dataset(X_val, label=y_val, feature_name=feature_names, reference=dtrain)
 
     callbacks = [lgb.log_evaluation(100), lgb.early_stopping(50)]
@@ -127,12 +135,18 @@ DEFAULT_RANK_PARAMS = {
     "lambda_l2": 1.0,
     "verbose": -1,
     "seed": 42,
+    "label_gain": [0, 1, 2, 3, 4],
 }
 
 
 def _make_rank_labels(finish_positions: np.ndarray, num_entries: int) -> np.ndarray:
-    """着順をランキング用ラベルに変換（高い=良い）"""
-    return np.maximum(num_entries + 1 - finish_positions, 0).astype(np.float32)
+    """着順をランキング用ラベルに変換（固定スケール、レース間で比較可能）"""
+    labels = np.zeros(len(finish_positions), dtype=np.float32)
+    labels[finish_positions == 1] = 4
+    labels[finish_positions == 2] = 3
+    labels[finish_positions == 3] = 2
+    labels[(finish_positions >= 4) & (finish_positions <= 5)] = 1
+    return labels
 
 
 def train_ranking_model(train_df: pd.DataFrame, val_df: pd.DataFrame,
@@ -140,18 +154,24 @@ def train_ranking_model(train_df: pd.DataFrame, val_df: pd.DataFrame,
     """ランキングモデル（LambdaRank）を学習"""
     params = params or DEFAULT_RANK_PARAMS.copy()
 
+    # LambdaRankはデータがグループ(race_id)順にソートされている必要がある
+    train_df = train_df.sort_values("race_id").reset_index(drop=True)
+    val_df = val_df.sort_values("race_id").reset_index(drop=True)
+
     X_train, _, _, feature_names = prepare_data(train_df)
     X_val, _, _, _ = prepare_data(val_df)
 
+    cat_indices = _get_categorical_indices(feature_names)
+
     y_train_rank, train_group_sizes = [], []
-    for _, group in train_df.groupby("race_id"):
+    for _, group in train_df.groupby("race_id", sort=True):
         n = len(group)
         labels = _make_rank_labels(group["finish_position"].values, n)
         y_train_rank.extend(labels)
         train_group_sizes.append(n)
 
     y_val_rank, val_group_sizes = [], []
-    for _, group in val_df.groupby("race_id"):
+    for _, group in val_df.groupby("race_id", sort=True):
         n = len(group)
         labels = _make_rank_labels(group["finish_position"].values, n)
         y_val_rank.extend(labels)
@@ -160,6 +180,7 @@ def train_ranking_model(train_df: pd.DataFrame, val_df: pd.DataFrame,
     dtrain = lgb.Dataset(
         X_train, label=np.array(y_train_rank, dtype=np.float32),
         group=train_group_sizes, feature_name=feature_names,
+        categorical_feature=cat_indices if cat_indices else "auto",
     )
     dval = lgb.Dataset(
         X_val, label=np.array(y_val_rank, dtype=np.float32),
@@ -229,7 +250,10 @@ def optimize_hyperparams(train_df: pd.DataFrame, val_df: pd.DataFrame,
     X_train, y_train, _, feature_names = prepare_data(train_df)
     X_val, y_val, _, _ = prepare_data(val_df)
 
-    dtrain = lgb.Dataset(X_train, label=y_train, feature_name=feature_names)
+    cat_indices = _get_categorical_indices(feature_names)
+
+    dtrain = lgb.Dataset(X_train, label=y_train, feature_name=feature_names,
+                         categorical_feature=cat_indices if cat_indices else "auto")
     dval = lgb.Dataset(X_val, label=y_val, feature_name=feature_names, reference=dtrain)
 
     def objective(trial):
@@ -238,6 +262,7 @@ def optimize_hyperparams(train_df: pd.DataFrame, val_df: pd.DataFrame,
             "metric": "auc",
             "verbose": -1,
             "seed": 42,
+            "feature_pre_filter": False,
             "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2, log=True),
             "num_leaves": trial.suggest_int("num_leaves", 15, 127),
             "max_depth": trial.suggest_int("max_depth", 3, 10),

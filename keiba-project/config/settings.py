@@ -68,6 +68,15 @@ SCORE_LIMITS = {
 
 EV_RANK_THRESHOLDS = {"S": 1.5, "A": 1.2, "B": 1.0}
 
+# バックテスト最適パラメータ（2025-08〜2026-02検証）
+BACKTEST_BEST_PARAMS = {
+    "temperature": 20,
+    "ev_threshold": 1.8,
+    "top_n": 1,
+    "win_roi": 108.3,
+    "place_roi": 101.0,
+}
+
 # ============================================================
 # ML特徴量カラム（Single Source of Truth）
 # ============================================================
@@ -77,6 +86,7 @@ FEATURE_COLUMNS = [
     "num_entries",
     "surface_code", "distance", "track_condition_code",
     "race_class_code", "distance_cat", "course_id_code",
+    # 過去成績
     "prev_finish_1", "prev_finish_2", "prev_finish_3",
     "avg_finish_last5", "best_finish_last5",
     "win_rate_last5", "place_rate_last5",
@@ -84,8 +94,22 @@ FEATURE_COLUMNS = [
     "total_races", "career_win_rate", "career_place_rate",
     "surface_win_rate", "surface_place_rate",
     "distance_cat_win_rate",
+    # 騎手
     "jockey_win_rate_365d", "jockey_place_rate_365d",
     "jockey_ride_count_365d",
+    # v2: 新特徴量
+    "prev_margin_1", "prev_last3f_1",
+    "distance_change",
+    "running_style", "avg_early_position_last5",
+    "track_cond_place_rate",
+    "trainer_win_rate_365d", "trainer_place_rate_365d",
+    "race_month",
+]
+
+CATEGORICAL_FEATURES = [
+    "sex_code", "surface_code", "track_condition_code",
+    "race_class_code", "distance_cat", "course_id_code",
+    "running_style", "race_month",
 ]
 
 META_COLUMNS = [
