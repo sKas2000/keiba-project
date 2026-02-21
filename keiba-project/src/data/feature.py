@@ -41,6 +41,8 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         "track_cond_place_rate",
         # v3: クラス変動特徴量
         "class_change",
+        # v4: 斤量変化
+        "weight_carried_change",
     ]
     for col in feature_cols:
         df[col] = 0.0
@@ -157,6 +159,13 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                 current_class = df.at[idx, "race_class_code"]
                 prev_class = past.iloc[-1]["race_class_code"] if "race_class_code" in past.columns else current_class
                 df.at[idx, "class_change"] = current_class - prev_class
+
+            # v4: 斤量変化（今走 - 前走）
+            if "weight_carried" in df.columns:
+                curr_wc = df.at[idx, "weight_carried"]
+                prev_wc = past.iloc[-1]["weight_carried"] if "weight_carried" in past.columns else curr_wc
+                if curr_wc > 0 and prev_wc > 0:
+                    df.at[idx, "weight_carried_change"] = curr_wc - prev_wc
 
     # 一時カラム削除
     df = df.drop(columns=["_group_key"])
@@ -332,7 +341,7 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                    "prev_margin_1", "prev_last3f_1",
                    "distance_change", "running_style",
                    "avg_early_position_last5", "track_cond_place_rate",
-                   "class_change"]:
+                   "class_change", "weight_carried_change"]:
             row[k] = 0
         row["days_since_last_race"] = 365
         return
@@ -473,6 +482,17 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
         row["class_change"] = current_class - prev_class
     else:
         row["class_change"] = 0
+
+    # v4: 斤量変化（今走 - 前走）
+    curr_wc = safe_float(row.get("weight_carried", 0))
+    if past_races and curr_wc > 0:
+        prev_wc = safe_float(past_races[0].get("weight_carried", past_races[0].get("load_weight", 0)))
+        if prev_wc > 0:
+            row["weight_carried_change"] = curr_wc - prev_wc
+        else:
+            row["weight_carried_change"] = 0
+    else:
+        row["weight_carried_change"] = 0
 
 
 def _load_trainer_lookup(race_date_str: str) -> dict:

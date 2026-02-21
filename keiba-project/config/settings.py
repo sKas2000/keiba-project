@@ -110,6 +110,8 @@ FEATURE_COLUMNS = [
     "race_month",
     # v3: クラス変動
     "class_change",
+    # v4: 斤量変化
+    "weight_carried_change",
 ]
 
 CATEGORICAL_FEATURES = [

@@ -6,7 +6,6 @@ __pycache__/
 .env
 .claude/
 test_*.json
-data/
 models/
 logs/
 .test_tmp/
