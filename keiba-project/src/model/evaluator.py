@@ -188,42 +188,19 @@ def _empty_bet_stats():
     return {"count": 0, "invested": 0, "returned": 0, "hits": 0}
 
 
-def run_backtest(input_path: str = None, model_dir: Path = None,
-                 returns_path: str = None,
-                 val_start: str = "2025-01-01",
-                 val_end: str = None,
-                 ev_threshold: float = 0.0,
-                 bet_threshold: float = 0.0,
-                 top_n: int = 3,
-                 temperature: float = 1.0,
-                 exclude_newcomer: bool = True,
-                 exclude_hurdle: bool = True,
-                 min_entries: int = 6,
-                 # Phase 1 フィルタ
-                 confidence_min: float = 0.0,
-                 odds_min: float = 0.0,
-                 odds_max: float = 0.0,
-                 axis_flow: bool = False,
-                 # Phase 3: Kelly基準
-                 kelly_fraction: float = 0.0,
-                 ) -> dict:
-    """
-    全券種対応EVフィルタ付きバックテスト
+def prepare_backtest_data(input_path: str = None, model_dir: Path = None,
+                          returns_path: str = None,
+                          val_start: str = "2025-01-01",
+                          val_end: str = None,
+                          exclude_newcomer: bool = True,
+                          exclude_hurdle: bool = True,
+                          min_entries: int = 6,
+                          ) -> dict | None:
+    """バックテストのデータ準備（CSV読込・モデル予測・キャリブレーション）
 
-    券種: 単勝・複勝・馬連・ワイド・馬単・3連複・3連単
-    確率推定: Plackett-Luce モデル
-
-    Args:
-        ev_threshold: EV がこの値以上で購入（0=フィルタなし、単勝・複勝のみ適用）
-        bet_threshold: 予測確率がこの値以上で購入対象
-        returns_path: returns.csv パス（実払い戻し使用）
-        val_end: 検証終了日（指定しない場合はデータ末尾まで）
-        temperature: ソフトマックス温度パラメータ（logitスケール、低いほど鋭い分布）
-        confidence_min: Top1-Top2のwin_prob差がこの値以上のレースのみ購入（0=無効）
-        odds_min: 単勝・複勝の最低オッズ（0=無効）
-        odds_max: 単勝・複勝の最高オッズ（0=無効）
-        axis_flow: True=馬単・3連単をTop1軸流しに変更（点数削減）
-        kelly_fraction: Kelly基準の割合（0=均一賭け、0.25=1/4 Kelly推奨）
+    Returns:
+        dict with keys: val_df, returns, has_win_model, has_ranking, calibrator
+        or None if error
     """
     input_path = input_path or str(PROCESSED_DIR / "features.csv")
     model_dir = model_dir or MODEL_DIR
@@ -249,12 +226,12 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         val_df = val_df[val_df["race_date"] < pd.Timestamp(val_end)].copy()
     if len(val_df) == 0:
         print("[ERROR] 検証期間のデータがありません")
-        return {}
+        return None
 
     binary_model_path = model_dir / "binary_model.txt"
     if not binary_model_path.exists():
         print(f"[ERROR] モデルが見つかりません: {binary_model_path}")
-        return {}
+        return None
 
     model = lgb.Booster(model_file=str(binary_model_path))
 
@@ -294,6 +271,47 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
 
     # 払い戻しデータ読み込み
     returns = _load_returns(returns_path)
+
+    return {
+        "val_df": val_df,
+        "full_df": df,
+        "returns": returns,
+        "has_win_model": has_win_model,
+        "has_ranking": has_ranking,
+        "calibrator": calibrator,
+        "val_start": val_start,
+        "val_end": val_end,
+    }
+
+
+def simulate_bets(prepared: dict,
+                  ev_threshold: float = 0.0,
+                  bet_threshold: float = 0.0,
+                  top_n: int = 3,
+                  temperature: float = 1.0,
+                  confidence_min: float = 0.0,
+                  odds_min: float = 0.0,
+                  odds_max: float = 0.0,
+                  axis_flow: bool = False,
+                  kelly_fraction: float = 0.0,
+                  race_ids: set = None,
+                  ) -> dict:
+    """賭けシミュレーション（prepare済みデータに対して実行）
+
+    Args:
+        prepared: prepare_backtest_data() の戻り値
+        race_ids: 対象レースIDのセット（Noneで全レース）
+        他のパラメータはrun_backtestと同一
+    """
+    val_df = prepared["val_df"]
+    returns = prepared["returns"]
+    has_win_model = prepared["has_win_model"]
+    has_ranking = prepared["has_ranking"]
+    calibrator = prepared["calibrator"]
+    val_start = prepared["val_start"]
+
+    if race_ids is not None:
+        val_df = val_df[val_df["race_id"].isin(race_ids)]
 
     results = {
         "val_start": val_start,
@@ -620,6 +638,48 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
     return results
 
 
+def run_backtest(input_path: str = None, model_dir: Path = None,
+                 returns_path: str = None,
+                 val_start: str = "2025-01-01",
+                 val_end: str = None,
+                 ev_threshold: float = 0.0,
+                 bet_threshold: float = 0.0,
+                 top_n: int = 3,
+                 temperature: float = 1.0,
+                 exclude_newcomer: bool = True,
+                 exclude_hurdle: bool = True,
+                 min_entries: int = 6,
+                 confidence_min: float = 0.0,
+                 odds_min: float = 0.0,
+                 odds_max: float = 0.0,
+                 axis_flow: bool = False,
+                 kelly_fraction: float = 0.0,
+                 _prepared: dict = None,
+                 ) -> dict:
+    """全券種対応EVフィルタ付きバックテスト（後方互換ラッパー）
+
+    _prepared を渡すとデータ準備をスキップしてシミュレーションのみ実行。
+    """
+    if _prepared is None:
+        _prepared = prepare_backtest_data(
+            input_path=input_path, model_dir=model_dir,
+            returns_path=returns_path, val_start=val_start, val_end=val_end,
+            exclude_newcomer=exclude_newcomer, exclude_hurdle=exclude_hurdle,
+            min_entries=min_entries,
+        )
+        if _prepared is None:
+            return {}
+
+    return simulate_bets(
+        _prepared,
+        ev_threshold=ev_threshold, bet_threshold=bet_threshold,
+        top_n=top_n, temperature=temperature,
+        confidence_min=confidence_min, odds_min=odds_min,
+        odds_max=odds_max, axis_flow=axis_flow,
+        kelly_fraction=kelly_fraction,
+    )
+
+
 def _record_bet(results: dict, month_key: str, bet_type: str,
                 invested: int, hit: bool, payout: float):
     """共通の賭け記録ヘルパー"""
@@ -648,14 +708,18 @@ def compare_ev_thresholds(input_path: str = None, model_dir: Path = None,
                           **filter_kwargs) -> list:
     """複数のEV閾値でバックテストを実行し比較（EVフィルタは単勝・複勝のみ）"""
     thresholds = thresholds or [0.0, 0.8, 1.0, 1.2, 1.5, 2.0]
-    comparison = []
 
+    prepared = prepare_backtest_data(
+        input_path=input_path, model_dir=model_dir,
+        returns_path=returns_path, val_start=val_start, val_end=val_end,
+    )
+    if prepared is None:
+        return []
+
+    comparison = []
     for t in thresholds:
-        res = run_backtest(
-            input_path=input_path, model_dir=model_dir,
-            returns_path=returns_path, val_start=val_start,
-            val_end=val_end,
-            ev_threshold=t, top_n=3, temperature=temperature,
+        res = simulate_bets(
+            prepared, ev_threshold=t, top_n=3, temperature=temperature,
             **filter_kwargs,
         )
         if not res:
@@ -685,6 +749,13 @@ def optimize_temperature(input_path: str = None, model_dir: Path = None,
     temperatures = [0.3, 0.5, 0.7, 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0]
     best = {"temperature": 1.0, "win_roi": 0, "place_roi": 0}
 
+    prepared = prepare_backtest_data(
+        input_path=input_path, model_dir=model_dir,
+        returns_path=returns_path, val_start=val_start, val_end=val_end,
+    )
+    if prepared is None:
+        return best
+
     period = f"{val_start}\u301c{val_end}" if val_end else f"{val_start}\u301c"
     print(f"\n  [温度パラメータ最適化] EV閾値={ev_threshold} 期間={period}")
     print(f"    {'温度':>6s} {'単勝回数':>8s} {'単勝的中率':>10s} {'単勝回収率':>10s} "
@@ -692,11 +763,8 @@ def optimize_temperature(input_path: str = None, model_dir: Path = None,
     print(f"    {'─' * 70}")
 
     for temp in temperatures:
-        res = run_backtest(
-            input_path=input_path, model_dir=model_dir,
-            returns_path=returns_path, val_start=val_start,
-            val_end=val_end,
-            ev_threshold=ev_threshold, top_n=3, temperature=temp,
+        res = simulate_bets(
+            prepared, ev_threshold=ev_threshold, top_n=3, temperature=temp,
             **filter_kwargs,
         )
         if not res:
@@ -896,14 +964,18 @@ def explore_strategies(input_path: str = None, model_dir: Path = None,
           f" {'馬単':>6s} {'3連複':>6s} {'3連単':>6s} {'Races':>6s} {'Skip':>5s}")
     print(f"  {'─' * 105}")
 
+    # データ準備1回（モデル読込・予測・キャリブレーション）
+    prepared = prepare_backtest_data(
+        input_path=input_path, model_dir=model_dir,
+        returns_path=returns_path, val_start=val_start, val_end=val_end,
+    )
+    if prepared is None:
+        return []
+
     all_results = []
     for label, kwargs in strategies:
         merged = {**filter_kwargs, **kwargs}
-        res = run_backtest(
-            input_path=input_path, model_dir=model_dir,
-            returns_path=returns_path, val_start=val_start,
-            val_end=val_end, top_n=3, **merged,
-        )
+        res = simulate_bets(prepared, top_n=3, **merged)
         if not res:
             continue
 
@@ -934,9 +1006,10 @@ def analyze_by_condition(input_path: str = None, model_dir: Path = None,
                          kelly_fraction: float = 0.25,
                          confidence_min: float = 0.03,
                          **filter_kwargs) -> dict:
-    """クラス別・条件別にバックテストを実行し、エッジのある条件を特定"""
-    import tempfile
+    """クラス別・条件別にバックテストを実行し、エッジのある条件を特定
 
+    最適化: prepare 1回 + race_idsフィルタでsimulate N回（一時CSV不要）
+    """
     conditions = {
         "クラス別": {
             "column": "race_class_code",
@@ -955,16 +1028,15 @@ def analyze_by_condition(input_path: str = None, model_dir: Path = None,
         },
     }
 
-    input_path = input_path or str(PROCESSED_DIR / "features.csv")
-    model_dir = model_dir or MODEL_DIR
-    returns_path_str = returns_path or str(RAW_DIR / "returns.csv")
+    # データ準備1回（モデル読込・予測・キャリブレーション）
+    prepared = prepare_backtest_data(
+        input_path=input_path, model_dir=model_dir,
+        returns_path=returns_path, val_start=val_start, val_end=val_end,
+    )
+    if prepared is None:
+        return {}
 
-    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
-    df["race_date"] = pd.to_datetime(df["race_date"])
-
-    val_df = df[df["race_date"] >= pd.Timestamp(val_start)].copy()
-    if val_end:
-        val_df = val_df[val_df["race_date"] < pd.Timestamp(val_end)].copy()
+    val_df = prepared["val_df"]
 
     period = f"{val_start}〜{val_end}" if val_end else f"{val_start}〜"
     print(f"\n  [条件別分析] 期間={period}")
@@ -990,21 +1062,13 @@ def analyze_by_condition(input_path: str = None, model_dir: Path = None,
             if not target_races:
                 continue
 
-            filtered_df = df[df["race_id"].isin(target_races)].copy()
-            tmp_path = Path(tempfile.mktemp(suffix=".csv"))
-            filtered_df.to_csv(tmp_path, index=False)
-
-            try:
-                res = run_backtest(
-                    input_path=str(tmp_path), model_dir=model_dir,
-                    returns_path=returns_path_str,
-                    val_start=val_start, val_end=val_end,
-                    top_n=3, kelly_fraction=kelly_fraction,
-                    confidence_min=confidence_min,
-                    **filter_kwargs,
-                )
-            finally:
-                tmp_path.unlink(missing_ok=True)
+            res = simulate_bets(
+                prepared, top_n=3,
+                kelly_fraction=kelly_fraction,
+                confidence_min=confidence_min,
+                race_ids=target_races,
+                **filter_kwargs,
+            )
 
             if not res or res.get("races", 0) == 0:
                 continue

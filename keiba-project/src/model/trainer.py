@@ -366,7 +366,7 @@ def fit_isotonic_cv(train_df: pd.DataFrame, params: dict,
         fold_model = lgb.train(
             fold_params, dtrain, num_boost_round=1000,
             valid_sets=[dval_fold], valid_names=["val"],
-            callbacks=[lgb.early_stopping(50), lgb.log_evaluation(0)],
+            callbacks=[lgb.early_stopping(20), lgb.log_evaluation(0)],
         )
 
         oof_preds[held_out_mask] = fold_model.predict(X_ho)
