@@ -81,27 +81,29 @@ BACKTEST_BEST_PARAMS = {
     "calibrated": True,
 }
 
-# Expanding Window最適パラメータ（Phase9-10: 9ウィンドウ検証済み）
+# Expanding Window最適パラメータ（Phase9-13: 9ウィンドウ + 3-way split検証済み）
 # Isotonic校正あり + ランキングなし = 全ウィンドウで安定
 # Kelly基準はWin/Placeを悪化させるためフラットベット
 # 校正割合10%が最適（訓練データ最大化 + 十分な校正品質）
-# ウィンドウサイズは2-6ヶ月全てでQ/Trio黒字（ロバスト）
+# Phase 13: Val(W04-05)/Test(W06-08)分離評価でパラメータの妥当性を検証
 EXPANDING_BEST_PARAMS = {
     "kelly_fraction": 0,          # フラットベット（Kelly非使用）
-    "confidence_min": 0.04,       # 確信度フィルタ（0.04最適、+5.7pt Trio）
-    "quinella_top_n": 2,          # 馬連: top2のみ（+11.3pt）
-    "wide_top_n": 2,              # ワイド: top2のみ（103.1%で黒字化）
-    "skip_classes": [4, 6],       # 2勝+OP除外（全券種+1~3pt）
+    "confidence_min": 0.04,       # 確信度フィルタ（Val/Testで安定）
+    "quinella_top_n": 2,          # 馬連: top2のみ（Val 109.7%, Test 110.7%）
+    "wide_top_n": 2,              # ワイド: top2のみ（Test 107.3%）
+    "skip_classes": [4, 6],       # 2勝+OP除外（全券種改善）
     "top_n": 3,
     "use_calibration": True,      # Isotonic校正（必須、+29pt）
     "use_ranking": False,         # ランキング不使用（-14.7pt）
     "calibration_pct": 0.10,      # 最適校正割合（10%）
     "window_months": 3,           # テスト期間（3ヶ月）
-    # Expanding Window結果（cal=10%, skip[4,6], conf=0.04, Q2/W2）:
-    # 馬連: 118.3% ← 黒字
-    # 3連複: 111.3% ← 黒字
-    # ワイド: 103.1% ← 黒字
-    # 単勝: 89.4%, 複勝: 91.5%
+    # 3-way split検証結果 (Phase 13):
+    #           Val(W04-05)  Test(W06-08)  ALL(W00-08)
+    # 馬連:     109.7%       110.7%        118.3%  ← Val/Test両方で黒字（信頼性高）
+    # ワイド:    92.5%       107.3%        103.1%  ← Testで黒字
+    # 3連複:    110.6%        93.4%        111.3%  ← Valのみ黒字（要注意）
+    # 単勝:      86.2%        92.7%         89.4%
+    # 複勝:      87.2%        95.5%         91.5%
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）

@@ -1385,6 +1385,12 @@ def expanding_window_backtest(
               f" {rois['wide']:>6.1f}%"
               f" {rois['trio']:>6.1f}%")
 
+        # ウィンドウ別の生ベット統計を保存（期間別集計用）
+        window_bets = {}
+        for bt in BET_TYPES:
+            b = res.get(f"bets_{bt}", {})
+            window_bets[bt] = {k: b.get(k, 0) for k in ["count", "invested", "returned", "hits"]}
+
         all_window_results.append({
             "window": window_idx,
             "train_end": str(train_end.date()),
@@ -1392,6 +1398,7 @@ def expanding_window_backtest(
             "test_end": str(test_end.date()),
             "races": n_races,
             "rois": {bt: round(rois.get(bt, 0), 1) for bt in BET_TYPES},
+            "bets": window_bets,
         })
 
         window_idx += 1
@@ -1419,6 +1426,50 @@ def expanding_window_backtest(
         "total_rois": {bt: round(total_rois.get(bt, 0), 1) for bt in BET_TYPES},
         "total_races": total_races,
     }
+
+
+def aggregate_windows_by_period(result: dict,
+                                val_windows: list = None,
+                                test_windows: list = None) -> dict:
+    """Expanding Window結果を期間別に集計
+
+    Args:
+        result: expanding_window_backtest() の戻り値
+        val_windows: Val期間のウィンドウインデックス（例: [4, 5]）
+        test_windows: Test期間のウィンドウインデックス（例: [6, 7, 8]）
+
+    Returns:
+        dict with keys: val_rois, test_rois, train_rois (残りのウィンドウ)
+    """
+    windows = result["windows"]
+    val_windows = val_windows or []
+    test_windows = test_windows or []
+    train_windows = [w["window"] for w in windows
+                     if w["window"] not in val_windows and w["window"] not in test_windows]
+
+    period_results = {}
+    for period_name, indices in [("train", train_windows), ("val", val_windows), ("test", test_windows)]:
+        period_bets = {bt: _empty_bet_stats() for bt in BET_TYPES}
+        period_races = 0
+        for w in windows:
+            if w["window"] not in indices:
+                continue
+            period_races += w["races"]
+            for bt in BET_TYPES:
+                wb = w.get("bets", {}).get(bt, {})
+                for k in ["count", "invested", "returned", "hits"]:
+                    period_bets[bt][k] += wb.get(k, 0)
+
+        rois = {}
+        for bt in BET_TYPES:
+            b = period_bets[bt]
+            rois[bt] = round((b["returned"] / b["invested"] * 100) if b["invested"] > 0 else 0, 1)
+
+        period_results[f"{period_name}_rois"] = rois
+        period_results[f"{period_name}_races"] = period_races
+        period_results[f"{period_name}_bets"] = period_bets
+
+    return period_results
 
 
 def save_backtest_report(results: dict, output_path: Path = None):
