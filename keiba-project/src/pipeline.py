@@ -304,6 +304,23 @@ async def run_collect_pipeline(start_date: str, end_date: str,
 
 
 # ============================================================
+# オッズ監視パイプライン
+# ============================================================
+
+async def run_monitor_pipeline(interval: int = 30, token: str = None,
+                               headless: bool = True, venue: str = None):
+    """オッズ監視サーバー（LINE通知付き）"""
+    from src.monitor import RaceMonitor
+    monitor = RaceMonitor(
+        interval=interval,
+        token=token,
+        headless=headless,
+        venue_filter=venue,
+    )
+    await monitor.run()
+
+
+# ============================================================
 # スコアリング単体実行（既存JSONに対して）
 # ============================================================
 

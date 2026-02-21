@@ -91,6 +91,17 @@ def cmd_collect(args):
     ))
 
 
+def cmd_monitor(args):
+    """オッズ監視サーバー"""
+    from src.pipeline import run_monitor_pipeline
+    asyncio.run(run_monitor_pipeline(
+        interval=args.interval,
+        token=args.token,
+        headless=not args.no_headless,
+        venue=args.venue,
+    ))
+
+
 def main():
     setup_encoding()
 
@@ -163,6 +174,14 @@ def main():
     p_col.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
     p_col.add_argument("--append", action="store_true", help="既存CSVに追記（収集済み日付をスキップ）")
     p_col.set_defaults(func=cmd_collect)
+
+    # monitor: オッズ監視サーバー
+    p_mon = sub.add_parser("monitor", help="オッズ監視サーバー（LINE通知付き）")
+    p_mon.add_argument("--interval", type=int, default=30, help="再スキャン間隔（分、デフォルト30）")
+    p_mon.add_argument("--token", help="LINE Notifyトークン（環境変数/`.env`でも設定可）")
+    p_mon.add_argument("--venue", help="会場フィルタ（例: 東京 or 中山,東京）")
+    p_mon.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
+    p_mon.set_defaults(func=cmd_monitor)
 
     args = parser.parse_args()
     if not args.command:
