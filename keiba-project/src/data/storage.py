@@ -34,11 +34,14 @@ def write_csv(df: "pd.DataFrame", path: str | Path, append: bool = False) -> Non
     df.to_csv(path, mode=mode, header=header, index=False)
 
 
-def generate_output_filename(race_info: dict, stage: str) -> str:
+def generate_output_filename(data: dict, stage: str) -> str:
     """
     YYYYMMDD_会場RR_レース名_<stage>.json
     stage: input | enriched_input | base_scored | ev_results | ml_scored
+    data: race_info dict or full data dict with "race" sub-key
     """
+    # full data dict の場合は race サブキーを参照
+    race_info = data.get("race", data) if "race" in data else data
     date_str = datetime.now().strftime("%Y%m%d")
     venue = race_info.get("venue", "")
     rn = race_info.get("race_number", 0)

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from config.settings import (
     RACES_DIR, MODEL_DIR, GRADE_DEFAULTS, ML_TEMPERATURE_DEFAULT,
-    setup_encoding,
+    EXPANDING_BEST_PARAMS, setup_encoding,
 )
 from src.data.storage import read_json, write_json, generate_output_filename
 
@@ -153,17 +153,17 @@ async def run_ml_pipeline(
 
     grade = data.get("race", {}).get("grade", "")
     _, budget = GRADE_DEFAULTS.get(grade, (10, 1500))
-    result["parameters"] = {"temperature": ML_TEMPERATURE_DEFAULT, "budget": budget, "top_n": 6}
+    result["parameters"] = {"temperature": ML_TEMPERATURE_DEFAULT, "budget": budget, "top_n": 3}
 
     scored_path = generate_output_filename(result, "ml_scored")
     write_json(result, scored_path)
     print(f"  出力: {scored_path}")
 
-    # EV 計算
+    # EV 計算（EXPANDING_BEST_PARAMS 戦略を適用）
     step = "Step 3/3" if input_file else "Step 3/3"
-    print(f"\n[{step}] 期待値計算")
+    print(f"\n[{step}] 期待値計算（Expanding Window戦略）")
     print("-" * 40)
-    ev_results = calculate_ev(result)
+    ev_results = calculate_ev(result, strategy=EXPANDING_BEST_PARAMS)
     result["ev_results"] = ev_results
 
     ev_path = generate_output_filename(result, "ev_results")
@@ -325,14 +325,16 @@ def run_score(input_file: str, mode: str = "rule"):
     temp, budget = GRADE_DEFAULTS.get(grade, (10, 1500))
     if mode == "ml":
         temp = ML_TEMPERATURE_DEFAULT
-    result["parameters"] = {"temperature": temp, "budget": budget, "top_n": 6}
+    result["parameters"] = {"temperature": temp, "budget": budget, "top_n": 3}
 
     suffix = "ml_scored" if mode == "ml" else "base_scored"
     scored_path = generate_output_filename(result, suffix)
     write_json(result, scored_path)
     print(f"  出力: {scored_path}")
 
-    ev_results = calculate_ev(result)
+    # ML時はEXPANDING_BEST_PARAMS戦略を適用
+    strategy = EXPANDING_BEST_PARAMS if mode == "ml" else None
+    ev_results = calculate_ev(result, strategy=strategy)
     result["ev_results"] = ev_results
 
     ev_path = generate_output_filename(result, "ev_results")

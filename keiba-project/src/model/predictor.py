@@ -11,7 +11,10 @@ from pathlib import Path
 
 import numpy as np
 
-from config.settings import FEATURE_COLUMNS, GRADE_DEFAULTS, MODEL_DIR
+from config.settings import (
+    FEATURE_COLUMNS, GRADE_DEFAULTS, MODEL_DIR,
+    EXPANDING_BEST_PARAMS, CLASS_MAP,
+)
 from src.scraping.parsers import safe_int, safe_float
 
 
@@ -219,7 +222,12 @@ def score_rule_based(data: dict) -> dict:
 # ============================================================
 
 def score_ml(data: dict, model_dir: Path = None) -> dict | None:
-    """ML モデルで予測してスコア付与"""
+    """ML モデルで予測してスコア付与
+
+    binary_model: 3着以内確率（ソート・スコア用）
+    win_model: 勝率直接推定（EV計算のwin_prob用）
+    Isotonic校正があればPlatt Scalingより優先
+    """
     import lightgbm as lgb
     from src.data.feature import extract_features_from_enriched
 
@@ -244,19 +252,34 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
 
     raw_probs = binary_model.predict(X)
 
-    # Platt Scaling キャリブレーション（利用可能な場合）
-    from src.model.trainer import load_calibrator, calibrate_probs
-    calibrator = load_calibrator(model_dir)
-    if calibrator is not None:
-        probs = calibrate_probs(raw_probs, calibrator)
+    # キャリブレーション: Isotonic優先 > Platt Scaling > raw
+    from src.model.trainer import (
+        load_calibrator, calibrate_probs,
+        load_isotonic_calibrator, calibrate_isotonic,
+    )
+    iso_binary = load_isotonic_calibrator("binary_isotonic", model_dir)
+    platt_cal = load_calibrator(model_dir)
+    if iso_binary is not None:
+        probs = calibrate_isotonic(raw_probs, iso_binary)
+        cal_method = "isotonic"
+    elif platt_cal is not None:
+        probs = calibrate_probs(raw_probs, platt_cal)
+        cal_method = "platt"
     else:
         probs = raw_probs
+        cal_method = "raw"
 
-    rank_model_path = model_dir / "ranking_model.txt"
-    rank_scores = None
-    if rank_model_path.exists():
-        rank_model = lgb.Booster(model_file=str(rank_model_path))
-        rank_scores = rank_model.predict(X)
+    # 勝率直接推定モデル（Expanding Window検証で使用）
+    win_model_path = model_dir / "win_model.txt"
+    win_probs_direct = None
+    if win_model_path.exists():
+        win_model = lgb.Booster(model_file=str(win_model_path))
+        raw_win = win_model.predict(X)
+        iso_win = load_isotonic_calibrator("win_isotonic", model_dir)
+        if iso_win is not None:
+            win_probs_direct = calibrate_isotonic(raw_win, iso_win)
+        else:
+            win_probs_direct = raw_win
 
     horses = data.get("horses", [])
     for i, horse in enumerate(horses):
@@ -264,15 +287,16 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
             prob = float(probs[i])
             horse["score"] = round(prob * 100, 1)
             horse["ml_top3_prob"] = round(prob, 4)
-            horse["ml_calibrated"] = calibrator is not None
-            if rank_scores is not None and i < len(rank_scores):
-                horse["ml_rank_score"] = round(float(rank_scores[i]), 4)
+            horse["ml_calibrated"] = cal_method != "raw"
+            if win_probs_direct is not None and i < len(win_probs_direct):
+                horse["ml_win_prob"] = round(float(win_probs_direct[i]), 6)
             horse["score_breakdown"] = {
                 "ml_binary": round(prob * 100, 1),
                 "ability": 0, "jockey": 0, "fitness": 0, "form": 0, "other": 0,
             }
-            cal_label = "calibrated" if calibrator is not None else "raw"
-            horse["note"] = f"[ML:{cal_label}] top3_prob={prob:.3f}"
+            horse["note"] = f"[ML:{cal_method}] top3={prob:.3f}"
+            if win_probs_direct is not None and i < len(win_probs_direct):
+                horse["note"] += f" win={win_probs_direct[i]:.4f}"
 
     return data
 
@@ -375,22 +399,65 @@ def get_ev_rank(ev_ratio: float) -> str:
     return "C"
 
 
-def calculate_ev(data: dict) -> dict:
-    """base_scored.json から期待値を計算"""
+def _grade_to_class_code(grade: str) -> int:
+    """レースグレード文字列をクラスコードに変換"""
+    if not grade:
+        return 0
+    return CLASS_MAP.get(grade, 0)
+
+
+def calculate_ev(data: dict, strategy: dict = None) -> dict:
+    """base_scored.json から期待値を計算
+
+    Args:
+        data: scored JSON data
+        strategy: 戦略パラメータ (None=EXPANDING_BEST_PARAMS使用)
+            - confidence_min: 確信度フィルタ（Top1-Top2のwin_prob差）
+            - quinella_top_n: 馬連用top_n
+            - wide_top_n: ワイド用top_n
+            - skip_classes: スキップするクラスコードリスト
+            - top_n: 上位N頭（デフォルト3）
+    """
     horses = data.get("horses", [])
     combo_odds = data.get("combo_odds", {})
     params = data.get("parameters", {})
     temperature = params.get("temperature", 10)
     budget = params.get("budget", 1500)
-    top_n = params.get("top_n", 6)
 
-    # MLモード: キャリブレーション済み確率をそのまま正規化（温度不要）
-    # 未キャリブレーション: logit変換 + 温度 softmax
-    # ルールベース: スコア（0-100）をそのままsoftmax
+    # 戦略パラメータ（ML時はEXPANDING_BEST_PARAMSをデフォルト使用）
     is_ml = any(h.get("ml_top3_prob") is not None for h in horses)
+    if strategy is None and is_ml:
+        strategy = EXPANDING_BEST_PARAMS.copy()
+    strategy = strategy or {}
+
+    top_n = strategy.get("top_n", params.get("top_n", 6))
+    confidence_min = strategy.get("confidence_min", 0)
+    quinella_top_n = strategy.get("quinella_top_n", 0) or top_n
+    wide_top_n = strategy.get("wide_top_n", 0) or top_n
+    skip_classes = strategy.get("skip_classes", [])
+
+    # 警告フラグ
+    warnings = []
+
+    # クラスチェック
+    race_grade = data.get("race", {}).get("grade", "")
+    race_class_code = _grade_to_class_code(race_grade)
+    if skip_classes and race_class_code in skip_classes:
+        class_names = {4: "2勝", 6: "OP"}
+        skipped = [class_names.get(c, str(c)) for c in skip_classes]
+        warnings.append(f"このクラス({race_grade})はバックテストで不利（{'/'.join(skipped)}クラス除外推奨）")
+
+    # MLモード: win_prob_directがあれば使用（Expanding Window方式）
+    # なければキャリブレーション済みtop3_probを正規化
     is_calibrated = any(h.get("ml_calibrated") for h in horses)
-    if is_ml and is_calibrated:
-        # キャリブレーション済み: 正規化のみ
+    has_win_model = any(h.get("ml_win_prob") is not None for h in horses)
+
+    if is_ml and has_win_model:
+        # Expanding Window方式: win_modelのIsotonic校正済み確率を正規化
+        wprobs = [max(h.get("ml_win_prob", 0.001), 0.001) for h in horses]
+        total = sum(wprobs)
+        win_probs = [p / total for p in wprobs]
+    elif is_ml and is_calibrated:
         probs = [max(h.get("ml_top3_prob", 0.001), 0.001) for h in horses]
         total = sum(probs)
         win_probs = [p / total for p in probs]
@@ -409,7 +476,21 @@ def calculate_ev(data: dict) -> dict:
         horse["place_prob"] = place_probs[idx]
 
     ranked = sorted(horses, key=lambda h: h.get("score", 0), reverse=True)
-    top_indices = [h["index"] for h in ranked[:top_n]]
+
+    # 確信度チェック
+    confidence_gap = win_probs[ranked[0]["index"]] - win_probs[ranked[1]["index"]] if len(ranked) >= 2 else 0
+    low_confidence = False
+    if confidence_min > 0 and confidence_gap < confidence_min:
+        low_confidence = True
+        warnings.append(
+            f"確信度不足 (Top1-Top2差={confidence_gap:.3f} < {confidence_min})"
+            " → ベット見送り推奨"
+        )
+
+    # 券種別top_n
+    effective_top = max(top_n, quinella_top_n, wide_top_n)
+    top_indices = [h["index"] for h in ranked[:effective_top]]
+    win_top = [h["index"] for h in ranked[:top_n]]
 
     # 単勝・複勝
     win_bets, place_bets = [], []
@@ -423,10 +504,11 @@ def calculate_ev(data: dict) -> dict:
         win_bets.append({"num": horse["num"], "name": horse["name"], "prob": wp, "odds": ow, "ev": ew, "ev_ratio": ew, "rank": get_ev_rank(ew)})
         place_bets.append({"num": horse["num"], "name": horse["name"], "prob": pp, "odds": op, "ev": ep, "ev_ratio": ep, "rank": get_ev_rank(ep)})
 
-    # 馬連
+    # 馬連（quinella_top_n で制御）
     q_map = {tuple(sorted(i["combo"])): i["odds"] for i in combo_odds.get("quinella", [])}
+    q_indices = [h["index"] for h in ranked[:quinella_top_n]]
     quinella_bets = []
-    for a, b in combinations(top_indices, 2):
+    for a, b in combinations(q_indices, 2):
         i, j = min(a, b), max(a, b)
         combo = (horses[i]["num"], horses[j]["num"])
         if combo not in q_map:
@@ -436,13 +518,14 @@ def calculate_ev(data: dict) -> dict:
         quinella_bets.append({"combo": f"{combo[0]}-{combo[1]}", "names": f"{horses[i]['name']}-{horses[j]['name']}", "prob": prob, "odds": q_map[combo], "ev": ev, "ev_ratio": ev, "rank": get_ev_rank(ev)})
     quinella_bets.sort(key=lambda x: x["ev"], reverse=True)
 
-    # ワイド
+    # ワイド（wide_top_n で制御）
     w_map = {}
     for item in combo_odds.get("wide", []):
         combo = tuple(sorted(item["combo"]))
         w_map[combo] = sum(item["odds"]) / 2 if isinstance(item["odds"], list) else item["odds"]
+    w_indices = [h["index"] for h in ranked[:wide_top_n]]
     wide_bets = []
-    for a, b in combinations(top_indices, 2):
+    for a, b in combinations(w_indices, 2):
         i, j = min(a, b), max(a, b)
         combo = (horses[i]["num"], horses[j]["num"])
         if combo not in w_map:
@@ -454,7 +537,7 @@ def calculate_ev(data: dict) -> dict:
 
     # 3連複
     t_map = {tuple(sorted(i["combo"])): i["odds"] for i in combo_odds.get("trio", [])}
-    trio_indices = top_indices[:min(top_n, 7)]
+    trio_indices = [h["index"] for h in ranked[:min(top_n, 7)]]
     trio_bets = []
     for a, b, c in combinations(trio_indices, 3):
         i, j, k = sorted([a, b, c])
@@ -470,38 +553,96 @@ def calculate_ev(data: dict) -> dict:
     return {
         "win": win_bets, "place": place_bets,
         "quinella": quinella_bets, "wide": wide_bets, "trio": trio_bets,
-        "confidence": confidence, "temperature": temperature, "budget": budget,
+        "confidence": confidence, "confidence_gap": confidence_gap,
+        "low_confidence": low_confidence,
+        "temperature": temperature, "budget": budget,
+        "strategy": {
+            "top_n": top_n, "quinella_top_n": quinella_top_n,
+            "wide_top_n": wide_top_n, "confidence_min": confidence_min,
+            "skip_classes": skip_classes,
+            "has_win_model": has_win_model,
+        },
+        "warnings": warnings,
     }
 
 
 def print_ev_results(results: dict, race_info: dict):
     """期待値結果を表示"""
-    print(f"\nレース: {race_info.get('venue', '')} {race_info.get('race_number', 0)}R {race_info.get('name', '')}")
-    print(f"温度: {results['temperature']}  確信度: {results['confidence']:.1%}\n")
+    print(f"\n{'=' * 60}")
+    print(f"  {race_info.get('venue', '')} {race_info.get('race_number', 0)}R {race_info.get('name', '')}")
+    print(f"{'=' * 60}")
 
-    for label, key in [("単勝", "win"), ("複勝", "place"), ("馬連", "quinella"), ("ワイド", "wide"), ("3連複", "trio")]:
-        print(f"[{label}] トップ5")
-        for i, bet in enumerate(results[key][:5], 1):
+    strategy = results.get("strategy", {})
+    has_win_model = strategy.get("has_win_model", False)
+    model_label = "ML(win_model+isotonic)" if has_win_model else f"温度={results['temperature']}"
+    print(f"  モデル: {model_label}")
+    print(f"  確信度: {results['confidence']:.1%} (Top1-Top2差: {results.get('confidence_gap', 0):.3f})")
+
+    if strategy.get("quinella_top_n"):
+        print(f"  馬連: Top{strategy['quinella_top_n']}  ワイド: Top{strategy.get('wide_top_n', 3)}")
+
+    # 警告表示
+    warnings = results.get("warnings", [])
+    for w in warnings:
+        print(f"  [!] {w}")
+    print()
+
+    # 馬連・ワイドは「推奨」、3連複は「参考」
+    # 3-way split検証: 馬連 Val110%/Test111%, ワイド Test107%
+    # 3連複は Val111%だがTest93% → 参考扱い
+    bet_sections = [
+        ("馬連", "quinella", "推奨"),
+        ("ワイド", "wide", "推奨"),
+        ("3連複", "trio", "参考"),
+        ("単勝", "win", "参考"),
+        ("複勝", "place", "参考"),
+    ]
+
+    for label, key, tier in bet_sections:
+        bets = results.get(key, [])
+        tag = f"[{tier}]" if strategy else ""
+        print(f"[{label}] {tag} トップ5")
+        for i, bet in enumerate(bets[:5], 1):
             combo = bet.get("combo", f"{bet.get('num', '?')}番")
-            print(f"  [{i}] {combo:12} {bet['odds']:7.1f}倍 x {bet['prob']:5.1%} = EV {bet['ev']:.2f} ({bet['rank']}級)")
+            ev_mark = " *" if bet['ev'] >= 1.0 else ""
+            print(f"  [{i}] {combo:12} {bet['odds']:7.1f}倍 x {bet['prob']:5.1%} = EV {bet['ev']:.2f} ({bet['rank']}級){ev_mark}")
         print()
 
-    # 推奨買い目
-    print("=" * 50)
-    print("  推奨買い目（EV 1.0以上）")
-    print("=" * 50)
+    # 推奨買い目まとめ
+    print("=" * 60)
+    if results.get("low_confidence"):
+        print("  [見送り推奨] 確信度不足 — 全券種ベット見送り")
+        print("=" * 60)
+        print()
+        return
+
+    # 推奨券種（馬連・ワイド）のEV>=1.0
+    print("  推奨買い目（馬連・ワイド: EV 1.0以上）")
+    print("-" * 60)
     recs = []
-    for bt, bets in [("単勝", results["win"]), ("複勝", results["place"]),
-                      ("馬連", results["quinella"]), ("ワイド", results["wide"]),
-                      ("3連複", results["trio"])]:
+    for bt, bets, tier in [("馬連", results.get("quinella", []), "推奨"),
+                            ("ワイド", results.get("wide", []), "推奨")]:
         for bet in bets:
             if bet["ev"] >= 1.0:
-                recs.append((bt, bet))
+                recs.append((bt, bet, tier))
+
     if not recs:
-        print("\n  [見送り推奨] EV 1.0以上の買い目がありません")
+        print("  該当なし")
     else:
         recs.sort(key=lambda x: x[1]["ev"], reverse=True)
-        for i, (bt, bet) in enumerate(recs[:10], 1):
+        for i, (bt, bet, tier) in enumerate(recs[:10], 1):
             combo = bet.get("combo", f"{bet.get('num', '?')}番")
             print(f"  [{i}] {bt:6} {combo:12} EV {bet['ev']:.2f} ({bet['rank']}級)")
+
+    # 参考券種（3連複）
+    trio_recs = [bet for bet in results.get("trio", []) if bet["ev"] >= 1.0]
+    if trio_recs:
+        print()
+        print("  参考買い目（3連複: Testで不利、少額推奨）")
+        print("-" * 60)
+        for i, bet in enumerate(trio_recs[:5], 1):
+            combo = bet.get("combo", f"{bet.get('num', '?')}番")
+            print(f"  [{i}] 3連複 {combo:12} EV {bet['ev']:.2f} ({bet['rank']}級)")
+
+    print("=" * 60)
     print()
