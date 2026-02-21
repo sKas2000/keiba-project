@@ -57,7 +57,7 @@ class OddsScraper(BaseScraper):
             "venue": extract_venue(meeting_text),
             "race_number": race_num,
             "name": "", "grade": "", "surface": "",
-            "distance": 0, "direction": "",
+            "distance": 0, "direction": "", "post_time": "",
         }
         self.log("レース情報を自動取得中...")
 
@@ -101,6 +101,20 @@ class OddsScraper(BaseScraper):
                         break
         except Exception as e:
             self.log(f"  race_title取得エラー: {e}")
+
+        # 発走時刻（ページ内テキストから HH:MM パターンを探索）
+        try:
+            body_text = await self.page.locator("body").first.text_content()
+            if body_text:
+                # 「発走 HH:MM」「HH:MM発走」「発走時刻 HH:MM」パターン
+                tm = re.search(r"発走[時刻]*\s*(\d{1,2}:\d{2})", body_text)
+                if not tm:
+                    tm = re.search(r"(\d{1,2}:\d{2})\s*発走", body_text)
+                if tm:
+                    info["post_time"] = tm.group(1)
+                    self.log(f"  発走時刻: {info['post_time']}")
+        except Exception:
+            pass
 
         # レース名フォールバック
         if not info["name"]:

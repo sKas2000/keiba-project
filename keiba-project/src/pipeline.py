@@ -307,12 +307,12 @@ async def run_collect_pipeline(start_date: str, end_date: str,
 # オッズ監視パイプライン
 # ============================================================
 
-async def run_monitor_pipeline(interval: int = 30, token: str = None,
+async def run_monitor_pipeline(before: int = 5, token: str = None,
                                headless: bool = True, venue: str = None):
-    """オッズ監視サーバー（LINE通知付き）"""
+    """オッズ監視サーバー（発走時刻連動LINE通知）"""
     from src.monitor import RaceMonitor
     monitor = RaceMonitor(
-        interval=interval,
+        before=before,
         token=token,
         headless=headless,
         venue_filter=venue,

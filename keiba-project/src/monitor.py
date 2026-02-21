@@ -1,47 +1,54 @@
 """
-オッズ監視サーバー
-JRAオッズを定期的に再取得し、ML予測結果をLINE通知
+オッズ監視サーバー（スケジュール方式）
+各レースの発走時刻N分前にオッズ取得→ML予測→LINE通知
 """
 import asyncio
 import copy
-import json
 import re
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from config.settings import (
-    RACES_DIR, MODEL_DIR, EXPANDING_BEST_PARAMS, setup_encoding,
+    RACES_DIR, MODEL_DIR, setup_encoding,
 )
-from src.data.storage import write_json, read_json
+from src.data.storage import write_json
 from src.notify import (
-    send_line_notify, format_race_notification,
-    format_odds_change_notification, get_token,
+    send_line_notify, format_race_notification, get_token,
 )
+
+
+# JRA標準発走時刻（post_timeが取得できない場合のフォールバック）
+# 開催場・季節で多少ズレるが概算として十分
+DEFAULT_POST_TIMES = {
+    1: "10:00", 2: "10:30", 3: "11:00", 4: "11:30",
+    5: "12:25", 6: "12:55", 7: "13:25", 8: "13:55",
+    9: "14:25", 10: "14:55", 11: "15:25", 12: "15:40",
+}
 
 
 class RaceMonitor:
-    """JRAオッズ監視 + ML予測 + LINE通知サーバー"""
+    """レース発走時刻に合わせたスケジュール実行モニター"""
 
-    def __init__(self, interval: int = 30, token: str = None,
+    def __init__(self, before: int = 5, token: str = None,
                  headless: bool = True, venue_filter: str = None):
         """
         Args:
-            interval: 再スキャン間隔（分）
+            before: 発走何分前にバッチ実行するか（デフォルト5分）
             token: LINE Notify トークン
             headless: ブラウザ非表示
             venue_filter: 会場フィルタ（例: "東京", "中山,東京"）
         """
-        self.interval = interval
+        self.before = before
         self.token = token or get_token()
         self.headless = headless
         self.venue_filter = set(venue_filter.split(",")) if venue_filter else None
 
-        # 監視データ
+        # データ
         self.monitor_dir = RACES_DIR / "monitor" / datetime.now().strftime("%Y%m%d")
-        self.races = {}          # race_key -> {data, enriched, predicted, race_info}
-        self.prev_recs = {}      # race_key -> [(bet_type, bet_dict), ...]
+        self.races = {}          # race_key -> {data, enriched, race_info, post_time}
         self.meeting_info = []   # [(index, text, venue), ...]
+        self.schedule = []       # [(datetime, race_key), ...] sorted
 
     def log(self, msg: str):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -70,9 +77,8 @@ class RaceMonitor:
 
         self.monitor_dir.mkdir(parents=True, exist_ok=True)
         self.log("オッズ監視サーバー開始")
-        self.log(f"  監視間隔: {self.interval}分")
+        self.log(f"  発走 {self.before}分前 にバッチ実行")
         self.log(f"  会場フィルタ: {self.venue_filter or '全会場'}")
-        self.log(f"  データ保存先: {self.monitor_dir}")
 
         # LINE疎通テスト
         if send_line_notify("\n[監視開始] オッズ監視サーバーが起動しました", self.token):
@@ -82,55 +88,56 @@ class RaceMonitor:
             return
 
         try:
-            # Phase 1: 初期スキャン（オッズ取得）
+            # Phase 1: レース一覧 + 発走時刻取得
             self.log("=" * 50)
-            self.log("Phase 1: オッズ取得")
+            self.log("Phase 1: レース一覧・発走時刻取得")
             self.log("=" * 50)
-            await self._scan_all_odds()
+            await self._scan_race_schedule()
 
             if not self.races:
                 self.log("[END] 本日のレースがありません")
                 send_line_notify("\n本日のJRAレースはありません", self.token)
                 return
 
-            self.log(f"  {len(self.races)} レース検出")
+            # スケジュール作成
+            self._build_schedule()
+
+            if not self.schedule:
+                self.log("[END] 実行予定のレースがありません（全て発走済み）")
+                send_line_notify("\n全レース発走済みです", self.token)
+                return
 
             # Phase 2: 馬データ補完（netkeiba）
             self.log("=" * 50)
             self.log("Phase 2: 馬データ補完（netkeiba）")
-            self.log("  ※ 1レースあたり約3分、全レースで30-60分かかります")
+            self.log("  ※ 1レースあたり約3分かかります")
             self.log("=" * 50)
             await self._enrich_all()
 
-            # Phase 3: 初回ML予測 + 通知
-            self.log("=" * 50)
-            self.log("Phase 3: ML予測 + 初回通知")
-            self.log("=" * 50)
-            self._predict_and_notify_all()
+            # スケジュール通知
+            schedule_text = self._format_schedule()
+            send_line_notify(schedule_text, self.token)
 
-            # Phase 4: 監視ループ
-            cycle = 1
-            while True:
-                self.log(f"\n--- {self.interval}分待機中 (Ctrl+Cで停止) ---")
-                await asyncio.sleep(self.interval * 60)
+            # Phase 3: スケジュール実行
+            self.log("=" * 50)
+            self.log("Phase 3: スケジュール実行開始")
+            self.log("=" * 50)
+            await self._run_schedule()
 
-                self.log("=" * 50)
-                self.log(f"再スキャン #{cycle}")
-                self.log("=" * 50)
-                await self._rescrape_odds()
-                self._predict_and_notify_updates()
-                cycle += 1
+            self.log("[完了] 全レースの処理が終了しました")
+            send_line_notify("\n[完了] 本日の全レース処理が終了しました", self.token)
 
         except KeyboardInterrupt:
             self.log("\n[停止] Ctrl+Cで停止しました")
             send_line_notify("\n[停止] オッズ監視サーバーを停止しました", self.token)
 
     # ==========================================================
-    # Phase 1: 全レースのオッズ取得
+    # Phase 1: レース一覧 + 発走時刻
     # ==========================================================
 
-    async def _scan_all_odds(self):
-        from src.scraping.odds import OddsScraper, build_input_json
+    async def _scan_race_schedule(self):
+        """全レースの情報と発走時刻を取得（オッズはまだ取らない）"""
+        from src.scraping.odds import OddsScraper
 
         scraper = OddsScraper(headless=self.headless, debug=False)
         await scraper.start()
@@ -140,7 +147,6 @@ class RaceMonitor:
                 self.log("[WARN] 開催情報が見つかりません")
                 return
 
-            # 会場情報を保存
             self.meeting_info = []
             for i, m in enumerate(meetings):
                 venue = self._extract_venue(m["text"])
@@ -152,7 +158,6 @@ class RaceMonitor:
                     self.log(f"  [{venue}] スキップ（フィルタ対象外）")
                     continue
 
-                # 開催を再取得して選択
                 meetings = await scraper.goto_odds_top()
                 if m_idx >= len(meetings):
                     continue
@@ -163,36 +168,23 @@ class RaceMonitor:
                     try:
                         await scraper.select_race(race_num)
                         race_info = await scraper.scrape_race_info(m_text, race_num)
-                        horses = await scraper.parse_win_place()
 
-                        if not horses:
-                            self.log(f"  {race_key}: 出走馬なし（スキップ）")
-                            continue
-
-                        quinella = await scraper.parse_triangle_odds("馬連")
-                        wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
-                        trio = await scraper.parse_trio()
-
-                        scraped = {
-                            "horses": horses, "quinella": quinella,
-                            "wide": wide, "trio": trio,
-                        }
-                        data = build_input_json(scraped, race_info)
+                        # 発走時刻
+                        post_time_str = race_info.get("post_time", "")
+                        if not post_time_str:
+                            post_time_str = DEFAULT_POST_TIMES.get(race_num, "12:00")
+                            self.log(f"  {race_key}: 発走時刻未検出 → デフォルト {post_time_str}")
 
                         self.races[race_key] = {
-                            "data": data,
+                            "data": None,
                             "enriched": None,
                             "race_info": race_info,
                             "meeting_idx": m_idx,
+                            "post_time": post_time_str,
                         }
 
-                        # ファイル保存
-                        path = self.monitor_dir / f"{race_key}_input.json"
-                        write_json(data, path)
-
-                        n_horses = len(horses)
-                        self.log(f"  {race_key}: {race_info.get('name', '')} "
-                                 f"({n_horses}頭, 馬連{len(quinella)}組)")
+                        name = race_info.get("name", "")
+                        self.log(f"  {race_key}: {name} 発走{post_time_str}")
 
                     except Exception as e:
                         self.log(f"  {race_key}: エラー ({e})")
@@ -200,19 +192,111 @@ class RaceMonitor:
         finally:
             await scraper.close()
 
+    def _build_schedule(self):
+        """発走時刻からスケジュールを作成"""
+        today = datetime.now().date()
+        now = datetime.now()
+        self.schedule = []
+
+        for race_key, race in self.races.items():
+            post_str = race["post_time"]
+            try:
+                h, m = map(int, post_str.split(":"))
+                post_dt = datetime.combine(today, datetime.min.time().replace(hour=h, minute=m))
+                trigger_dt = post_dt - timedelta(minutes=self.before)
+
+                if trigger_dt > now:
+                    self.schedule.append((trigger_dt, post_dt, race_key))
+                else:
+                    self.log(f"  {race_key}: 発走{post_str} → 既に通過（スキップ）")
+            except (ValueError, TypeError):
+                self.log(f"  {race_key}: 時刻パースエラー '{post_str}'")
+
+        self.schedule.sort(key=lambda x: x[0])
+        self.log(f"\n  スケジュール: {len(self.schedule)} レース")
+        for trigger_dt, post_dt, race_key in self.schedule:
+            self.log(f"    {trigger_dt.strftime('%H:%M')} 実行 → {race_key} (発走{post_dt.strftime('%H:%M')})")
+
+    def _format_schedule(self) -> str:
+        """スケジュールをLINE通知用にフォーマット"""
+        lines = [f"\n[スケジュール] {len(self.schedule)}レース (発走{self.before}分前に通知)"]
+        for trigger_dt, post_dt, race_key in self.schedule:
+            race = self.races[race_key]
+            name = race["race_info"].get("name", "")
+            lines.append(f"{post_dt.strftime('%H:%M')} {race_key} {name}")
+        return "\n".join(lines)
+
     # ==========================================================
     # Phase 2: 馬データ補完
     # ==========================================================
 
     async def _enrich_all(self):
+        """全レースの馬データを補完（スケジュール対象のみ）"""
         from src.scraping.horse import HorseScraper
+        from src.scraping.odds import OddsScraper, build_input_json
 
-        scraper = HorseScraper(headless=self.headless, debug=False)
+        # まずスケジュール対象レースのオッズを取得
+        scheduled_keys = {rk for _, _, rk in self.schedule}
+        self.log(f"  オッズ取得対象: {len(scheduled_keys)}レース")
+
+        odds_scraper = OddsScraper(headless=self.headless, debug=False)
+        await odds_scraper.start()
         try:
-            await scraper.start()
-            total = len(self.races)
+            for m_idx, m_text, venue in self.meeting_info:
+                if self.venue_filter and venue not in self.venue_filter:
+                    continue
 
-            for r_idx, (race_key, race) in enumerate(self.races.items(), 1):
+                meetings = await odds_scraper.goto_odds_top()
+                if m_idx >= len(meetings):
+                    continue
+                await odds_scraper.select_meeting(meetings[m_idx]["element"])
+
+                for race_num in range(1, 13):
+                    race_key = f"{venue}{race_num}R"
+                    if race_key not in scheduled_keys:
+                        continue
+                    race = self.races.get(race_key)
+                    if not race:
+                        continue
+
+                    try:
+                        await odds_scraper.select_race(race_num)
+                        horses = await odds_scraper.parse_win_place()
+                        if not horses:
+                            self.log(f"  {race_key}: 出走馬なし")
+                            continue
+
+                        quinella = await odds_scraper.parse_triangle_odds("馬連")
+                        wide = await odds_scraper.parse_triangle_odds("ワイド", is_range=True)
+                        trio = await odds_scraper.parse_trio()
+
+                        scraped = {
+                            "horses": horses, "quinella": quinella,
+                            "wide": wide, "trio": trio,
+                        }
+                        data = build_input_json(scraped, race["race_info"])
+                        race["data"] = data
+
+                        path = self.monitor_dir / f"{race_key}_input.json"
+                        write_json(data, path)
+                        self.log(f"  {race_key}: オッズ取得完了 ({len(horses)}頭)")
+
+                    except Exception as e:
+                        self.log(f"  {race_key}: オッズ取得エラー ({e})")
+        finally:
+            await odds_scraper.close()
+
+        # 馬データ補完
+        horse_scraper = HorseScraper(headless=self.headless, debug=False)
+        try:
+            await horse_scraper.start()
+
+            enriched_count = 0
+            targets = [(k, r) for k, r in self.races.items()
+                       if k in scheduled_keys and r.get("data")]
+            total = len(targets)
+
+            for r_idx, (race_key, race) in enumerate(targets, 1):
                 data = copy.deepcopy(race["data"])
                 horses = data.get("horses", [])
                 self.log(f"\n[{r_idx}/{total}] {race_key}: {len(horses)}頭を補完中...")
@@ -228,9 +312,8 @@ class RaceMonitor:
                         continue
 
                     if i > 0 and i % 5 == 0:
-                        await scraper.restart()
+                        await horse_scraper.restart()
 
-                    # 生年計算
                     birth_year = 0
                     sex_age = horse.get("sex_age", "")
                     race_year = data.get("race", {}).get("date", "")[:4]
@@ -240,13 +323,13 @@ class RaceMonitor:
                             birth_year = int(race_year) - int(age_match.group(1))
 
                     try:
-                        horse_url = await scraper.search_horse(
+                        horse_url = await horse_scraper.search_horse(
                             horse_name, birth_year=birth_year
                         )
                         if horse_url:
-                            past_races = await scraper.scrape_horse_past_races(horse_url)
+                            past_races = await horse_scraper.scrape_horse_past_races(horse_url)
                             horse["past_races"] = past_races
-                            trainer_name = await scraper.get_trainer_name()
+                            trainer_name = await horse_scraper.get_trainer_name()
                             if trainer_name:
                                 horse["trainer_name"] = trainer_name
                         else:
@@ -259,15 +342,15 @@ class RaceMonitor:
                     if jockey_name:
                         try:
                             past = horse.get("past_races", [])
-                            jockey_id = scraper.extract_jockey_id_from_past_races(
+                            jockey_id = horse_scraper.extract_jockey_id_from_past_races(
                                 jockey_name, past
                             )
                             if jockey_id:
-                                stats = await scraper.get_jockey_stats_by_id(
+                                stats = await horse_scraper.get_jockey_stats_by_id(
                                     jockey_id, jockey_name
                                 )
                             else:
-                                stats = await scraper.search_jockey(jockey_name)
+                                stats = await horse_scraper.search_jockey(jockey_name)
                             horse["jockey_stats"] = stats
                         except Exception:
                             horse["jockey_stats"] = {
@@ -282,176 +365,134 @@ class RaceMonitor:
 
                     await asyncio.sleep(2.0)
 
-                # enriched データを保存
                 race["enriched"] = data
                 path = self.monitor_dir / f"{race_key}_enriched.json"
                 write_json(data, path)
-                self.log(f"  {race_key}: 補完完了")
+                enriched_count += 1
+                self.log(f"  {race_key}: 補完完了 ({enriched_count}/{total})")
 
         except KeyboardInterrupt:
-            self.log("[!] 補完中断 — 完了済みレースのみ監視します")
+            self.log("[!] 補完中断 — 完了済みレースのみ対象とします")
         except Exception as e:
             self.log(f"[ERROR] 補完エラー: {e}")
             traceback.print_exc()
         finally:
-            await scraper.close()
+            await horse_scraper.close()
+
+        self.log(f"\n  補完完了: {enriched_count}/{total} レース")
 
     # ==========================================================
-    # Phase 3: ML予測 + 初回通知
+    # Phase 3: スケジュール実行
     # ==========================================================
 
-    def _predict_and_notify_all(self):
+    async def _run_schedule(self):
+        """発走時刻に合わせてバッチ実行"""
+        for i, (trigger_dt, post_dt, race_key) in enumerate(self.schedule):
+            race = self.races.get(race_key)
+            if not race or not race.get("enriched"):
+                self.log(f"  {race_key}: enrichedデータなし（スキップ）")
+                continue
+
+            now = datetime.now()
+            wait_seconds = (trigger_dt - now).total_seconds()
+
+            if wait_seconds > 0:
+                remaining = len(self.schedule) - i
+                self.log(f"\n--- 次: {race_key} 発走{post_dt.strftime('%H:%M')} "
+                         f"(あと{int(wait_seconds//60)}分{int(wait_seconds%60)}秒待機, "
+                         f"残り{remaining}レース) ---")
+                await asyncio.sleep(wait_seconds)
+
+            self.log(f"\n{'=' * 50}")
+            self.log(f"[実行] {race_key} (発走{post_dt.strftime('%H:%M')})")
+            self.log(f"{'=' * 50}")
+
+            # 最新オッズ取得 + ML予測 + 通知
+            await self._scrape_predict_notify(race_key)
+
+    async def _scrape_predict_notify(self, race_key: str):
+        """単一レースのオッズ再取得→ML予測→LINE通知"""
+        from src.scraping.odds import OddsScraper
         from src.model.predictor import score_ml, calculate_ev
 
-        summary_lines = ["\n[初回予測結果]"]
-        has_recs = False
+        race = self.races[race_key]
+        race_info = race["race_info"]
+        venue = race_info.get("venue", "")
+        race_num = race_info.get("race_number", 0)
+        m_idx = race["meeting_idx"]
 
-        for race_key, race in self.races.items():
-            enriched = race.get("enriched")
-            if enriched is None:
-                continue
-
-            data = copy.deepcopy(enriched)
-            result = score_ml(data, model_dir=MODEL_DIR)
-            if result is None:
-                self.log(f"  {race_key}: MLモデル未学習（スキップ）")
-                continue
-
-            ev_results = calculate_ev(result)
-            race_info = data.get("race", {})
-
-            # 推奨買い目を収集
-            recs = self._collect_recommendations(ev_results)
-            self.prev_recs[race_key] = recs
-
-            # ファイル保存
-            result["ev_results"] = ev_results
-            path = self.monitor_dir / f"{race_key}_predicted.json"
-            write_json(result, path)
-
-            # 通知テキスト作成
-            if recs and not ev_results.get("low_confidence"):
-                has_recs = True
-                text = format_race_notification(race_info, ev_results)
-                summary_lines.append(text)
-                self.log(f"  {race_key}: {len(recs)} 件の推奨買い目")
-            else:
-                reason = "確信度不足" if ev_results.get("low_confidence") else "推奨なし"
-                self.log(f"  {race_key}: {reason}")
-
-        # LINE通知送信（1000文字制限のため分割送信）
-        if has_recs:
-            self._send_chunked(summary_lines)
-        else:
-            send_line_notify("\n[初回結果] 推奨買い目のあるレースはありません", self.token)
-
-    # ==========================================================
-    # Phase 4: オッズ再取得 + 変動通知
-    # ==========================================================
-
-    async def _rescrape_odds(self):
-        """オッズだけ再取得し、enriched データに反映"""
-        from src.scraping.odds import OddsScraper
-
+        # 最新オッズ取得
         scraper = OddsScraper(headless=self.headless, debug=False)
         await scraper.start()
         try:
-            for m_idx, m_text, venue in self.meeting_info:
-                if self.venue_filter and venue not in self.venue_filter:
-                    continue
-
-                meetings = await scraper.goto_odds_top()
-                if m_idx >= len(meetings):
-                    continue
+            meetings = await scraper.goto_odds_top()
+            if m_idx < len(meetings):
                 await scraper.select_meeting(meetings[m_idx]["element"])
+                await scraper.select_race(race_num)
 
-                for race_num in range(1, 13):
-                    race_key = f"{venue}{race_num}R"
-                    race = self.races.get(race_key)
-                    if not race or not race.get("enriched"):
-                        continue
+                horses_new = await scraper.parse_win_place()
+                if horses_new:
+                    quinella = await scraper.parse_triangle_odds("馬連")
+                    wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
+                    trio = await scraper.parse_trio()
 
-                    try:
-                        await scraper.select_race(race_num)
-                        horses = await scraper.parse_win_place()
-
-                        if not horses:
-                            continue
-
-                        quinella = await scraper.parse_triangle_odds("馬連")
-                        wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
-                        trio = await scraper.parse_trio()
-
-                        # enriched データのオッズだけ更新
-                        enriched = race["enriched"]
-                        for h_new in horses:
-                            for h_old in enriched.get("horses", []):
-                                if h_old.get("num") == h_new["num"]:
-                                    h_old["odds_win"] = h_new["odds_win"]
-                                    h_old["odds_place"] = h_new["odds_place"]
-                                    break
-
-                        enriched["combo_odds"] = {
-                            "quinella": quinella,
-                            "wide": wide,
-                            "trio": trio,
-                        }
-                        self.log(f"  {race_key}: オッズ更新完了")
-
-                    except Exception as e:
-                        self.log(f"  {race_key}: 再取得エラー ({e})")
-                        continue
+                    # enriched データのオッズだけ更新
+                    enriched = race["enriched"]
+                    for h_new in horses_new:
+                        for h_old in enriched.get("horses", []):
+                            if h_old.get("num") == h_new["num"]:
+                                h_old["odds_win"] = h_new["odds_win"]
+                                h_old["odds_place"] = h_new["odds_place"]
+                                break
+                    enriched["combo_odds"] = {
+                        "quinella": quinella,
+                        "wide": wide,
+                        "trio": trio,
+                    }
+                    self.log(f"  最新オッズ取得完了")
+                else:
+                    self.log(f"  [WARN] オッズ取得失敗 — 既存データで予測")
+        except Exception as e:
+            self.log(f"  [WARN] オッズ取得エラー ({e}) — 既存データで予測")
         finally:
             await scraper.close()
 
-    def _predict_and_notify_updates(self):
-        """再予測して変動を通知"""
-        from src.model.predictor import score_ml, calculate_ev
-
-        changes = []
-
-        for race_key, race in self.races.items():
-            enriched = race.get("enriched")
-            if enriched is None:
-                continue
-
-            data = copy.deepcopy(enriched)
-            result = score_ml(data, model_dir=MODEL_DIR)
-            if result is None:
-                continue
-
-            ev_results = calculate_ev(result)
-            race_info = data.get("race", {})
-            curr_recs = self._collect_recommendations(ev_results)
-            prev_recs = self.prev_recs.get(race_key, [])
-
-            # 変動検知
-            change_text = format_odds_change_notification(
-                race_info, prev_recs, curr_recs
+        # ML予測
+        data = copy.deepcopy(race["enriched"])
+        result = score_ml(data, model_dir=MODEL_DIR)
+        if result is None:
+            self.log(f"  [WARN] MLモデル未学習")
+            send_line_notify(
+                f"\n{venue}{race_num}R: MLモデル未学習のため予測不可", self.token
             )
-            if change_text:
-                changes.append(change_text)
-                self.log(f"  {race_key}: 推奨変動あり")
-            else:
-                self.log(f"  {race_key}: 変動なし")
+            return
 
-            self.prev_recs[race_key] = curr_recs
+        ev_results = calculate_ev(result)
 
-            # ファイル更新
-            result["ev_results"] = ev_results
-            path = self.monitor_dir / f"{race_key}_predicted.json"
-            write_json(result, path)
+        # ファイル保存
+        result["ev_results"] = ev_results
+        path = self.monitor_dir / f"{race_key}_predicted.json"
+        write_json(result, path)
 
-        if changes:
-            self._send_chunked(changes)
+        # LINE通知
+        text = format_race_notification(race_info, ev_results)
+        send_line_notify(text, self.token)
+
+        # コンソールにも表示
+        recs = self._collect_recommendations(ev_results)
+        if recs:
+            self.log(f"  {len(recs)} 件の推奨買い目を通知")
+        elif ev_results.get("low_confidence"):
+            self.log(f"  確信度不足 → 見送り推奨")
         else:
-            self.log("  全レース変動なし")
+            self.log(f"  推奨買い目なし")
 
     # ==========================================================
     # ヘルパー
     # ==========================================================
 
-    def _collect_recommendations(self, ev_results: dict) -> list:
+    @staticmethod
+    def _collect_recommendations(ev_results: dict) -> list:
         """推奨買い目を収集 → [(bet_type, bet_dict), ...]"""
         recs = []
         if ev_results.get("low_confidence"):
@@ -461,19 +502,6 @@ class RaceMonitor:
                 if bet["ev"] >= 1.0:
                     recs.append((bt, bet))
         return recs
-
-    def _send_chunked(self, lines: list):
-        """1000文字制限でチャンク分割送信"""
-        chunk = ""
-        for line in lines:
-            if len(chunk) + len(line) + 1 > 950:
-                if chunk:
-                    send_line_notify(chunk, self.token)
-                chunk = line
-            else:
-                chunk += ("\n" if chunk else "") + line
-        if chunk:
-            send_line_notify(chunk, self.token)
 
     @staticmethod
     def _extract_venue(meeting_text: str) -> str:
