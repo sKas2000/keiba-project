@@ -207,14 +207,29 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           ev_threshold: float = 0.0,
                           compare_ev: bool = False,
                           optimize_temp: bool = False,
-                          temperature: float = 1.0):
+                          temperature: float = 1.0,
+                          explore: bool = False,
+                          confidence_min: float = 0.0,
+                          odds_min: float = 0.0,
+                          odds_max: float = 0.0,
+                          axis_flow: bool = False,
+                          kelly_fraction: float = 0.0):
     """バックテストパイプライン"""
     from src.model.evaluator import (
         run_backtest, print_backtest_report, save_backtest_report,
         compare_ev_thresholds, print_ev_comparison, optimize_temperature,
+        explore_strategies,
     )
 
     model_path = Path(model_dir) if model_dir else None
+
+    if explore:
+        return explore_strategies(
+            input_path=input_path,
+            model_dir=model_path,
+            val_start=val_start,
+            val_end=val_end,
+        )
 
     if optimize_temp:
         best = optimize_temperature(
@@ -246,6 +261,11 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
         top_n=top_n,
         ev_threshold=ev_threshold,
         temperature=temperature,
+        confidence_min=confidence_min,
+        odds_min=odds_min,
+        odds_max=odds_max,
+        axis_flow=axis_flow,
+        kelly_fraction=kelly_fraction,
     )
     print_backtest_report(results)
 

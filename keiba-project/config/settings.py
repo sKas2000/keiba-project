@@ -112,6 +112,12 @@ FEATURE_COLUMNS = [
     "class_change",
     # v4: 斤量変化
     "weight_carried_change",
+    # v5: ローテーションパターン
+    "prev_interval_2", "is_second_start",
+    # v6: 展開予測（レース内脚質構成）
+    "race_n_front", "race_n_mid", "race_n_back", "pace_advantage",
+    # v7: コース×距離×枠順バイアス
+    "post_position_bias",
 ]
 
 CATEGORICAL_FEATURES = [

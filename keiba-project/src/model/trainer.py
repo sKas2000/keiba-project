@@ -1,6 +1,7 @@
 """
 モデル学習モジュール
-LightGBM 二値分類 + ランキング（LambdaRank） + Platt Scaling キャリブレーション
+LightGBM 二値分類 + 勝率直接推定 + ランキング（LambdaRank）
++ Platt Scaling / Isotonic Regression キャリブレーション
 """
 import json
 import pickle
@@ -11,6 +12,7 @@ import pandas as pd
 import lightgbm as lgb
 from sklearn.metrics import roc_auc_score, log_loss, accuracy_score, brier_score_loss
 from sklearn.linear_model import LogisticRegression
+from sklearn.isotonic import IsotonicRegression
 
 from config.settings import FEATURE_COLUMNS, CATEGORICAL_FEATURES, MODEL_DIR, PROCESSED_DIR
 
@@ -131,6 +133,63 @@ def _calc_top3_hit_rate(val_df: pd.DataFrame) -> float:
 
 
 # ============================================================
+# 勝率直接推定モデル（1着予測）
+# ============================================================
+
+def train_win_model(train_df: pd.DataFrame, val_df: pd.DataFrame,
+                    params: dict = None) -> tuple:
+    """勝率直接推定モデル（1着 vs others）を学習"""
+    params = params or DEFAULT_BINARY_PARAMS.copy()
+    params["is_unbalance"] = True  # クラス不均衡対応（陽性率 ~7%）
+
+    available = [c for c in FEATURE_COLUMNS if c in train_df.columns]
+    cat_indices = _get_categorical_indices(available)
+
+    X_train = train_df[available].values.astype(np.float32)
+    X_val = val_df[available].values.astype(np.float32)
+    y_train = (train_df["finish_position"] == 1).astype(int).values
+    y_val = (val_df["finish_position"] == 1).astype(int).values
+
+    dtrain = lgb.Dataset(X_train, label=y_train, feature_name=available,
+                         categorical_feature=cat_indices if cat_indices else "auto")
+    dval = lgb.Dataset(X_val, label=y_val, feature_name=available, reference=dtrain)
+
+    callbacks = [lgb.log_evaluation(100), lgb.early_stopping(50)]
+
+    model = lgb.train(
+        params, dtrain, num_boost_round=1000,
+        valid_sets=[dtrain, dval], valid_names=["train", "val"],
+        callbacks=callbacks,
+    )
+
+    y_pred = model.predict(X_val)
+    auc = roc_auc_score(y_val, y_pred)
+    logloss = log_loss(y_val, y_pred)
+
+    # Top1的中率
+    val_copy = val_df.copy()
+    val_copy["pred_win"] = y_pred
+    top1_hits = total_races = 0
+    for _, grp in val_copy.groupby("race_id"):
+        if len(grp) < 3:
+            continue
+        if grp.nlargest(1, "pred_win").iloc[0]["finish_position"] == 1:
+            top1_hits += 1
+        total_races += 1
+
+    metrics = {
+        "auc": round(auc, 4),
+        "logloss": round(logloss, 4),
+        "top1_hit_rate": round(top1_hits / total_races, 4) if total_races > 0 else 0,
+        "num_iterations": model.best_iteration,
+        "train_size": len(X_train),
+        "val_size": len(X_val),
+        "positive_rate": round(float(y_val.mean()), 4),
+    }
+    return model, metrics
+
+
+# ============================================================
 # Platt Scaling キャリブレーション
 # ============================================================
 
@@ -189,6 +248,70 @@ def calibrate_probs(raw_probs: np.ndarray, calibrator: LogisticRegression) -> np
     clipped = np.clip(raw_probs, 1e-6, 1 - 1e-6)
     logits = np.log(clipped / (1 - clipped)).reshape(-1, 1)
     return calibrator.predict_proba(logits)[:, 1]
+
+
+# ============================================================
+# Isotonic Regression キャリブレーション
+# ============================================================
+
+def fit_isotonic_calibrator(model, val_df: pd.DataFrame, target: str = "top3",
+                            save_name: str = "isotonic",
+                            model_dir: Path = None) -> IsotonicRegression:
+    """Isotonic Regression: 非パラメトリック確率キャリブレーション
+
+    Platt Scalingより柔軟。任意の単調歪みを補正可能。
+    """
+    model_dir = model_dir or MODEL_DIR
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    available = [c for c in FEATURE_COLUMNS if c in val_df.columns]
+    X_val = val_df[available].values.astype(np.float32)
+
+    if target == "win":
+        y_val = (val_df["finish_position"] == 1).astype(int).values
+    elif target in val_df.columns:
+        y_val = val_df[target].values
+    else:
+        raise ValueError(f"Unknown target: {target}")
+
+    raw_probs = model.predict(X_val)
+
+    iso = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+    iso.fit(raw_probs, y_val)
+
+    cal_path = model_dir / f"{save_name}.pkl"
+    with open(cal_path, "wb") as f:
+        pickle.dump(iso, f)
+
+    cal_probs = iso.predict(raw_probs)
+    raw_brier = brier_score_loss(y_val, np.clip(raw_probs, 0, 1))
+    cal_brier = brier_score_loss(y_val, cal_probs)
+
+    print(f"  [{save_name}]")
+    print(f"    Brier Score (raw):        {raw_brier:.6f}")
+    print(f"    Brier Score (calibrated): {cal_brier:.6f}")
+    improvement = (raw_brier - cal_brier) / raw_brier * 100 if raw_brier > 0 else 0
+    print(f"    改善: {improvement:.1f}%")
+    print(f"    保存: {cal_path}")
+
+    return iso
+
+
+def load_isotonic_calibrator(save_name: str = "isotonic",
+                             model_dir: Path = None) -> IsotonicRegression | None:
+    """保存済みIsotonicキャリブレーターを読み込み"""
+    model_dir = model_dir or MODEL_DIR
+    cal_path = model_dir / f"{save_name}.pkl"
+    if not cal_path.exists():
+        return None
+    with open(cal_path, "rb") as f:
+        return pickle.load(f)
+
+
+def calibrate_isotonic(raw_probs: np.ndarray,
+                       calibrator: IsotonicRegression) -> np.ndarray:
+    """Isotonic Regressionでキャリブレーション"""
+    return calibrator.predict(raw_probs)
 
 
 # ============================================================
@@ -459,6 +582,30 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
     print(f"\n{'─' * 40}")
     print(f"[Platt Scaling キャリブレーション]")
     fit_calibrator(binary_model, val_df)
+
+    # 勝率直接推定モデル
+    print(f"\n{'─' * 40}")
+    print(f"[勝率直接推定モデル（1着予測）]")
+    win_params = binary_params.copy()
+    win_model, win_metrics = train_win_model(train_df, val_df, win_params)
+    print(f"  AUC:        {win_metrics['auc']}")
+    print(f"  LogLoss:    {win_metrics['logloss']}")
+    print(f"  Top1的中率: {win_metrics['top1_hit_rate']}")
+    print(f"  陽性率:     {win_metrics['positive_rate']}")
+    save_model(win_model, win_metrics, available_features, "win")
+
+    fi_win = get_feature_importance(win_model, available_features)
+    print(f"\n  [特徴量重要度 Top10 (Win)]")
+    for _, row in fi_win.head(10).iterrows():
+        print(f"    {row['feature']:30s} {row['importance_pct']:5.1f}%")
+
+    # Isotonic Regression キャリブレーション
+    print(f"\n{'─' * 40}")
+    print(f"[Isotonic Regression キャリブレーション]")
+    fit_isotonic_calibrator(binary_model, val_df, target="top3",
+                            save_name="binary_isotonic")
+    fit_isotonic_calibrator(win_model, val_df, target="win",
+                            save_name="win_isotonic")
 
     # ランキングモデル
     print(f"\n{'─' * 40}")

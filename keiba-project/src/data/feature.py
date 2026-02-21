@@ -43,6 +43,8 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         "class_change",
         # v4: 斤量変化
         "weight_carried_change",
+        # v5: ローテーションパターン
+        "prev_interval_2", "is_second_start",
     ]
     for col in feature_cols:
         df[col] = 0.0
@@ -167,6 +169,18 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                 if curr_wc > 0 and prev_wc > 0:
                     df.at[idx, "weight_carried_change"] = curr_wc - prev_wc
 
+            # v5: ローテーションパターン（前走間隔 + 前々走間隔）
+            if len(past) >= 2:
+                d0 = past.iloc[-1]["race_date"]
+                d1 = past.iloc[-2]["race_date"]
+                current_date = df.at[idx, "race_date"]
+                if pd.notna(d0) and pd.notna(d1) and pd.notna(current_date):
+                    interval_1 = (current_date - d0).days
+                    interval_2 = (d0 - d1).days
+                    df.at[idx, "prev_interval_2"] = interval_2
+                    # 叩き良化判定: 前々走間隔>60日 and 前走間隔<45日 → 叩き2走目
+                    df.at[idx, "is_second_start"] = 1.0 if interval_2 > 60 and interval_1 < 45 else 0.0
+
     # 一時カラム削除
     df = df.drop(columns=["_group_key"])
     return df
@@ -251,6 +265,88 @@ def compute_trainer_features(df: pd.DataFrame) -> pd.DataFrame:
 # 目的変数・特徴量選択
 # ============================================================
 
+def compute_race_pace_features(df: pd.DataFrame) -> pd.DataFrame:
+    """レース内の脚質構成から展開予測特徴量を計算
+    running_style: 0=逃げ, 1=先行, 2=差し, 3=追込
+    """
+    pace_cols = ["race_n_front", "race_n_mid", "race_n_back", "pace_advantage"]
+    for col in pace_cols:
+        df[col] = 0.0
+
+    for race_id, group in df.groupby("race_id"):
+        styles = group["running_style"].values
+        n_front = np.sum(styles <= 1)   # 逃げ+先行
+        n_mid = np.sum(styles == 2)     # 差し
+        n_back = np.sum(styles == 3)    # 追込
+
+        indices = group.index
+        df.loc[indices, "race_n_front"] = n_front
+        df.loc[indices, "race_n_mid"] = n_mid
+        df.loc[indices, "race_n_back"] = n_back
+
+        # 自分の脚質に対するペース有利不利
+        # 逃げ・先行馬が多い=ハイペース=差し有利
+        # 逃げ・先行馬が少ない=スローペース=先行有利
+        for idx in indices:
+            style = df.at[idx, "running_style"]
+            if n_front >= 4:
+                # ハイペース: 差し・追込に有利
+                df.at[idx, "pace_advantage"] = 1.0 if style >= 2 else -1.0
+            elif n_front <= 2:
+                # スローペース: 逃げ・先行に有利
+                df.at[idx, "pace_advantage"] = 1.0 if style <= 1 else -1.0
+            else:
+                df.at[idx, "pace_advantage"] = 0.0
+
+    return df
+
+
+def compute_post_position_bias(df: pd.DataFrame) -> pd.DataFrame:
+    """コース×距離カテゴリ×枠番の複勝率バイアスを計算（リーケージ防止）"""
+    df["post_position_bias"] = 0.0
+    if "course_id_code" not in df.columns or "frame_number" not in df.columns:
+        return df
+
+    df = df.sort_values(["race_date", "race_id", "finish_position"]).reset_index(drop=True)
+    dates = sorted(df["race_date"].unique())
+
+    # 累積統計を効率的に計算するためにdaily batch
+    # キー: (course_id_code, distance_cat, frame_number) → {place_count, total_count}
+    cumulative = {}
+
+    for date in dates:
+        date_mask = df["race_date"] == date
+        date_indices = df[date_mask].index
+
+        # 現在の累積値を適用（この日のレースに対して過去データを使う）
+        for idx in date_indices:
+            key = (
+                int(df.at[idx, "course_id_code"]),
+                int(df.at[idx, "distance_cat"]),
+                int(df.at[idx, "frame_number"]),
+            )
+            stats = cumulative.get(key)
+            if stats and stats["total"] >= 20:
+                # 複勝率の偏差（全体平均≒22%からの乖離）
+                rate = stats["place"] / stats["total"]
+                df.at[idx, "post_position_bias"] = round(rate - 0.22, 4)
+
+        # この日のデータを累積に追加
+        for idx in date_indices:
+            key = (
+                int(df.at[idx, "course_id_code"]),
+                int(df.at[idx, "distance_cat"]),
+                int(df.at[idx, "frame_number"]),
+            )
+            if key not in cumulative:
+                cumulative[key] = {"place": 0, "total": 0}
+            cumulative[key]["total"] += 1
+            if df.at[idx, "finish_position"] <= 3:
+                cumulative[key]["place"] += 1
+
+    return df
+
+
 def create_target(df: pd.DataFrame) -> pd.DataFrame:
     df["top3"] = (df["finish_position"] <= 3).astype(int)
     return df
@@ -290,10 +386,16 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
     print("[6/8] 調教師統計特徴量を計算中...")
     df = compute_trainer_features(df)
 
-    print("[7/8] 目的変数作成")
+    print("[7/10] 展開予測特徴量（レース内脚質構成）を計算中...")
+    df = compute_race_pace_features(df)
+
+    print("[8/10] コース×距離×枠順バイアスを計算中...")
+    df = compute_post_position_bias(df)
+
+    print("[9/10] 目的変数作成")
     df = create_target(df)
 
-    print("[8/8] 特徴量選択・保存")
+    print("[10/10] 特徴量選択・保存")
     df_features = select_features(df)
 
     # 決定論的ソート（再現性保証）

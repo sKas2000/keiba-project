@@ -3,8 +3,10 @@
 学習済みモデルの予測結果で過去レースの回収率をシミュレーション
 全7券種対応: 単勝・複勝・馬連・ワイド・馬単・3連複・3連単
 EVフィルタリング + 実払い戻しデータ対応
+Phase 3: 勝率直接推定モデル + Isotonic Regression + Kelly基準
 """
 import json
+import pickle
 from itertools import combinations, permutations
 from pathlib import Path
 
@@ -25,6 +27,20 @@ BET_LABELS = {
     "win": "単勝", "place": "複勝", "quinella": "馬連", "wide": "ワイド",
     "exacta": "馬単", "trio": "3連複", "trifecta": "3連単",
 }
+
+# Kelly基準のデフォルト銀行残高（ベットサイズ計算用）
+KELLY_BANKROLL = 100000
+
+
+def _kelly_fraction_calc(prob: float, odds: float) -> float:
+    """Kelly基準のベット割合を計算
+    f* = (b*p - q) / b  where b = odds-1, p = prob, q = 1-p
+    """
+    if odds <= 1 or prob <= 0:
+        return 0.0
+    b = odds - 1.0
+    f = (b * prob - (1 - prob)) / b
+    return max(0.0, f)
 
 
 # ============================================================
@@ -163,7 +179,15 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  temperature: float = 1.0,
                  exclude_newcomer: bool = True,
                  exclude_hurdle: bool = True,
-                 min_entries: int = 6) -> dict:
+                 min_entries: int = 6,
+                 # Phase 1 フィルタ
+                 confidence_min: float = 0.0,
+                 odds_min: float = 0.0,
+                 odds_max: float = 0.0,
+                 axis_flow: bool = False,
+                 # Phase 3: Kelly基準
+                 kelly_fraction: float = 0.0,
+                 ) -> dict:
     """
     全券種対応EVフィルタ付きバックテスト
 
@@ -176,6 +200,11 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         returns_path: returns.csv パス（実払い戻し使用）
         val_end: 検証終了日（指定しない場合はデータ末尾まで）
         temperature: ソフトマックス温度パラメータ（logitスケール、低いほど鋭い分布）
+        confidence_min: Top1-Top2のwin_prob差がこの値以上のレースのみ購入（0=無効）
+        odds_min: 単勝・複勝の最低オッズ（0=無効）
+        odds_max: 単勝・複勝の最高オッズ（0=無効）
+        axis_flow: True=馬単・3連単をTop1軸流しに変更（点数削減）
+        kelly_fraction: Kelly基準の割合（0=均一賭け、0.25=1/4 Kelly推奨）
     """
     input_path = input_path or str(PROCESSED_DIR / "features.csv")
     model_dir = model_dir or MODEL_DIR
@@ -222,6 +251,20 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
     else:
         val_df["pred_prob"] = raw_probs
 
+    # Phase 3: 勝率直接推定モデル（利用可能な場合）
+    win_model_path = model_dir / "win_model.txt"
+    has_win_model = False
+    if win_model_path.exists():
+        from src.model.trainer import load_isotonic_calibrator, calibrate_isotonic
+        win_model = lgb.Booster(model_file=str(win_model_path))
+        win_raw = win_model.predict(X_val)
+        win_iso = load_isotonic_calibrator("win_isotonic", model_dir)
+        if win_iso is not None:
+            val_df["win_prob_direct"] = calibrate_isotonic(win_raw, win_iso)
+        else:
+            val_df["win_prob_direct"] = win_raw
+        has_win_model = True
+
     # 払い戻しデータ読み込み
     returns = _load_returns(returns_path)
 
@@ -250,7 +293,11 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
 
         # レース内の勝率を計算
         pred_probs = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
-        if calibrator is not None:
+        if has_win_model and "win_prob_direct" in race_group.columns:
+            # Phase 3: 勝率直接推定モデルから win_prob を算出（温度不要）
+            wprobs = np.clip(race_group["win_prob_direct"].values, 1e-6, 1.0)
+            win_probs = wprobs / wprobs.sum()
+        elif calibrator is not None:
             win_probs = pred_probs / pred_probs.sum()
         else:
             logits = np.log(pred_probs / (1 - pred_probs))
@@ -270,6 +317,30 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         top3_actual = (top3_pred["finish_position"] <= 3).sum()
         results["prediction_accuracy"]["top3_hit"] += top3_actual
 
+        # 確信度フィルタ: Top1-Top2 の win_prob 差
+        if confidence_min > 0 and len(race_group) >= 2:
+            gap = win_probs[0] - win_probs[1]
+            if gap < confidence_min:
+                # レース詳細のみ記録して次へ（賭けはスキップ）
+                detail = {
+                    "race_id": race_id,
+                    "date": str(race_group.iloc[0].get("race_date", "")),
+                    "predictions": [],
+                    "skipped": True,
+                }
+                for _, horse in race_group.head(5).iterrows():
+                    detail["predictions"].append({
+                        "horse": horse.get("horse_name", ""),
+                        "pred_prob": round(float(horse["pred_prob"]), 3),
+                        "win_prob": round(float(horse["win_prob"]), 3),
+                        "actual_finish": int(horse.get("finish_position", 0)),
+                        "odds": float(horse.get("win_odds", 0)),
+                        "ev_win": round(float(horse["win_prob"] * horse.get("win_odds", 0)), 2),
+                    })
+                results["race_details"].append(detail)
+                results["races_skipped"] = results.get("races_skipped", 0) + 1
+                continue
+
         # 馬番と着順の取得
         top_horses = race_group.head(top_n)
         horse_numbers = top_horses["horse_number"].values if "horse_number" in top_horses.columns else []
@@ -280,21 +351,39 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
             odds = horse.get("win_odds", 0)
             if odds <= 0:
                 continue
+            # オッズ帯フィルタ
+            if odds_min > 0 and odds < odds_min:
+                continue
+            if odds_max > 0 and odds > odds_max:
+                continue
             ev_win = horse["win_prob"] * odds
             if ev_threshold > 0 and ev_win < ev_threshold:
                 continue
             if horse["pred_prob"] < bet_threshold:
                 continue
 
-            _record_bet(results, month_key, "win", 100,
-                        horse.get("finish_position", 99) == 1,
-                        odds * 100 if horse.get("finish_position", 99) == 1 else 0)
+            # Kelly基準ベットサイジング
+            bet_amount = 100
+            if kelly_fraction > 0:
+                kf = _kelly_fraction_calc(horse["win_prob"], odds) * kelly_fraction
+                if kf <= 0:
+                    continue  # エッジなし → スキップ
+                bet_amount = max(100, round(kf * KELLY_BANKROLL / 100) * 100)
+
+            hit = horse.get("finish_position", 99) == 1
+            payout = odds * bet_amount if hit else 0
+            _record_bet(results, month_key, "win", bet_amount, hit, payout)
 
         # --- 複勝シミュレーション ---
         for i, (_, horse) in enumerate(top_horses.iterrows()):
             pred_place = horse["pred_prob"]
             odds = horse.get("win_odds", 0)
             if odds <= 0:
+                continue
+            # オッズ帯フィルタ
+            if odds_min > 0 and odds < odds_min:
+                continue
+            if odds_max > 0 and odds > odds_max:
                 continue
             est_place_odds = max(PLACE_ODDS_SLOPE * odds + PLACE_ODDS_INTERCEPT, 1.0)
             ev_place = pred_place * est_place_odds
@@ -303,15 +392,23 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
             if pred_place < bet_threshold:
                 continue
 
+            # Kelly基準ベットサイジング
+            bet_amount = 100
+            if kelly_fraction > 0:
+                kf = _kelly_fraction_calc(pred_place, est_place_odds) * kelly_fraction
+                if kf <= 0:
+                    continue  # エッジなし → スキップ
+                bet_amount = max(100, round(kf * KELLY_BANKROLL / 100) * 100)
+
             hit = horse.get("finish_position", 99) <= 3
             payout = 0
             if hit:
                 actual_payout = _get_payout(
                     returns, race_id, "place",
                     str(int(horse.get("horse_number", 0))))
-                payout = actual_payout if actual_payout > 0 else est_place_odds * 100
+                payout = (actual_payout * bet_amount / 100) if actual_payout > 0 else est_place_odds * bet_amount
 
-            _record_bet(results, month_key, "place", 100, hit, payout)
+            _record_bet(results, month_key, "place", bet_amount, hit, payout)
 
         # --- 馬連シミュレーション（top_n から2頭組合せ、順不同） ---
         if len(horse_numbers) >= 2:
@@ -357,28 +454,40 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                     payout = _get_payout(returns, race_id, "wide", combo_key)
                 _record_bet(results, month_key, "wide", 100, hit, payout)
 
-        # --- 馬単シミュレーション（top_n から2頭順列、1着→2着） ---
+        # --- 馬単シミュレーション ---
         if len(horse_numbers) >= 2:
-            for idx_pair in permutations(range(min(top_n, len(top_horses))), 2):
-                i, j = idx_pair
-                h_i = top_horses.iloc[i]
-                h_j = top_horses.iloc[j]
-                nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
-                if 0 in nums:
-                    continue
-                combo_key = _make_combination_key(nums, ordered=True)
-                actual_1st = race_group[race_group["finish_position"] == 1]
-                actual_2nd = race_group[race_group["finish_position"] == 2]
-                if len(actual_1st) == 0 or len(actual_2nd) == 0:
-                    continue
+            actual_1st = race_group[race_group["finish_position"] == 1]
+            actual_2nd = race_group[race_group["finish_position"] == 2]
+            if len(actual_1st) > 0 and len(actual_2nd) > 0:
                 actual_combo = _make_combination_key(
                     [actual_1st.iloc[0].get("horse_number", 0),
                      actual_2nd.iloc[0].get("horse_number", 0)], ordered=True)
-                hit = combo_key == actual_combo
-                payout = 0
-                if hit:
-                    payout = _get_payout(returns, race_id, "exacta", combo_key)
-                _record_bet(results, month_key, "exacta", 100, hit, payout)
+
+                if axis_flow:
+                    # 軸流し: Top1=1着固定 → Top2~TopNへ流し（N-1点）
+                    axis_num = top_horses.iloc[0].get("horse_number", 0)
+                    if axis_num != 0:
+                        for j in range(1, min(top_n, len(top_horses))):
+                            target_num = top_horses.iloc[j].get("horse_number", 0)
+                            if target_num == 0:
+                                continue
+                            combo_key = _make_combination_key([axis_num, target_num], ordered=True)
+                            hit = combo_key == actual_combo
+                            payout = _get_payout(returns, race_id, "exacta", combo_key) if hit else 0
+                            _record_bet(results, month_key, "exacta", 100, hit, payout)
+                else:
+                    # ボックス: 全順列（N*(N-1)点）
+                    for idx_pair in permutations(range(min(top_n, len(top_horses))), 2):
+                        i, j = idx_pair
+                        h_i = top_horses.iloc[i]
+                        h_j = top_horses.iloc[j]
+                        nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
+                        if 0 in nums:
+                            continue
+                        combo_key = _make_combination_key(nums, ordered=True)
+                        hit = combo_key == actual_combo
+                        payout = _get_payout(returns, race_id, "exacta", combo_key) if hit else 0
+                        _record_bet(results, month_key, "exacta", 100, hit, payout)
 
         # --- 3連複シミュレーション（top_n=3 の場合1点、順不同） ---
         if len(horse_numbers) >= 3:
@@ -404,35 +513,48 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                     payout = _get_payout(returns, race_id, "trio", combo_key)
                 _record_bet(results, month_key, "trio", 100, hit, payout)
 
-        # --- 3連単シミュレーション（top_n=3 の場合6点、順序あり） ---
+        # --- 3連単シミュレーション ---
         if len(horse_numbers) >= 3:
-            for idx_trio in combinations(range(min(top_n, len(top_horses))), 3):
-                # 選んだ3頭の全順列
-                for perm in permutations(idx_trio):
-                    i, j, k = perm
-                    nums = [
-                        top_horses.iloc[i].get("horse_number", 0),
-                        top_horses.iloc[j].get("horse_number", 0),
-                        top_horses.iloc[k].get("horse_number", 0),
-                    ]
-                    if 0 in nums:
-                        continue
-                    combo_key = _make_combination_key(nums, ordered=True)
-                    actual_1st = race_group[race_group["finish_position"] == 1]
-                    actual_2nd = race_group[race_group["finish_position"] == 2]
-                    actual_3rd = race_group[race_group["finish_position"] == 3]
-                    if len(actual_1st) == 0 or len(actual_2nd) == 0 or len(actual_3rd) == 0:
-                        continue
-                    actual_combo = _make_combination_key(
-                        [actual_1st.iloc[0].get("horse_number", 0),
-                         actual_2nd.iloc[0].get("horse_number", 0),
-                         actual_3rd.iloc[0].get("horse_number", 0)],
-                        ordered=True)
-                    hit = combo_key == actual_combo
-                    payout = 0
-                    if hit:
-                        payout = _get_payout(returns, race_id, "trifecta", combo_key)
-                    _record_bet(results, month_key, "trifecta", 100, hit, payout)
+            actual_1st = race_group[race_group["finish_position"] == 1]
+            actual_2nd = race_group[race_group["finish_position"] == 2]
+            actual_3rd = race_group[race_group["finish_position"] == 3]
+            if len(actual_1st) > 0 and len(actual_2nd) > 0 and len(actual_3rd) > 0:
+                actual_combo = _make_combination_key(
+                    [actual_1st.iloc[0].get("horse_number", 0),
+                     actual_2nd.iloc[0].get("horse_number", 0),
+                     actual_3rd.iloc[0].get("horse_number", 0)],
+                    ordered=True)
+
+                if axis_flow:
+                    # 軸流し: Top1=1着固定 → Top2~TopNの2着3着順列（(N-1)*(N-2)点）
+                    axis_num = top_horses.iloc[0].get("horse_number", 0)
+                    if axis_num != 0:
+                        others = []
+                        for j in range(1, min(top_n, len(top_horses))):
+                            n = top_horses.iloc[j].get("horse_number", 0)
+                            if n != 0:
+                                others.append(n)
+                        for perm in permutations(others, 2):
+                            combo_key = _make_combination_key([axis_num, perm[0], perm[1]], ordered=True)
+                            hit = combo_key == actual_combo
+                            payout = _get_payout(returns, race_id, "trifecta", combo_key) if hit else 0
+                            _record_bet(results, month_key, "trifecta", 100, hit, payout)
+                else:
+                    # ボックス: 全順列
+                    for idx_trio in combinations(range(min(top_n, len(top_horses))), 3):
+                        for perm in permutations(idx_trio):
+                            i, j, k = perm
+                            nums = [
+                                top_horses.iloc[i].get("horse_number", 0),
+                                top_horses.iloc[j].get("horse_number", 0),
+                                top_horses.iloc[k].get("horse_number", 0),
+                            ]
+                            if 0 in nums:
+                                continue
+                            combo_key = _make_combination_key(nums, ordered=True)
+                            hit = combo_key == actual_combo
+                            payout = _get_payout(returns, race_id, "trifecta", combo_key) if hit else 0
+                            _record_bet(results, month_key, "trifecta", 100, hit, payout)
 
         # レース詳細（上位5頭）
         detail = {
@@ -674,6 +796,91 @@ def print_ev_comparison(comparison: list):
                 print(f"    {label:8s} {bets:>8d} {hit_rate:>7.1f}% {roi:>9.1f}%{mark}")
             else:
                 print(f"    {label:8s} {'---':>8s} {'---':>8s} {'---':>10s}")
+
+
+def explore_strategies(input_path: str = None, model_dir: Path = None,
+                       returns_path: str = None,
+                       val_start: str = "2025-01-01",
+                       val_end: str = None,
+                       **filter_kwargs) -> list:
+    """Phase 1 戦略探索: 確信度・オッズ帯・軸流しの組合せを網羅的にテスト"""
+    strategies = [
+        # (label, kwargs)
+        ("ベースライン（現状）",
+         {}),
+        ("確信度>=0.02",
+         {"confidence_min": 0.02}),
+        ("確信度>=0.03",
+         {"confidence_min": 0.03}),
+        ("確信度>=0.05",
+         {"confidence_min": 0.05}),
+        ("オッズ4-30倍",
+         {"odds_min": 4.0, "odds_max": 30.0}),
+        ("オッズ4-50倍",
+         {"odds_min": 4.0, "odds_max": 50.0}),
+        ("オッズ3-20倍",
+         {"odds_min": 3.0, "odds_max": 20.0}),
+        ("軸流し",
+         {"axis_flow": True}),
+        ("確信度>=0.03 + オッズ4-30倍",
+         {"confidence_min": 0.03, "odds_min": 4.0, "odds_max": 30.0}),
+        ("確信度>=0.03 + オッズ4-50倍",
+         {"confidence_min": 0.03, "odds_min": 4.0, "odds_max": 50.0}),
+        ("確信度>=0.03 + 軸流し",
+         {"confidence_min": 0.03, "axis_flow": True}),
+        ("確信度>=0.03 + オッズ4-30倍 + 軸流し",
+         {"confidence_min": 0.03, "odds_min": 4.0, "odds_max": 30.0, "axis_flow": True}),
+        ("EV>=1.0 + 確信度>=0.03",
+         {"ev_threshold": 1.0, "confidence_min": 0.03}),
+        ("EV>=1.0 + オッズ4-30倍",
+         {"ev_threshold": 1.0, "odds_min": 4.0, "odds_max": 30.0}),
+        ("EV>=1.0 + 確信度>=0.03 + オッズ4-30倍",
+         {"ev_threshold": 1.0, "confidence_min": 0.03, "odds_min": 4.0, "odds_max": 30.0}),
+        # Phase 3: Kelly基準
+        ("Kelly 1/4",
+         {"kelly_fraction": 0.25}),
+        ("Kelly 1/4 + 確信度>=0.03",
+         {"kelly_fraction": 0.25, "confidence_min": 0.03}),
+        ("Kelly 1/4 + 確信度>=0.05",
+         {"kelly_fraction": 0.25, "confidence_min": 0.05}),
+    ]
+
+    period = f"{val_start}\u301c{val_end}" if val_end else f"{val_start}\u301c"
+    print(f"\n  [戦略探索] 期間={period}")
+    print(f"  {'─' * 105}")
+    print(f"  {'戦略':36s} {'単勝':>6s} {'複勝':>6s} {'馬連':>6s} {'ﾜｲﾄﾞ':>6s}"
+          f" {'馬単':>6s} {'3連複':>6s} {'3連単':>6s} {'Races':>6s} {'Skip':>5s}")
+    print(f"  {'─' * 105}")
+
+    all_results = []
+    for label, kwargs in strategies:
+        merged = {**filter_kwargs, **kwargs}
+        res = run_backtest(
+            input_path=input_path, model_dir=model_dir,
+            returns_path=returns_path, val_start=val_start,
+            val_end=val_end, top_n=3, **merged,
+        )
+        if not res:
+            continue
+
+        entry = {"label": label, "kwargs": kwargs, "races": res["races"]}
+        entry["skipped"] = res.get("races_skipped", 0)
+        row = f"  {label:36s}"
+        for bt in BET_TYPES:
+            b = res[f"bets_{bt}"]
+            roi = (b["returned"] / b["invested"] * 100) if b["invested"] > 0 else 0
+            entry[f"{bt}_roi"] = round(roi, 1)
+            entry[f"{bt}_bets"] = b["count"]
+            mark = "*" if roi >= 100 else ""
+            row += f" {roi:>5.1f}%{mark}" if b["count"] > 0 else f" {'---':>6s}"
+        row += f" {res['races']:>6d}"
+        row += f" {entry['skipped']:>5d}"
+        print(row)
+        all_results.append(entry)
+
+    print(f"  {'─' * 105}")
+    print(f"  (* = 回収率100%超)")
+    return all_results
 
 
 def save_backtest_report(results: dict, output_path: Path = None):
