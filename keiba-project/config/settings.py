@@ -68,20 +68,33 @@ SCORE_LIMITS = {
 
 EV_RANK_THRESHOLDS = {"S": 1.5, "A": 1.2, "B": 1.0}
 
-# バックテスト最適パラメータ（Phase6 プルーニング + Phase7 券種別top_n）
-# Train: ~2024-12, Val: 2025-01~06（キャリブレーター学習）, Test: 2025-07~
-# Best strategy: Kelly 1/4 + conf>=0.05 + skip3OP + Q2/W4 + axis_flow
+# バックテスト最適パラメータ（固定分割: Phase6-7）
+# Train: ~2024-12, Val: 2025-01~06, Test: 2025-07~
 BACKTEST_BEST_PARAMS = {
     "kelly_fraction": 0.25,
     "confidence_min": 0.05,
     "skip_classes": [5, 6, 7],   # 3勝+OP/L除外
-    "quinella_top_n": 2,          # 馬連: top2のみ（+5.1pt）
-    "wide_top_n": 4,              # ワイド: top4まで（+2.0pt）
-    "axis_flow": True,            # 軸流し（3連単+14.9pt）
+    "quinella_top_n": 2,          # 馬連: top2のみ
+    "wide_top_n": 4,              # ワイド: top4まで
+    "axis_flow": True,            # 軸流し
     "top_n": 3,
-    "test_win_roi": 100.1,        # OOS Test 単勝 ← 黒字
-    "test_trifecta_roi": 100.5,   # OOS Test 3連単 ← 黒字
     "calibrated": True,
+}
+
+# Expanding Window最適パラメータ（Phase9: 9ウィンドウ検証済み）
+# Isotonic校正あり + ランキングなし = 全ウィンドウで安定
+# Kelly基準はWin/Placeを悪化させるためフラットベット
+EXPANDING_BEST_PARAMS = {
+    "kelly_fraction": 0,          # フラットベット（Kelly非使用）
+    "confidence_min": 0.05,       # 確信度フィルタ
+    "quinella_top_n": 2,          # 馬連: top2のみ（+11.3pt）
+    "top_n": 3,
+    "use_calibration": True,      # Isotonic校正（必須）
+    "use_ranking": False,         # ランキング不使用（-14.7pt）
+    # Expanding Window結果（9ウィンドウ, 6427レース）:
+    # 馬連: 109.2% ← 黒字
+    # 3連複: 101.6% ← 黒字
+    # ワイド: 92.6%, 単勝: 85.5%, 複勝: 88.8%
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）

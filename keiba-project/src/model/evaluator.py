@@ -1138,26 +1138,31 @@ def expanding_window_backtest(
         window_months: int = 3,
         initial_train_end: str = "2024-01-01",
         final_test_end: str = None,
+        calibration_pct: float = 0.15,
+        use_calibration: bool = True,
+        use_ranking: bool = True,
         **bet_kwargs,
 ) -> dict:
     """Expanding Window Backtest（ウォーキングフォワード）
 
     Train期間を拡大しながら、次のwindow_monthsを予測。
-    各ウィンドウでモデルを再学習→バックテスト→集計。
+    各ウィンドウ: binary + win (+ ranking) 学習 → (Isotonic校正) → simulate
     実運用時の「定期リトレイン」をシミュレーション。
 
     Args:
         window_months: テスト期間の長さ（月）
         initial_train_end: 初回のTrain終了日
         final_test_end: 最終テスト終了日（Noneで最新まで）
+        calibration_pct: キャリブレーション用ホールドアウト割合
+        use_calibration: Isotonic Regressionを使用するか
+        use_ranking: ランキングモデル+アンサンブルを使用するか
         **bet_kwargs: simulate_bets に渡すパラメータ
     """
-    import tempfile
     from src.model.trainer import (
-        train_binary_model, train_win_model,
-        fit_calibrator, fit_isotonic_cv,
-        DEFAULT_BINARY_PARAMS,
+        DEFAULT_BINARY_PARAMS, DEFAULT_RANK_PARAMS,
+        _get_categorical_indices, _make_rank_labels,
     )
+    from sklearn.isotonic import IsotonicRegression
     from dateutil.relativedelta import relativedelta
 
     input_path = input_path or str(PROCESSED_DIR / "features.csv")
@@ -1175,11 +1180,11 @@ def expanding_window_backtest(
         df = df[df["surface_code"] != 2]
     if "num_entries" in df.columns:
         df = df[df["num_entries"] >= 6]
-    print(f"  [フィルタ] {pre_filter - len(df)}行除外 → {len(df)}行")
+    print(f"  [フィルタ] {pre_filter - len(df)}行除外 -> {len(df)}行")
 
     available = [c for c in FEATURE_COLUMNS if c in df.columns]
     from config.settings import CATEGORICAL_FEATURES
-    cat_feats = [c for c in CATEGORICAL_FEATURES if c in available]
+    cat_indices = [i for i, f in enumerate(available) if f in CATEGORICAL_FEATURES]
 
     train_end = pd.Timestamp(initial_train_end)
     if final_test_end:
@@ -1191,11 +1196,20 @@ def expanding_window_backtest(
     total_bets = {bt: _empty_bet_stats() for bt in BET_TYPES}
     window_idx = 0
 
-    print(f"\n  [Expanding Window Backtest] window={window_months}ヶ月")
-    print(f"  {'─' * 90}")
-    print(f"  {'Window':8s} {'Train':>12s} {'Test':>18s} {'Races':>6s}"
+    flags = []
+    if use_calibration:
+        flags.append(f"cal={calibration_pct:.0%}")
+    if use_ranking:
+        flags.append("rank")
+    flag_str = ", ".join(flags) if flags else "basic"
+    print(f"\n  [Expanding Window Backtest] window={window_months}M, {flag_str}")
+    print(f"  {'='*95}")
+    print(f"  {'Win':8s} {'Train':>12s} {'Test':>18s} {'Races':>6s}"
           f" {'Win':>7s} {'Place':>7s} {'Q':>7s} {'Wide':>7s} {'Trio':>7s}")
-    print(f"  {'─' * 90}")
+    print(f"  {'-'*95}")
+
+    # 共通LightGBMパラメータ（quiet）
+    quiet_cb = [lgb.log_evaluation(0), lgb.early_stopping(50)]
 
     while train_end < max_date:
         test_start = train_end
@@ -1203,26 +1217,133 @@ def expanding_window_backtest(
         if test_end > max_date:
             test_end = max_date
 
-        train_df = df[df["race_date"] < train_end].copy()
+        full_train = df[df["race_date"] < train_end].copy()
         test_df = df[(df["race_date"] >= test_start) &
                      (df["race_date"] < test_end)].copy()
 
-        if len(train_df) < 1000 or len(test_df) < 100:
+        if len(full_train) < 1000 or len(test_df) < 100:
             train_end = test_end
             continue
 
-        # バイナリモデル学習
-        params = DEFAULT_BINARY_PARAMS.copy()
-        binary_model, _ = train_binary_model(train_df, test_df, params)
+        # --- Train/Calibration split ---
+        train_dates = np.sort(full_train["race_date"].unique())
+        cal_idx = int(len(train_dates) * (1 - calibration_pct))
+        cal_split = train_dates[cal_idx]
+        train_inner = full_train[full_train["race_date"] < cal_split].copy()
+        cal_set = full_train[full_train["race_date"] >= cal_split].copy()
 
-        # Winモデル学習
-        win_params = params.copy()
-        win_model, _ = train_win_model(train_df, test_df, win_params)
+        if len(train_inner) < 500 or len(cal_set) < 200:
+            # cal_setが小さすぎる場合はフルtrainで学習（キャリブレーションなし）
+            train_inner = full_train
+            cal_set = None
 
-        # 予測
+        X_inner = train_inner[available].values.astype(np.float32)
+        y_inner_top3 = train_inner["top3"].values
+        y_inner_win = (train_inner["finish_position"] == 1).astype(int).values
+
+        # --- Binary model ---
+        bp = DEFAULT_BINARY_PARAMS.copy()
+        if cal_set is not None:
+            X_cal = cal_set[available].values.astype(np.float32)
+            y_cal_top3 = cal_set["top3"].values
+            d_tr = lgb.Dataset(X_inner, label=y_inner_top3, feature_name=available,
+                               categorical_feature=cat_indices if cat_indices else "auto")
+            d_cal = lgb.Dataset(X_cal, label=y_cal_top3, feature_name=available, reference=d_tr)
+            binary_model = lgb.train(bp, d_tr, num_boost_round=1000,
+                                     valid_sets=[d_cal], valid_names=["val"],
+                                     callbacks=quiet_cb)
+        else:
+            X_test_tmp = test_df[available].values.astype(np.float32)
+            d_tr = lgb.Dataset(X_inner, label=y_inner_top3, feature_name=available,
+                               categorical_feature=cat_indices if cat_indices else "auto")
+            d_te = lgb.Dataset(X_test_tmp, label=test_df["top3"].values,
+                               feature_name=available, reference=d_tr)
+            binary_model = lgb.train(bp, d_tr, num_boost_round=1000,
+                                     valid_sets=[d_te], valid_names=["val"],
+                                     callbacks=quiet_cb)
+
+        # --- Win model ---
+        wp = DEFAULT_BINARY_PARAMS.copy()
+        wp["is_unbalance"] = True
+        if cal_set is not None:
+            y_cal_win = (cal_set["finish_position"] == 1).astype(int).values
+            d_tr_w = lgb.Dataset(X_inner, label=y_inner_win, feature_name=available,
+                                 categorical_feature=cat_indices if cat_indices else "auto")
+            d_cal_w = lgb.Dataset(X_cal, label=y_cal_win, feature_name=available, reference=d_tr_w)
+            win_model = lgb.train(wp, d_tr_w, num_boost_round=1000,
+                                  valid_sets=[d_cal_w], valid_names=["val"],
+                                  callbacks=quiet_cb)
+        else:
+            y_test_win = (test_df["finish_position"] == 1).astype(int).values
+            d_tr_w = lgb.Dataset(X_inner, label=y_inner_win, feature_name=available,
+                                 categorical_feature=cat_indices if cat_indices else "auto")
+            d_te_w = lgb.Dataset(X_test_tmp, label=y_test_win,
+                                 feature_name=available, reference=d_tr_w)
+            win_model = lgb.train(wp, d_tr_w, num_boost_round=1000,
+                                  valid_sets=[d_te_w], valid_names=["val"],
+                                  callbacks=quiet_cb)
+
+        # --- Ranking model ---
+        has_ranking = False
+        if use_ranking:
+            rp = DEFAULT_RANK_PARAMS.copy()
+            train_rank = train_inner.sort_values("race_id").reset_index(drop=True)
+            X_rank = train_rank[available].values.astype(np.float32)
+            y_rank, grp_sizes = [], []
+            for _, grp in train_rank.groupby("race_id", sort=True):
+                labels = _make_rank_labels(grp["finish_position"].values, len(grp))
+                y_rank.extend(labels)
+                grp_sizes.append(len(grp))
+
+        if use_ranking and len(grp_sizes) > 10:
+            d_tr_r = lgb.Dataset(X_rank, label=np.array(y_rank, dtype=np.float32),
+                                 group=grp_sizes, feature_name=available,
+                                 categorical_feature=cat_indices if cat_indices else "auto")
+            # val for ranking: cal_set or test
+            if cal_set is not None:
+                cal_rank = cal_set.sort_values("race_id").reset_index(drop=True)
+            else:
+                cal_rank = test_df.sort_values("race_id").reset_index(drop=True)
+            X_cal_r = cal_rank[available].values.astype(np.float32)
+            y_cal_r, cal_grp = [], []
+            for _, grp in cal_rank.groupby("race_id", sort=True):
+                labels = _make_rank_labels(grp["finish_position"].values, len(grp))
+                y_cal_r.extend(labels)
+                cal_grp.append(len(grp))
+            d_cal_r = lgb.Dataset(X_cal_r, label=np.array(y_cal_r, dtype=np.float32),
+                                  group=cal_grp, feature_name=available, reference=d_tr_r)
+            try:
+                ranking_model = lgb.train(rp, d_tr_r, num_boost_round=1000,
+                                          valid_sets=[d_cal_r], valid_names=["val"],
+                                          callbacks=quiet_cb)
+                has_ranking = True
+            except Exception:
+                has_ranking = False
+
+        # --- Prediction + optional Isotonic Calibration ---
         X_test = test_df[available].values.astype(np.float32)
-        test_df["pred_prob"] = binary_model.predict(X_test)
-        test_df["win_prob_direct"] = win_model.predict(X_test)
+        raw_binary = binary_model.predict(X_test)
+        raw_win = win_model.predict(X_test)
+
+        if use_calibration and cal_set is not None:
+            # cal_setの予測でIsotonicを学習 → testに適用
+            cal_binary_raw = binary_model.predict(X_cal)
+            cal_win_raw = win_model.predict(X_cal)
+
+            iso_binary = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+            iso_binary.fit(cal_binary_raw, y_cal_top3)
+            test_df["pred_prob"] = iso_binary.predict(raw_binary)
+
+            iso_win = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+            iso_win.fit(cal_win_raw, y_cal_win)
+            test_df["win_prob_direct"] = iso_win.predict(raw_win)
+        else:
+            test_df["pred_prob"] = raw_binary
+            test_df["win_prob_direct"] = raw_win
+
+        # Ranking scores
+        if has_ranking:
+            test_df["rank_score"] = ranking_model.predict(X_test)
 
         # ソート（各レース内でpred_prob降順）
         test_df = test_df.sort_values(
@@ -1234,8 +1355,8 @@ def expanding_window_backtest(
             "full_df": df,
             "returns": returns,
             "has_win_model": True,
-            "has_ranking": False,
-            "calibrator": None,
+            "has_ranking": has_ranking,
+            "calibrator": "isotonic",  # truthy: skip logit/softmax path
             "val_start": str(test_start.date()),
             "val_end": str(test_end.date()),
         }
@@ -1277,7 +1398,7 @@ def expanding_window_backtest(
         train_end = test_end
 
     # 総合結果
-    print(f"  {'─' * 90}")
+    print(f"  {'-'*95}")
     total_rois = {}
     for bt in BET_TYPES:
         b = total_bets[bt]
@@ -1290,8 +1411,8 @@ def expanding_window_backtest(
           f" {total_rois['quinella']:>6.1f}%"
           f" {total_rois['wide']:>6.1f}%"
           f" {total_rois['trio']:>6.1f}%")
-    print(f"  {'─' * 90}")
-    print(f"  (* = 回収率100%超)")
+    print(f"  {'='*95}")
+    print(f"  (* = ROI >= 100%)")
 
     return {
         "windows": all_window_results,
