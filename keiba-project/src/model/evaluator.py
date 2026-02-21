@@ -1138,7 +1138,7 @@ def expanding_window_backtest(
         window_months: int = 3,
         initial_train_end: str = "2024-01-01",
         final_test_end: str = None,
-        calibration_pct: float = 0.15,
+        calibration_pct: float = 0.10,
         use_calibration: bool = True,
         use_ranking: bool = True,
         **bet_kwargs,

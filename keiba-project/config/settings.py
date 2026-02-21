@@ -81,20 +81,24 @@ BACKTEST_BEST_PARAMS = {
     "calibrated": True,
 }
 
-# Expanding Window最適パラメータ（Phase9: 9ウィンドウ検証済み）
+# Expanding Window最適パラメータ（Phase9-10: 9ウィンドウ検証済み）
 # Isotonic校正あり + ランキングなし = 全ウィンドウで安定
 # Kelly基準はWin/Placeを悪化させるためフラットベット
+# 校正割合10%が最適（訓練データ最大化 + 十分な校正品質）
+# ウィンドウサイズは2-6ヶ月全てでQ/Trio黒字（ロバスト）
 EXPANDING_BEST_PARAMS = {
     "kelly_fraction": 0,          # フラットベット（Kelly非使用）
     "confidence_min": 0.05,       # 確信度フィルタ
     "quinella_top_n": 2,          # 馬連: top2のみ（+11.3pt）
     "top_n": 3,
-    "use_calibration": True,      # Isotonic校正（必須）
+    "use_calibration": True,      # Isotonic校正（必須、+29pt）
     "use_ranking": False,         # ランキング不使用（-14.7pt）
-    # Expanding Window結果（9ウィンドウ, 6427レース）:
-    # 馬連: 109.2% ← 黒字
-    # 3連複: 101.6% ← 黒字
-    # ワイド: 92.6%, 単勝: 85.5%, 複勝: 88.8%
+    "calibration_pct": 0.10,      # 最適校正割合（10%）
+    "window_months": 3,           # テスト期間（3ヶ月）
+    # Expanding Window結果（cal=10%, 9ウィンドウ, 6427レース）:
+    # 馬連: 116.7% ← 黒字（全window sizeで黒字）
+    # 3連複: 102.7% ← 黒字（全window sizeで黒字）
+    # ワイド: 94.0%, 単勝: 87.7%, 複勝: 90.1%
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）
