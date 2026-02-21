@@ -96,7 +96,7 @@ def cmd_monitor(args):
     from src.pipeline import run_monitor_pipeline
     asyncio.run(run_monitor_pipeline(
         before=args.before,
-        token=args.token,
+        webhook=args.webhook,
         headless=not args.no_headless,
         venue=args.venue,
     ))
@@ -176,9 +176,9 @@ def main():
     p_col.set_defaults(func=cmd_collect)
 
     # monitor: オッズ監視サーバー
-    p_mon = sub.add_parser("monitor", help="オッズ監視サーバー（発走時刻連動LINE通知）")
+    p_mon = sub.add_parser("monitor", help="オッズ監視サーバー（発走時刻連動Discord通知）")
     p_mon.add_argument("--before", type=int, default=5, help="発走何分前にバッチ実行（デフォルト5）")
-    p_mon.add_argument("--token", help="LINE Notifyトークン（環境変数/`.env`でも設定可）")
+    p_mon.add_argument("--webhook", help="Discord Webhook URL（.envでも設定可）")
     p_mon.add_argument("--venue", help="会場フィルタ（例: 東京 or 中山,東京）")
     p_mon.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
     p_mon.set_defaults(func=cmd_monitor)

@@ -1,94 +1,82 @@
 """
-LINE Notify 通知モジュール
-レース予測結果をLINEに送信
+Discord Webhook 通知モジュール
+レース予測結果をDiscordに送信
 """
+import json
 import os
 import urllib.request
-import urllib.parse
 
 
-def get_token() -> str:
-    """LINE Notify トークンを取得（環境変数 or .envファイル）"""
-    token = os.environ.get("LINE_NOTIFY_TOKEN", "")
-    if token:
-        return token
+def get_webhook_url() -> str:
+    """Discord Webhook URLを取得（環境変数 or .envファイル）"""
+    url = os.environ.get("DISCORD_WEBHOOK_URL", "")
+    if url:
+        return url
 
-    # .env ファイルから読み込み
     from config.settings import PROJECT_ROOT
     env_path = PROJECT_ROOT / ".env"
     if env_path.exists():
         for line in env_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
-            if line.startswith("LINE_NOTIFY_TOKEN="):
+            if line.startswith("DISCORD_WEBHOOK_URL="):
                 return line.split("=", 1)[1].strip().strip('"').strip("'")
     return ""
 
 
-def send_line_notify(message: str, token: str = None) -> bool:
-    """LINE Notifyでメッセージ送信
+def send_notify(message: str, webhook_url: str = None) -> bool:
+    """Discordにメッセージ送信
 
     Args:
-        message: 送信メッセージ（最大1000文字）
-        token: LINE Notifyトークン（省略時は環境変数から取得）
+        message: 送信メッセージ（最大2000文字）
+        webhook_url: Discord Webhook URL（省略時は環境変数から取得）
 
     Returns:
         送信成功ならTrue
     """
-    token = token or get_token()
-    if not token:
-        print("[ERROR] LINE_NOTIFY_TOKEN が未設定です")
-        print("  1. https://notify-bot.line.me/ でトークン取得")
-        print("  2. 環境変数 LINE_NOTIFY_TOKEN に設定")
-        print("     または .env ファイルに LINE_NOTIFY_TOKEN=xxx を記載")
+    webhook_url = webhook_url or get_webhook_url()
+    if not webhook_url:
+        print("[ERROR] DISCORD_WEBHOOK_URL が未設定です")
+        print("  1. Discordサーバーでチャンネル設定→連携サービス→ウェブフック作成")
+        print("  2. Webhook URLをコピー")
+        print("  3. .env ファイルに DISCORD_WEBHOOK_URL=https://... を記載")
         return False
 
-    # 1000文字制限
-    if len(message) > 1000:
-        message = message[:997] + "..."
+    # 2000文字制限
+    if len(message) > 2000:
+        message = message[:1997] + "..."
 
-    url = "https://notify-api.line.me/api/notify"
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    data = urllib.parse.urlencode({"message": message}).encode("utf-8")
-
-    req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+    payload = json.dumps({"content": message}).encode("utf-8")
+    req = urllib.request.Request(
+        webhook_url, data=payload,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
     try:
         with urllib.request.urlopen(req, timeout=10) as resp:
-            return resp.status == 200
+            return resp.status in (200, 204)
     except Exception as e:
-        print(f"[ERROR] LINE通知送信失敗: {e}")
+        print(f"[ERROR] Discord通知送信失敗: {e}")
         return False
 
 
 def format_race_notification(race_info: dict, ev_results: dict) -> str:
-    """レース予測結果をLINE通知用にフォーマット
-
-    Args:
-        race_info: race dict (venue, race_number, name, grade, etc.)
-        ev_results: calculate_ev() の返り値
-
-    Returns:
-        LINE通知用テキスト
-    """
+    """レース予測結果を通知用にフォーマット"""
     venue = race_info.get("venue", "")
     race_num = race_info.get("race_number", 0)
     name = race_info.get("name", "")
     grade = race_info.get("grade", "")
 
-    lines = [f"\n{venue}{race_num}R {name}"]
+    header = f"**{venue}{race_num}R {name}**"
     if grade:
-        lines[0] += f" [{grade}]"
+        header += f" [{grade}]"
+    lines = [header]
 
-    # 確信度チェック
     if ev_results.get("low_confidence"):
-        lines.append("[見送り] 確信度不足")
+        lines.append("> [見送り] 確信度不足")
         return "\n".join(lines)
 
-    # 警告
     for w in ev_results.get("warnings", []):
-        lines.append(f"[!]{w}")
+        lines.append(f"> ⚠ {w}")
 
     # 推奨買い目（馬連・ワイド EV>=1.0）
     recs = []
@@ -102,18 +90,21 @@ def format_race_notification(race_info: dict, ev_results: dict) -> str:
         return "\n".join(lines)
 
     recs.sort(key=lambda x: x[1]["ev"], reverse=True)
-    lines.append("---推奨---")
+    lines.append("```")
+    lines.append("券種   組合せ       オッズ   EV    級")
+    lines.append("-" * 42)
     for bt, bet in recs[:8]:
         combo = bet.get("combo", "?")
-        lines.append(f"{bt} {combo} {bet['odds']:.1f}倍 EV{bet['ev']:.2f}({bet['rank']})")
+        lines.append(f"{bt:6} {combo:12} {bet['odds']:6.1f}倍 {bet['ev']:.2f} ({bet['rank']})")
+    lines.append("```")
 
     # 参考: 3連複
     trio_recs = [b for b in ev_results.get("trio", []) if b["ev"] >= 1.0]
     if trio_recs:
-        lines.append("---参考(3連複)---")
+        lines.append("参考(3連複):")
         for bet in trio_recs[:3]:
             combo = bet.get("combo", "?")
-            lines.append(f"{combo} {bet['odds']:.1f}倍 EV{bet['ev']:.2f}")
+            lines.append(f"> {combo} {bet['odds']:.1f}倍 EV{bet['ev']:.2f}")
 
     return "\n".join(lines)
 
@@ -123,11 +114,6 @@ def format_odds_change_notification(
 ) -> str:
     """オッズ変動通知フォーマット
 
-    Args:
-        race_info: レース情報
-        prev_bets: 前回の推奨買い目 [(bet_type, bet_dict), ...]
-        curr_bets: 今回の推奨買い目
-
     Returns:
         変動通知テキスト（変動がない場合は空文字列）
     """
@@ -135,7 +121,6 @@ def format_odds_change_notification(
     race_num = race_info.get("race_number", 0)
     name = race_info.get("name", "")
 
-    # 前回と今回の買い目をキーで比較
     prev_keys = {(bt, b.get("combo", "")): b for bt, b in prev_bets}
     curr_keys = {(bt, b.get("combo", "")): b for bt, b in curr_bets}
 
@@ -159,22 +144,22 @@ def format_odds_change_notification(
     if not new_bets and not dropped and not changed:
         return ""
 
-    lines = [f"\n[変動]{venue}{race_num}R {name}"]
+    lines = [f"**[変動] {venue}{race_num}R {name}**"]
 
     if new_bets:
-        lines.append("▼新規")
+        lines.append("新規:")
         for bt, bet in new_bets:
-            lines.append(f" {bt} {bet.get('combo','')} EV{bet['ev']:.2f}")
+            lines.append(f"> {bt} {bet.get('combo','')} EV{bet['ev']:.2f}")
 
     if dropped:
-        lines.append("▼消滅")
+        lines.append("消滅:")
         for bt, bet in dropped:
-            lines.append(f" {bt} {bet.get('combo','')} (旧EV{bet['ev']:.2f})")
+            lines.append(f"> {bt} {bet.get('combo','')} (旧EV{bet['ev']:.2f})")
 
     if changed:
-        lines.append("▼変動")
+        lines.append("変動:")
         for bt, bet, prev_ev in changed:
             arrow = "↑" if bet["ev"] > prev_ev else "↓"
-            lines.append(f" {bt} {bet.get('combo','')} EV{prev_ev:.2f}→{bet['ev']:.2f}{arrow}")
+            lines.append(f"> {bt} {bet.get('combo','')} EV{prev_ev:.2f} → {bet['ev']:.2f} {arrow}")
 
     return "\n".join(lines)

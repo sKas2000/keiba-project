@@ -1,6 +1,6 @@
 """
 オッズ監視サーバー（スケジュール方式）
-各レースの発走時刻N分前にオッズ取得→ML予測→LINE通知
+各レースの発走時刻N分前にオッズ取得→ML予測→Discord通知
 """
 import asyncio
 import copy
@@ -14,7 +14,7 @@ from config.settings import (
 )
 from src.data.storage import write_json
 from src.notify import (
-    send_line_notify, format_race_notification, get_token,
+    send_notify, format_race_notification, get_webhook_url,
 )
 
 
@@ -35,12 +35,12 @@ class RaceMonitor:
         """
         Args:
             before: 発走何分前にバッチ実行するか（デフォルト5分）
-            token: LINE Notify トークン
+            token: Discord Webhook URL
             headless: ブラウザ非表示
             venue_filter: 会場フィルタ（例: "東京", "中山,東京"）
         """
         self.before = before
-        self.token = token or get_token()
+        self.webhook_url = token or get_webhook_url()
         self.headless = headless
         self.venue_filter = set(venue_filter.split(",")) if venue_filter else None
 
@@ -62,16 +62,16 @@ class RaceMonitor:
         """メインループ"""
         setup_encoding()
 
-        if not self.token:
+        if not self.webhook_url:
             print("=" * 60)
-            print("[ERROR] LINE Notifyトークンが未設定")
+            print("[ERROR] Discord Webhook URLが未設定")
             print()
             print("設定方法:")
-            print("  1. https://notify-bot.line.me/ でトークン取得")
-            print("  2. 以下のいずれかで設定:")
-            print("     a) 環境変数: set LINE_NOTIFY_TOKEN=xxxxx")
-            print("     b) .envファイルに LINE_NOTIFY_TOKEN=xxxxx を記載")
-            print("     c) コマンド引数: python main.py monitor --token xxxxx")
+            print("  1. Discordサーバーのチャンネル設定→連携サービス→ウェブフック作成")
+            print("  2. Webhook URLをコピー")
+            print("  3. 以下のいずれかで設定:")
+            print("     a) .envファイルに DISCORD_WEBHOOK_URL=https://... を記載")
+            print("     b) コマンド引数: python main.py monitor --webhook URL")
             print("=" * 60)
             return
 
@@ -80,11 +80,11 @@ class RaceMonitor:
         self.log(f"  発走 {self.before}分前 にバッチ実行")
         self.log(f"  会場フィルタ: {self.venue_filter or '全会場'}")
 
-        # LINE疎通テスト
-        if send_line_notify("\n[監視開始] オッズ監視サーバーが起動しました", self.token):
-            self.log("LINE通知テスト: OK")
+        # Discord疎通テスト
+        if send_notify("[監視開始] オッズ監視サーバーが起動しました", self.webhook_url):
+            self.log("Discord通知テスト: OK")
         else:
-            self.log("[WARN] LINE通知テスト失敗 — トークンを確認してください")
+            self.log("[WARN] Discord通知テスト失敗 — Webhook URLを確認してください")
             return
 
         try:
@@ -96,7 +96,7 @@ class RaceMonitor:
 
             if not self.races:
                 self.log("[END] 本日のレースがありません")
-                send_line_notify("\n本日のJRAレースはありません", self.token)
+                send_notify("\n本日のJRAレースはありません", self.webhook_url)
                 return
 
             # スケジュール作成
@@ -104,7 +104,7 @@ class RaceMonitor:
 
             if not self.schedule:
                 self.log("[END] 実行予定のレースがありません（全て発走済み）")
-                send_line_notify("\n全レース発走済みです", self.token)
+                send_notify("\n全レース発走済みです", self.webhook_url)
                 return
 
             # Phase 2: 馬データ補完（netkeiba）
@@ -116,7 +116,7 @@ class RaceMonitor:
 
             # スケジュール通知
             schedule_text = self._format_schedule()
-            send_line_notify(schedule_text, self.token)
+            send_notify(schedule_text, self.webhook_url)
 
             # Phase 3: スケジュール実行
             self.log("=" * 50)
@@ -125,11 +125,11 @@ class RaceMonitor:
             await self._run_schedule()
 
             self.log("[完了] 全レースの処理が終了しました")
-            send_line_notify("\n[完了] 本日の全レース処理が終了しました", self.token)
+            send_notify("\n[完了] 本日の全レース処理が終了しました", self.webhook_url)
 
         except KeyboardInterrupt:
             self.log("\n[停止] Ctrl+Cで停止しました")
-            send_line_notify("\n[停止] オッズ監視サーバーを停止しました", self.token)
+            send_notify("\n[停止] オッズ監視サーバーを停止しました", self.webhook_url)
 
     # ==========================================================
     # Phase 1: レース一覧 + 発走時刻
@@ -462,8 +462,8 @@ class RaceMonitor:
         result = score_ml(data, model_dir=MODEL_DIR)
         if result is None:
             self.log(f"  [WARN] MLモデル未学習")
-            send_line_notify(
-                f"\n{venue}{race_num}R: MLモデル未学習のため予測不可", self.token
+            send_notify(
+                f"\n{venue}{race_num}R: MLモデル未学習のため予測不可", self.webhook_url
             )
             return
 
@@ -476,7 +476,7 @@ class RaceMonitor:
 
         # LINE通知
         text = format_race_notification(race_info, ev_results)
-        send_line_notify(text, self.token)
+        send_notify(text, self.webhook_url)
 
         # コンソールにも表示
         recs = self._collect_recommendations(ev_results)
