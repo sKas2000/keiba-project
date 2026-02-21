@@ -88,8 +88,8 @@ FEATURE_COLUMNS = [
     "frame_number", "horse_number", "sex_code", "age",
     "weight_carried", "horse_weight", "horse_weight_change",
     "num_entries",
-    "surface_code", "distance", "track_condition_code",
-    "race_class_code", "distance_cat", "course_id_code",
+    "surface_code", "distance",
+    "race_class_code", "course_id_code",
     # 過去成績
     "prev_finish_1", "prev_finish_2", "prev_finish_3",
     "avg_finish_last5", "best_finish_last5",
@@ -113,16 +113,27 @@ FEATURE_COLUMNS = [
     # v4: 斤量変化
     "weight_carried_change",
     # v5: ローテーションパターン
-    "prev_interval_2", "is_second_start",
+    "prev_interval_2",
     # v6: 展開予測（レース内脚質構成）
     "race_n_front", "race_n_mid", "race_n_back", "pace_advantage",
     # v7: コース×距離×枠順バイアス
     "post_position_bias",
+    # プルーニング済み（importance < 0.15%でノイズ源）:
+    # track_condition_code(0.03%), is_second_start(0.06%), distance_cat(0.11%)
+    # v8: レース内Z-score → ROI悪化のため除外（AUC+0.007だがKelly ROI -21pt）
+    # Z-scoreは予測の分散を減らし、confidence gapを縮小→Kelly基準のエッジ検出力が低下
+    # "z_surface_place_rate", "z_jockey_place_rate_365d",
+    # "z_avg_finish_last5", "z_career_place_rate", "z_trainer_place_rate_365d",
+    # v9: 騎手×馬の騎乗経験 → ROI悪化のため除外（Kelly ROI 110.4%→80.8%）
+    # スパースな特徴量が予測の安定性を損ない、Kelly基準のエッジ検出力が低下
+    # "same_jockey_rides", "same_jockey_win_rate",
+    # v10: コース適性 → v9と同時に追加してROI悪化、単独効果未検証
+    # "course_dist_win_rate", "course_dist_place_rate",
 ]
 
 CATEGORICAL_FEATURES = [
-    "sex_code", "surface_code", "track_condition_code",
-    "race_class_code", "distance_cat", "course_id_code",
+    "sex_code", "surface_code",
+    "race_class_code", "course_id_code",
     "running_style", "race_month",
 ]
 

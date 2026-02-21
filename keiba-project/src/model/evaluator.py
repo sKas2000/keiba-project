@@ -295,12 +295,14 @@ def simulate_bets(prepared: dict,
                   axis_flow: bool = False,
                   kelly_fraction: float = 0.0,
                   race_ids: set = None,
+                  skip_classes: list = None,
                   ) -> dict:
     """賭けシミュレーション（prepare済みデータに対して実行）
 
     Args:
         prepared: prepare_backtest_data() の戻り値
         race_ids: 対象レースIDのセット（Noneで全レース）
+        skip_classes: スキップするクラスコードのリスト（例: [5] で3勝クラスを除外）
         他のパラメータはrun_backtestと同一
     """
     val_df = prepared["val_df"]
@@ -327,6 +329,13 @@ def simulate_bets(prepared: dict,
     for race_id, race_group in val_df.groupby("race_id"):
         if len(race_group) < 4:
             continue
+
+        # Phase 5-4: クラス別スキップ
+        if skip_classes and "race_class_code" in race_group.columns:
+            race_class = race_group.iloc[0]["race_class_code"]
+            if int(race_class) in skip_classes:
+                results["races_class_skipped"] = results.get("races_class_skipped", 0) + 1
+                continue
 
         # Phase 4-4: アンサンブルソート（ranking + binary）
         if has_ranking and "rank_score" in race_group.columns:
@@ -654,6 +663,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  odds_max: float = 0.0,
                  axis_flow: bool = False,
                  kelly_fraction: float = 0.0,
+                 skip_classes: list = None,
                  _prepared: dict = None,
                  ) -> dict:
     """全券種対応EVフィルタ付きバックテスト（後方互換ラッパー）
@@ -677,6 +687,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         confidence_min=confidence_min, odds_min=odds_min,
         odds_max=odds_max, axis_flow=axis_flow,
         kelly_fraction=kelly_fraction,
+        skip_classes=skip_classes,
     )
 
 
@@ -955,6 +966,14 @@ def explore_strategies(input_path: str = None, model_dir: Path = None,
          {"kelly_fraction": 0.25, "confidence_min": 0.03}),
         ("Kelly 1/4 + 確信度>=0.05",
          {"kelly_fraction": 0.25, "confidence_min": 0.05}),
+        # Phase 5-4: 条件別ベット制御
+        ("Kelly 1/4 + conf>=0.03 + 3勝除外",
+         {"kelly_fraction": 0.25, "confidence_min": 0.03, "skip_classes": [5]}),
+        ("Kelly 1/4 + conf>=0.03 + 3勝OP除外",
+         {"kelly_fraction": 0.25, "confidence_min": 0.03, "skip_classes": [5, 6, 7]}),
+        # Phase 6-3: 最適化された戦略
+        ("Kelly 1/4 + conf>=0.05 + 3勝OP除外",
+         {"kelly_fraction": 0.25, "confidence_min": 0.05, "skip_classes": [5, 6, 7]}),
     ]
 
     period = f"{val_start}\u301c{val_end}" if val_end else f"{val_start}\u301c"

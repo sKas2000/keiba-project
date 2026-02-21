@@ -347,6 +347,122 @@ def compute_post_position_bias(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+# ============================================================
+# Phase 5-1: レース内相対特徴量（Z-score）
+# ============================================================
+
+Z_SCORE_BASE_COLS = [
+    "surface_place_rate", "jockey_place_rate_365d",
+    "avg_finish_last5", "career_place_rate", "trainer_place_rate_365d",
+]
+
+
+def compute_zscore_features(df: pd.DataFrame) -> pd.DataFrame:
+    """レース内Z-score特徴量を計算（自馬 - レース平均）/ レース標準偏差"""
+    for col in Z_SCORE_BASE_COLS:
+        zcol = f"z_{col}"
+        df[zcol] = 0.0
+
+    for race_id, group in df.groupby("race_id"):
+        if len(group) < 3:
+            continue
+        indices = group.index
+        for col in Z_SCORE_BASE_COLS:
+            if col not in group.columns:
+                continue
+            vals = group[col].values.astype(float)
+            mean = vals.mean()
+            std = vals.std()
+            if std > 1e-8:
+                df.loc[indices, f"z_{col}"] = (vals - mean) / std
+            else:
+                df.loc[indices, f"z_{col}"] = 0.0
+
+    return df
+
+
+# ============================================================
+# Phase 5-2: 騎手×馬の騎乗経験特徴量
+# ============================================================
+
+def compute_jockey_horse_features(df: pd.DataFrame) -> pd.DataFrame:
+    """同じ騎手×同じ馬の過去騎乗回数・勝率を計算"""
+    df["same_jockey_rides"] = 0
+    df["same_jockey_win_rate"] = 0.0
+
+    # グルーピングキー
+    if "horse_id" not in df.columns or df["horse_id"].isna().all():
+        return df
+    if "jockey_name" not in df.columns or df["jockey_name"].isna().all():
+        return df
+
+    df = df.sort_values(["race_date", "race_id", "finish_position"]).reset_index(drop=True)
+
+    # 高速化: (horse_id, jockey_name) ペアごとに過去走を追跡
+    pair_history = {}  # (horse_id, jockey_name) -> [finish_positions...]
+
+    for idx in range(len(df)):
+        hid = df.at[idx, "horse_id"]
+        jname = df.at[idx, "jockey_name"]
+        if pd.isna(hid) or pd.isna(jname):
+            continue
+
+        key = (hid, jname)
+        past = pair_history.get(key, [])
+        if past:
+            df.at[idx, "same_jockey_rides"] = len(past)
+            df.at[idx, "same_jockey_win_rate"] = round(sum(1 for p in past if p == 1) / len(past), 3)
+
+        # 現在のレースを履歴に追加
+        fp = df.at[idx, "finish_position"]
+        if key not in pair_history:
+            pair_history[key] = []
+        pair_history[key].append(fp)
+
+    return df
+
+
+# ============================================================
+# Phase 5-3: コース適性特徴量
+# ============================================================
+
+def compute_course_aptitude_features(df: pd.DataFrame) -> pd.DataFrame:
+    """course_id × surface × distance_cat での過去成績を計算"""
+    df["course_dist_win_rate"] = 0.0
+    df["course_dist_place_rate"] = 0.0
+
+    if "horse_id" not in df.columns or df["horse_id"].isna().all():
+        return df
+
+    df = df.sort_values(["race_date", "race_id", "finish_position"]).reset_index(drop=True)
+
+    # (horse_id, course_id_code, surface_code, distance_cat) -> [finish_positions...]
+    course_history = {}
+
+    for idx in range(len(df)):
+        hid = df.at[idx, "horse_id"]
+        if pd.isna(hid):
+            continue
+
+        cid = int(df.at[idx, "course_id_code"]) if "course_id_code" in df.columns else 0
+        sc = int(df.at[idx, "surface_code"]) if "surface_code" in df.columns else 0
+        dc = int(df.at[idx, "distance_cat"]) if "distance_cat" in df.columns else 0
+        key = (hid, cid, sc, dc)
+
+        past = course_history.get(key, [])
+        if len(past) >= 2:  # 最低2走以上でノイズ抑制
+            arr = np.array(past)
+            df.at[idx, "course_dist_win_rate"] = round((arr == 1).mean(), 3)
+            df.at[idx, "course_dist_place_rate"] = round((arr <= 3).mean(), 3)
+
+        fp = df.at[idx, "finish_position"]
+        if key not in course_history:
+            course_history[key] = []
+        course_history[key].append(fp)
+
+    return df
+
+
 def create_target(df: pd.DataFrame) -> pd.DataFrame:
     df["top3"] = (df["finish_position"] <= 3).astype(int)
     return df
@@ -386,16 +502,25 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
     print("[6/8] 調教師統計特徴量を計算中...")
     df = compute_trainer_features(df)
 
-    print("[7/10] 展開予測特徴量（レース内脚質構成）を計算中...")
+    print("[7/13] 展開予測特徴量（レース内脚質構成）を計算中...")
     df = compute_race_pace_features(df)
 
-    print("[8/10] コース×距離×枠順バイアスを計算中...")
+    print("[8/13] コース×距離×枠順バイアスを計算中...")
     df = compute_post_position_bias(df)
 
-    print("[9/10] 目的変数作成")
+    print("[9/13] 騎手×馬の騎乗経験特徴量を計算中...")
+    df = compute_jockey_horse_features(df)
+
+    print("[10/13] コース適性特徴量を計算中...")
+    df = compute_course_aptitude_features(df)
+
+    print("[11/13] レース内Z-score特徴量を計算中...")
+    df = compute_zscore_features(df)
+
+    print("[12/13] 目的変数作成")
     df = create_target(df)
 
-    print("[10/10] 特徴量選択・保存")
+    print("[13/13] 特徴量選択・保存")
     df_features = select_features(df)
 
     # 決定論的ソート（再現性保証）
@@ -624,6 +749,68 @@ def _load_trainer_lookup(race_date_str: str) -> dict:
         return {}
 
 
+def _load_jockey_horse_course_lookup(
+    race_date_str: str, course_id_code: int, surface_code: int, distance_cat: int
+) -> tuple:
+    """results.csvから騎手×馬の過去騎乗・コース適性をルックアップ辞書で返す
+
+    Returns:
+        (jh_lookup, ca_lookup)
+        jh_lookup: {(horse_id, jockey_name) -> {rides, win_rate}}
+        ca_lookup: {horse_id -> {win_rate, place_rate}}
+    """
+    results_path = RAW_DIR / "results.csv"
+    if not results_path.exists():
+        return {}, {}
+    try:
+        from datetime import datetime
+        race_date = datetime.strptime(race_date_str.replace("/", "-"), "%Y-%m-%d")
+        cols = ["race_date", "horse_id", "jockey_name", "finish_position",
+                "course_id", "surface", "distance"]
+        df = pd.read_csv(results_path, dtype={"race_id": str, "horse_id": str},
+                         usecols=[c for c in cols if c in pd.read_csv(results_path, nrows=0).columns])
+        df["race_date"] = pd.to_datetime(df["race_date"], errors="coerce")
+        df = df.dropna(subset=["race_date", "horse_id"])
+        df["finish_position"] = pd.to_numeric(df["finish_position"], errors="coerce")
+        df = df[(df["finish_position"] > 0) & (df["race_date"] < race_date)]
+
+        # 騎手×馬ルックアップ
+        jh_lookup = {}
+        if "jockey_name" in df.columns:
+            for (hid, jname), grp in df.groupby(["horse_id", "jockey_name"]):
+                fps = grp["finish_position"].values
+                jh_lookup[(hid, jname)] = {
+                    "rides": len(fps),
+                    "win_rate": round((fps == 1).mean(), 3),
+                }
+
+        # コース適性ルックアップ
+        ca_lookup = {}
+        if "surface" in df.columns and "distance" in df.columns:
+            df["_sc"] = df["surface"].map(SURFACE_MAP).fillna(-1).astype(int)
+            df["_dc"] = df["distance"].apply(
+                lambda d: _dist_cat(int(d)) if pd.notna(d) and int(d) > 0 else -1)
+            # course_idからcourse_id_codeへ
+            if "course_id" in df.columns:
+                df["_cid"] = pd.to_numeric(df["course_id"], errors="coerce").fillna(0).astype(int)
+            else:
+                df["_cid"] = 0
+            matched = df[(df["_cid"] == course_id_code) &
+                         (df["_sc"] == surface_code) &
+                         (df["_dc"] == distance_cat)]
+            for hid, grp in matched.groupby("horse_id"):
+                fps = grp["finish_position"].values
+                if len(fps) >= 2:
+                    ca_lookup[hid] = {
+                        "win_rate": round((fps == 1).mean(), 3),
+                        "place_rate": round((fps <= 3).mean(), 3),
+                    }
+
+        return jh_lookup, ca_lookup
+    except Exception:
+        return {}, {}
+
+
 def extract_features_from_enriched(data: dict) -> pd.DataFrame:
     """enriched_input.json -> ML 特徴量 DataFrame"""
     race = data.get("race", {})
@@ -651,6 +838,10 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
 
     # 調教師成績ルックアップ（results.csvから直近365日分を事前計算）
     trainer_lookup = _load_trainer_lookup(race_date_str) if race_date_str else {}
+
+    # v9/v10: 騎手×馬・コース適性ルックアップ
+    jh_lookup, ca_lookup = _load_jockey_horse_course_lookup(
+        race_date_str, course_id_code, surface_code, distance_cat)
 
     rows = []
     for horse in horses:
@@ -700,6 +891,27 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
             row["trainer_win_rate_365d"] = 0.0
             row["trainer_place_rate_365d"] = 0.0
 
+        # v9: 騎手×馬の騎乗経験
+        horse_id = horse.get("horse_id", "")
+        jockey_name = horse.get("jockey_name", jockey_stats.get("name", ""))
+        jh_key = (horse_id, jockey_name)
+        if jh_key in jh_lookup:
+            jh = jh_lookup[jh_key]
+            row["same_jockey_rides"] = jh["rides"]
+            row["same_jockey_win_rate"] = jh["win_rate"]
+        else:
+            row["same_jockey_rides"] = 0
+            row["same_jockey_win_rate"] = 0.0
+
+        # v10: コース適性
+        if horse_id and horse_id in ca_lookup:
+            ca = ca_lookup[horse_id]
+            row["course_dist_win_rate"] = ca["win_rate"]
+            row["course_dist_place_rate"] = ca["place_rate"]
+        else:
+            row["course_dist_win_rate"] = 0.0
+            row["course_dist_place_rate"] = 0.0
+
         row["odds_win"] = horse.get("odds_win", 0)
         row["odds_place"] = horse.get("odds_place", 0)
         row["win_odds"] = horse.get("odds_win", 0)
@@ -710,4 +922,16 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
 
         rows.append(row)
 
-    return pd.DataFrame(rows)
+    df = pd.DataFrame(rows)
+
+    # v8: レース内Z-score（全馬の特徴量が揃った後に計算）
+    for col in Z_SCORE_BASE_COLS:
+        zcol = f"z_{col}"
+        if col in df.columns and len(df) >= 3:
+            vals = df[col].values.astype(float)
+            mean, std = vals.mean(), vals.std()
+            df[zcol] = ((vals - mean) / std) if std > 1e-8 else 0.0
+        else:
+            df[zcol] = 0.0
+
+    return df
