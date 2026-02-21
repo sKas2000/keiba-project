@@ -90,15 +90,16 @@ EXPANDING_BEST_PARAMS = {
     "kelly_fraction": 0,          # フラットベット（Kelly非使用）
     "confidence_min": 0.05,       # 確信度フィルタ
     "quinella_top_n": 2,          # 馬連: top2のみ（+11.3pt）
+    "skip_classes": [4, 6],       # 2勝+OP除外（全券種+1~3pt）
     "top_n": 3,
     "use_calibration": True,      # Isotonic校正（必須、+29pt）
     "use_ranking": False,         # ランキング不使用（-14.7pt）
     "calibration_pct": 0.10,      # 最適校正割合（10%）
     "window_months": 3,           # テスト期間（3ヶ月）
-    # Expanding Window結果（cal=10%, 9ウィンドウ, 6427レース）:
-    # 馬連: 116.7% ← 黒字（全window sizeで黒字）
-    # 3連複: 102.7% ← 黒字（全window sizeで黒字）
-    # ワイド: 94.0%, 単勝: 87.7%, 複勝: 90.1%
+    # Expanding Window結果（cal=10%, skip[4,6], 5141レース）:
+    # 馬連: 118.0% ← 黒字
+    # 3連複: 105.6% ← 黒字
+    # ワイド: 96.2%, 単勝: 89.8%, 複勝: 91.4%
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）
