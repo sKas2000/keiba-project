@@ -48,7 +48,10 @@ def send_notify(message: str, webhook_url: str = None) -> bool:
     payload = json.dumps({"content": message}).encode("utf-8")
     req = urllib.request.Request(
         webhook_url, data=payload,
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "keiba-ai/1.0",
+        },
         method="POST",
     )
     try:
