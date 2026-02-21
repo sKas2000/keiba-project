@@ -296,6 +296,8 @@ def simulate_bets(prepared: dict,
                   kelly_fraction: float = 0.0,
                   race_ids: set = None,
                   skip_classes: list = None,
+                  quinella_top_n: int = 0,
+                  wide_top_n: int = 0,
                   ) -> dict:
     """賭けシミュレーション（prepare済みデータに対して実行）
 
@@ -303,6 +305,8 @@ def simulate_bets(prepared: dict,
         prepared: prepare_backtest_data() の戻り値
         race_ids: 対象レースIDのセット（Noneで全レース）
         skip_classes: スキップするクラスコードのリスト（例: [5] で3勝クラスを除外）
+        quinella_top_n: 馬連用top_n（0でtop_nを使用）
+        wide_top_n: ワイド用top_n（0でtop_nを使用）
         他のパラメータはrun_backtestと同一
     """
     val_df = prepared["val_df"]
@@ -411,13 +415,14 @@ def simulate_bets(prepared: dict,
                 results["races_skipped"] = results.get("races_skipped", 0) + 1
                 continue
 
-        # 馬番と着順の取得
-        top_horses = race_group.head(top_n)
+        # 馬番と着順の取得（券種別top_nの最大値を使用）
+        effective_top = max(top_n, quinella_top_n, wide_top_n)
+        top_horses = race_group.head(effective_top)
         horse_numbers = top_horses["horse_number"].values if "horse_number" in top_horses.columns else []
         finish_positions = top_horses["finish_position"].values
 
         # --- 単勝シミュレーション ---
-        for i, (_, horse) in enumerate(top_horses.iterrows()):
+        for i, (_, horse) in enumerate(top_horses.head(top_n).iterrows()):
             odds = horse.get("win_odds", 0)
             if odds <= 0:
                 continue
@@ -445,7 +450,7 @@ def simulate_bets(prepared: dict,
             _record_bet(results, month_key, "win", bet_amount, hit, payout)
 
         # --- 複勝シミュレーション ---
-        for i, (_, horse) in enumerate(top_horses.iterrows()):
+        for i, (_, horse) in enumerate(top_horses.head(top_n).iterrows()):
             pred_place = horse["pred_prob"]
             odds = horse.get("win_odds", 0)
             if odds <= 0:
@@ -482,8 +487,9 @@ def simulate_bets(prepared: dict,
             _record_bet(results, month_key, "place", bet_amount, hit, payout)
 
         # --- 馬連シミュレーション（top_n から2頭組合せ、順不同） ---
+        q_top = quinella_top_n if quinella_top_n > 0 else top_n
         if len(horse_numbers) >= 2:
-            for idx_pair in combinations(range(min(top_n, len(top_horses))), 2):
+            for idx_pair in combinations(range(min(q_top, len(top_horses))), 2):
                 i, j = idx_pair
                 h_i = top_horses.iloc[i]
                 h_j = top_horses.iloc[j]
@@ -505,13 +511,14 @@ def simulate_bets(prepared: dict,
                 _record_bet(results, month_key, "quinella", 100, hit, payout)
 
         # --- ワイド シミュレーション（top_n から2頭組合せ、3着以内） ---
+        w_top = wide_top_n if wide_top_n > 0 else top_n
         if len(horse_numbers) >= 2:
             # 実際の3着以内馬番セット
             actual_top3 = set(
                 race_group[race_group["finish_position"] <= 3]["horse_number"].astype(int).tolist()
             ) if "horse_number" in race_group.columns else set()
 
-            for idx_pair in combinations(range(min(top_n, len(top_horses))), 2):
+            for idx_pair in combinations(range(min(w_top, len(top_horses))), 2):
                 i, j = idx_pair
                 h_i = top_horses.iloc[i]
                 h_j = top_horses.iloc[j]
@@ -664,6 +671,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  axis_flow: bool = False,
                  kelly_fraction: float = 0.0,
                  skip_classes: list = None,
+                 quinella_top_n: int = 0,
+                 wide_top_n: int = 0,
                  _prepared: dict = None,
                  ) -> dict:
     """全券種対応EVフィルタ付きバックテスト（後方互換ラッパー）
@@ -688,6 +697,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         odds_max=odds_max, axis_flow=axis_flow,
         kelly_fraction=kelly_fraction,
         skip_classes=skip_classes,
+        quinella_top_n=quinella_top_n,
+        wide_top_n=wide_top_n,
     )
 
 
@@ -974,6 +985,10 @@ def explore_strategies(input_path: str = None, model_dir: Path = None,
         # Phase 6-3: 最適化された戦略
         ("Kelly 1/4 + conf>=0.05 + 3勝OP除外",
          {"kelly_fraction": 0.25, "confidence_min": 0.05, "skip_classes": [5, 6, 7]}),
+        # Phase 7-1: 券種別top_n最適化
+        ("conf>=0.05 + skip3OP + Q2/W4",
+         {"kelly_fraction": 0.25, "confidence_min": 0.05, "skip_classes": [5, 6, 7],
+          "quinella_top_n": 2, "wide_top_n": 4}),
     ]
 
     period = f"{val_start}\u301c{val_end}" if val_end else f"{val_start}\u301c"

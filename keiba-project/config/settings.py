@@ -68,14 +68,20 @@ SCORE_LIMITS = {
 
 EV_RANK_THRESHOLDS = {"S": 1.5, "A": 1.2, "B": 1.0}
 
-# バックテスト最適パラメータ（Platt Scaling + class_change）
+# バックテスト最適パラメータ（Phase6 プルーニング + Phase7 券種別top_n）
 # Train: ~2024-12, Val: 2025-01~06（キャリブレーター学習）, Test: 2025-07~
+# Best strategy: Kelly 1/4 + conf>=0.05 + skip3OP + Q2/W4 + axis_flow
 BACKTEST_BEST_PARAMS = {
-    "ev_threshold": 2.0,       # Platt Scaling使用時の最適閾値
+    "kelly_fraction": 0.25,
+    "confidence_min": 0.05,
+    "skip_classes": [5, 6, 7],   # 3勝+OP/L除外
+    "quinella_top_n": 2,          # 馬連: top2のみ（+5.1pt）
+    "wide_top_n": 4,              # ワイド: top4まで（+2.0pt）
+    "axis_flow": True,            # 軸流し（3連単+14.9pt）
     "top_n": 3,
-    "test_win_roi": 103.8,     # OOS Test set ← 黒字
-    "test_place_roi": 107.5,   # OOS Test set ← 黒字
-    "calibrated": True,        # Platt Scalingキャリブレーション済み
+    "test_win_roi": 100.1,        # OOS Test 単勝 ← 黒字
+    "test_trifecta_roi": 100.5,   # OOS Test 3連単 ← 黒字
+    "calibrated": True,
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）
