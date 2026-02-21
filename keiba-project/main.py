@@ -75,6 +75,7 @@ def cmd_backtest(args):
         odds_max=getattr(args, "odds_max", 0.0),
         axis_flow=getattr(args, "axis_flow", False),
         kelly_fraction=getattr(args, "kelly", 0.0),
+        analyze_cond=getattr(args, "analyze_cond", False),
     )
 
 
@@ -151,6 +152,7 @@ def main():
     p_bt.add_argument("--odds-max", type=float, default=0.0, help="最高オッズ（単勝・複勝）")
     p_bt.add_argument("--axis-flow", action="store_true", help="馬単・3連単をTop1軸流しに変更")
     p_bt.add_argument("--kelly", type=float, default=0.0, help="Kelly基準の割合（0=均一賭け、0.25=1/4 Kelly推奨）")
+    p_bt.add_argument("--analyze-cond", action="store_true", help="条件別分析（クラス・馬場・距離別ROI）")
     p_bt.set_defaults(func=cmd_backtest)
 
     # collect: レース結果収集

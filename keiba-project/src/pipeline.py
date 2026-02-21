@@ -213,15 +213,26 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           odds_min: float = 0.0,
                           odds_max: float = 0.0,
                           axis_flow: bool = False,
-                          kelly_fraction: float = 0.0):
+                          kelly_fraction: float = 0.0,
+                          analyze_cond: bool = False):
     """バックテストパイプライン"""
     from src.model.evaluator import (
         run_backtest, print_backtest_report, save_backtest_report,
         compare_ev_thresholds, print_ev_comparison, optimize_temperature,
-        explore_strategies,
+        explore_strategies, analyze_by_condition,
     )
 
     model_path = Path(model_dir) if model_dir else None
+
+    if analyze_cond:
+        return analyze_by_condition(
+            input_path=input_path,
+            model_dir=model_path,
+            val_start=val_start,
+            val_end=val_end,
+            kelly_fraction=kelly_fraction,
+            confidence_min=confidence_min,
+        )
 
     if explore:
         return explore_strategies(

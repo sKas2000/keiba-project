@@ -297,6 +297,105 @@ def fit_isotonic_calibrator(model, val_df: pd.DataFrame, target: str = "top3",
     return iso
 
 
+def fit_isotonic_cv(train_df: pd.DataFrame, params: dict,
+                    target: str = "top3", save_name: str = "isotonic_cv",
+                    n_folds: int = 5, model_dir: Path = None) -> IsotonicRegression:
+    """CV-Isotonic: Train期間のK-fold OOF予測でIsotonicを学習（リーク完全解消）
+
+    1. Train期間を時系列でK分割
+    2. 各foldでモデル学習 → held-outに予測
+    3. OOF予測全体でIsotonic Regressionを学習
+    4. val/test期間はリーク無しでキャリブレーション可能
+    """
+    model_dir = model_dir or MODEL_DIR
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    available = [c for c in FEATURE_COLUMNS if c in train_df.columns]
+    cat_indices = _get_categorical_indices(available)
+
+    # 時系列K-fold: race_dateでソートして均等分割
+    train_sorted = train_df.sort_values("race_date").reset_index(drop=True)
+    dates = train_sorted["race_date"].unique()
+    fold_size = len(dates) // n_folds
+
+    oof_preds = np.zeros(len(train_sorted))
+    if target == "win":
+        y_all = (train_sorted["finish_position"] == 1).astype(int).values
+    elif target in train_sorted.columns:
+        y_all = train_sorted[target].values
+    else:
+        raise ValueError(f"Unknown target: {target}")
+
+    print(f"  [CV-Isotonic] {n_folds}-fold, target={target}")
+
+    for fold in range(n_folds):
+        # 時系列分割: fold番目の日付範囲をheld-outに
+        start_idx = fold * fold_size
+        if fold == n_folds - 1:
+            fold_dates = dates[start_idx:]
+        else:
+            fold_dates = dates[start_idx:start_idx + fold_size]
+
+        fold_date_set = set(fold_dates)
+        held_out_mask = train_sorted["race_date"].isin(fold_date_set)
+        train_mask = ~held_out_mask
+
+        fold_train = train_sorted[train_mask]
+        fold_val = train_sorted[held_out_mask]
+
+        if len(fold_train) == 0 or len(fold_val) == 0:
+            continue
+
+        X_tr = fold_train[available].values.astype(np.float32)
+        X_ho = fold_val[available].values.astype(np.float32)
+
+        if target == "win":
+            y_tr = (fold_train["finish_position"] == 1).astype(int).values
+        else:
+            y_tr = fold_train[target].values
+
+        fold_params = params.copy()
+        if target == "win":
+            fold_params["is_unbalance"] = True
+
+        dtrain = lgb.Dataset(X_tr, label=y_tr, feature_name=available,
+                             categorical_feature=cat_indices if cat_indices else "auto")
+        dval_fold = lgb.Dataset(X_ho, label=y_all[held_out_mask], feature_name=available,
+                                reference=dtrain)
+
+        fold_model = lgb.train(
+            fold_params, dtrain, num_boost_round=1000,
+            valid_sets=[dval_fold], valid_names=["val"],
+            callbacks=[lgb.early_stopping(50), lgb.log_evaluation(0)],
+        )
+
+        oof_preds[held_out_mask] = fold_model.predict(X_ho)
+        print(f"    Fold {fold+1}/{n_folds}: train={len(fold_train)}, "
+              f"held_out={len(fold_val)}, iters={fold_model.best_iteration}")
+
+    # OOF予測でIsotonic Regressionを学習
+    valid_mask = oof_preds > 0  # fold漏れがないか確認
+    iso = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+    iso.fit(oof_preds[valid_mask], y_all[valid_mask])
+
+    cal_path = model_dir / f"{save_name}.pkl"
+    with open(cal_path, "wb") as f:
+        pickle.dump(iso, f)
+
+    # 評価
+    cal_preds = iso.predict(oof_preds[valid_mask])
+    raw_brier = brier_score_loss(y_all[valid_mask], np.clip(oof_preds[valid_mask], 0, 1))
+    cal_brier = brier_score_loss(y_all[valid_mask], cal_preds)
+    improvement = (raw_brier - cal_brier) / raw_brier * 100 if raw_brier > 0 else 0
+
+    print(f"    OOF Brier (raw):        {raw_brier:.6f}")
+    print(f"    OOF Brier (calibrated): {cal_brier:.6f}")
+    print(f"    改善: {improvement:.1f}%")
+    print(f"    保存: {cal_path}")
+
+    return iso
+
+
 def load_isotonic_calibrator(save_name: str = "isotonic",
                              model_dir: Path = None) -> IsotonicRegression | None:
     """保存済みIsotonicキャリブレーターを読み込み"""
@@ -599,13 +698,14 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
     for _, row in fi_win.head(10).iterrows():
         print(f"    {row['feature']:30s} {row['importance_pct']:5.1f}%")
 
-    # Isotonic Regression キャリブレーション
+    # CV-Isotonic Regression キャリブレーション（リーク無し）
     print(f"\n{'─' * 40}")
-    print(f"[Isotonic Regression キャリブレーション]")
-    fit_isotonic_calibrator(binary_model, val_df, target="top3",
-                            save_name="binary_isotonic")
-    fit_isotonic_calibrator(win_model, val_df, target="win",
-                            save_name="win_isotonic")
+    print(f"[CV-Isotonic Regression キャリブレーション（Train OOF）]")
+    fit_isotonic_cv(train_df, binary_params, target="top3",
+                    save_name="binary_isotonic", model_dir=MODEL_DIR)
+    win_cv_params = binary_params.copy()
+    fit_isotonic_cv(train_df, win_cv_params, target="win",
+                    save_name="win_isotonic", model_dir=MODEL_DIR)
 
     # ランキングモデル
     print(f"\n{'─' * 40}")

@@ -16,10 +16,16 @@ import lightgbm as lgb
 
 from config.settings import FEATURE_COLUMNS, MODEL_DIR, PROCESSED_DIR, RAW_DIR
 
-# 複勝オッズ推定回帰係数（returns.csv 30,378件から算出、R²=0.80、MAE=0.79）
-# place_odds = PLACE_ODDS_SLOPE * win_odds + PLACE_ODDS_INTERCEPT
+# 複勝オッズ推定回帰係数（returns.csv 30,378件から算出）
+# 旧: 線形モデル（R²=0.804, MAE=0.789）
+# 新: 多変量モデル（R²=0.807, MAE=0.758） win_odds + num_entries + log(1+win_odds)
+PLACE_ODDS_COEF_WIN = 0.13470
+PLACE_ODDS_COEF_ENTRIES = 0.06456
+PLACE_ODDS_COEF_LOG = 0.24967
+PLACE_ODDS_INTERCEPT = -0.1849
+# フォールバック用（num_entriesが不明な場合）
 PLACE_ODDS_SLOPE = 0.1414
-PLACE_ODDS_INTERCEPT = 1.1475
+PLACE_ODDS_INTERCEPT_SIMPLE = 1.1475
 
 # 全券種キー（内部用）
 BET_TYPES = ["win", "place", "quinella", "wide", "exacta", "trio", "trifecta"]
@@ -30,6 +36,19 @@ BET_LABELS = {
 
 # Kelly基準のデフォルト銀行残高（ベットサイズ計算用）
 KELLY_BANKROLL = 100000
+
+
+def _estimate_place_odds(win_odds: float, num_entries: int = 0) -> float:
+    """複勝オッズ推定（多変量モデル）"""
+    if num_entries > 0:
+        log_win = np.log1p(max(win_odds, 0))
+        est = (PLACE_ODDS_COEF_WIN * win_odds
+               + PLACE_ODDS_COEF_ENTRIES * num_entries
+               + PLACE_ODDS_COEF_LOG * log_win
+               + PLACE_ODDS_INTERCEPT)
+    else:
+        est = PLACE_ODDS_SLOPE * win_odds + PLACE_ODDS_INTERCEPT_SIMPLE
+    return max(est, 1.0)
 
 
 def _kelly_fraction_calc(prob: float, odds: float) -> float:
@@ -265,6 +284,14 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
             val_df["win_prob_direct"] = win_raw
         has_win_model = True
 
+    # Phase 4-4: ランキングモデル（アンサンブル用）
+    ranking_model_path = model_dir / "ranking_model.txt"
+    has_ranking = False
+    if ranking_model_path.exists():
+        ranking_model = lgb.Booster(model_file=str(ranking_model_path))
+        val_df["rank_score"] = ranking_model.predict(X_val)
+        has_ranking = True
+
     # 払い戻しデータ読み込み
     returns = _load_returns(returns_path)
 
@@ -283,7 +310,22 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         if len(race_group) < 4:
             continue
 
-        race_group = race_group.sort_values("pred_prob", ascending=False)
+        # Phase 4-4: アンサンブルソート（ranking + binary）
+        if has_ranking and "rank_score" in race_group.columns:
+            # ランキングスコアをsoftmaxで正規化 → binaryと平均して安定化
+            rs = race_group["rank_score"].values
+            exp_rs = np.exp(rs - rs.max())
+            rank_probs = exp_rs / exp_rs.sum()
+            bp = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
+            bp_norm = bp / bp.sum()
+            # 加重平均: binary 0.6 + ranking 0.4（binaryの方が確率として信頼性が高い）
+            ensemble_sort = 0.6 * bp_norm + 0.4 * rank_probs
+            race_group = race_group.copy()
+            race_group["_ensemble_sort"] = ensemble_sort
+            race_group = race_group.sort_values("_ensemble_sort", ascending=False)
+        else:
+            race_group = race_group.sort_values("pred_prob", ascending=False)
+
         results["races"] += 1
 
         # 月別集計用
@@ -292,6 +334,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
             results["monthly"][month_key] = {bt: _empty_bet_stats() for bt in BET_TYPES}
 
         # レース内の勝率を計算
+        # Note: win_probsはキャリブレーション済みモデルのみ使用（アンサンブルはソートのみ）
         pred_probs = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
         if has_win_model and "win_prob_direct" in race_group.columns:
             # Phase 3: 勝率直接推定モデルから win_prob を算出（温度不要）
@@ -385,7 +428,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                 continue
             if odds_max > 0 and odds > odds_max:
                 continue
-            est_place_odds = max(PLACE_ODDS_SLOPE * odds + PLACE_ODDS_INTERCEPT, 1.0)
+            n_entries = len(race_group)
+            est_place_odds = _estimate_place_odds(odds, n_entries)
             ev_place = pred_place * est_place_odds
             if ev_threshold > 0 and ev_place < ev_threshold:
                 continue
@@ -879,6 +923,113 @@ def explore_strategies(input_path: str = None, model_dir: Path = None,
         all_results.append(entry)
 
     print(f"  {'─' * 105}")
+    print(f"  (* = 回収率100%超)")
+    return all_results
+
+
+def analyze_by_condition(input_path: str = None, model_dir: Path = None,
+                         returns_path: str = None,
+                         val_start: str = "2025-01-01",
+                         val_end: str = None,
+                         kelly_fraction: float = 0.25,
+                         confidence_min: float = 0.03,
+                         **filter_kwargs) -> dict:
+    """クラス別・条件別にバックテストを実行し、エッジのある条件を特定"""
+    import tempfile
+
+    conditions = {
+        "クラス別": {
+            "column": "race_class_code",
+            "values": {
+                "未勝利(2)": 2, "1勝(3)": 3, "2勝(4)": 4, "3勝(5)": 5,
+                "OP/L(6-7)": [6, 7], "重賞(8-10)": [8, 9, 10],
+            },
+        },
+        "馬場別": {
+            "column": "surface_code",
+            "values": {"芝(0)": 0, "ダート(1)": 1},
+        },
+        "距離別": {
+            "column": "distance_cat",
+            "values": {"短距離(0)": 0, "マイル(1)": 1, "中距離(2)": 2, "長距離(3)": 3},
+        },
+    }
+
+    input_path = input_path or str(PROCESSED_DIR / "features.csv")
+    model_dir = model_dir or MODEL_DIR
+    returns_path_str = returns_path or str(RAW_DIR / "returns.csv")
+
+    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
+    df["race_date"] = pd.to_datetime(df["race_date"])
+
+    val_df = df[df["race_date"] >= pd.Timestamp(val_start)].copy()
+    if val_end:
+        val_df = val_df[val_df["race_date"] < pd.Timestamp(val_end)].copy()
+
+    period = f"{val_start}〜{val_end}" if val_end else f"{val_start}〜"
+    print(f"\n  [条件別分析] 期間={period}")
+
+    all_results = {}
+    for category_name, config in conditions.items():
+        col = config["column"]
+        if col not in val_df.columns:
+            continue
+
+        print(f"\n  ■ {category_name}")
+        print(f"  {'条件':18s} {'レース':>6s} {'単勝ROI':>8s} {'複勝ROI':>8s} "
+              f"{'馬連ROI':>8s} {'ﾜｲﾄﾞROI':>8s} {'3連複ROI':>9s}")
+        print(f"  {'─' * 70}")
+
+        category_results = {}
+        for label, values in config["values"].items():
+            if isinstance(values, list):
+                target_races = set(val_df[val_df[col].isin(values)]["race_id"].unique())
+            else:
+                target_races = set(val_df[val_df[col] == values]["race_id"].unique())
+
+            if not target_races:
+                continue
+
+            filtered_df = df[df["race_id"].isin(target_races)].copy()
+            tmp_path = Path(tempfile.mktemp(suffix=".csv"))
+            filtered_df.to_csv(tmp_path, index=False)
+
+            try:
+                res = run_backtest(
+                    input_path=str(tmp_path), model_dir=model_dir,
+                    returns_path=returns_path_str,
+                    val_start=val_start, val_end=val_end,
+                    top_n=3, kelly_fraction=kelly_fraction,
+                    confidence_min=confidence_min,
+                    **filter_kwargs,
+                )
+            finally:
+                tmp_path.unlink(missing_ok=True)
+
+            if not res or res.get("races", 0) == 0:
+                continue
+
+            rois = {}
+            for bt in ["win", "place", "quinella", "wide", "trio"]:
+                b = res.get(f"bets_{bt}", {})
+                rois[bt] = (b["returned"] / b["invested"] * 100) if b.get("invested", 0) > 0 else 0
+
+            marks = {bt: "*" if rois[bt] >= 100 else "" for bt in rois}
+            print(f"  {label:18s} {res['races']:>6d} "
+                  f"{rois['win']:>6.1f}%{marks['win']} "
+                  f"{rois['place']:>6.1f}%{marks['place']} "
+                  f"{rois['quinella']:>6.1f}%{marks['quinella']} "
+                  f"{rois['wide']:>6.1f}%{marks['wide']} "
+                  f"{rois['trio']:>7.1f}%{marks['trio']}")
+
+            category_results[label] = {
+                "races": res["races"],
+                **{f"{bt}_roi": round(rois.get(bt, 0), 1) for bt in rois},
+            }
+
+        all_results[category_name] = category_results
+
+    print(f"\n  {'─' * 70}")
     print(f"  (* = 回収率100%超)")
     return all_results
 
