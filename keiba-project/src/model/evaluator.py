@@ -1132,6 +1132,174 @@ def analyze_by_condition(input_path: str = None, model_dir: Path = None,
     return all_results
 
 
+def expanding_window_backtest(
+        input_path: str = None,
+        returns_path: str = None,
+        window_months: int = 3,
+        initial_train_end: str = "2024-01-01",
+        final_test_end: str = None,
+        **bet_kwargs,
+) -> dict:
+    """Expanding Window Backtest（ウォーキングフォワード）
+
+    Train期間を拡大しながら、次のwindow_monthsを予測。
+    各ウィンドウでモデルを再学習→バックテスト→集計。
+    実運用時の「定期リトレイン」をシミュレーション。
+
+    Args:
+        window_months: テスト期間の長さ（月）
+        initial_train_end: 初回のTrain終了日
+        final_test_end: 最終テスト終了日（Noneで最新まで）
+        **bet_kwargs: simulate_bets に渡すパラメータ
+    """
+    import tempfile
+    from src.model.trainer import (
+        train_binary_model, train_win_model,
+        fit_calibrator, fit_isotonic_cv,
+        DEFAULT_BINARY_PARAMS,
+    )
+    from dateutil.relativedelta import relativedelta
+
+    input_path = input_path or str(PROCESSED_DIR / "features.csv")
+    returns_path = Path(returns_path) if returns_path else RAW_DIR / "returns.csv"
+
+    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
+    df["race_date"] = pd.to_datetime(df["race_date"])
+    returns = _load_returns(returns_path)
+
+    # フィルタリング
+    pre_filter = len(df)
+    if "race_class_code" in df.columns:
+        df = df[df["race_class_code"] != 1]
+    if "surface_code" in df.columns:
+        df = df[df["surface_code"] != 2]
+    if "num_entries" in df.columns:
+        df = df[df["num_entries"] >= 6]
+    print(f"  [フィルタ] {pre_filter - len(df)}行除外 → {len(df)}行")
+
+    available = [c for c in FEATURE_COLUMNS if c in df.columns]
+    from config.settings import CATEGORICAL_FEATURES
+    cat_feats = [c for c in CATEGORICAL_FEATURES if c in available]
+
+    train_end = pd.Timestamp(initial_train_end)
+    if final_test_end:
+        max_date = pd.Timestamp(final_test_end)
+    else:
+        max_date = df["race_date"].max() + pd.Timedelta(days=1)
+
+    all_window_results = []
+    total_bets = {bt: _empty_bet_stats() for bt in BET_TYPES}
+    window_idx = 0
+
+    print(f"\n  [Expanding Window Backtest] window={window_months}ヶ月")
+    print(f"  {'─' * 90}")
+    print(f"  {'Window':8s} {'Train':>12s} {'Test':>18s} {'Races':>6s}"
+          f" {'Win':>7s} {'Place':>7s} {'Q':>7s} {'Wide':>7s} {'Trio':>7s}")
+    print(f"  {'─' * 90}")
+
+    while train_end < max_date:
+        test_start = train_end
+        test_end = train_end + relativedelta(months=window_months)
+        if test_end > max_date:
+            test_end = max_date
+
+        train_df = df[df["race_date"] < train_end].copy()
+        test_df = df[(df["race_date"] >= test_start) &
+                     (df["race_date"] < test_end)].copy()
+
+        if len(train_df) < 1000 or len(test_df) < 100:
+            train_end = test_end
+            continue
+
+        # バイナリモデル学習
+        params = DEFAULT_BINARY_PARAMS.copy()
+        binary_model, _ = train_binary_model(train_df, test_df, params)
+
+        # Winモデル学習
+        win_params = params.copy()
+        win_model, _ = train_win_model(train_df, test_df, win_params)
+
+        # 予測
+        X_test = test_df[available].values.astype(np.float32)
+        test_df["pred_prob"] = binary_model.predict(X_test)
+        test_df["win_prob_direct"] = win_model.predict(X_test)
+
+        # ソート（各レース内でpred_prob降順）
+        test_df = test_df.sort_values(
+            ["race_id", "pred_prob"], ascending=[True, False]
+        )
+
+        prepared = {
+            "val_df": test_df,
+            "full_df": df,
+            "returns": returns,
+            "has_win_model": True,
+            "has_ranking": False,
+            "calibrator": None,
+            "val_start": str(test_start.date()),
+            "val_end": str(test_end.date()),
+        }
+
+        res = simulate_bets(prepared, **bet_kwargs)
+        n_races = res.get("races", 0)
+        if n_races == 0:
+            train_end = test_end
+            continue
+
+        # 集計
+        rois = {}
+        for bt in BET_TYPES:
+            b = res.get(f"bets_{bt}", {})
+            rois[bt] = (b["returned"] / b["invested"] * 100) if b.get("invested", 0) > 0 else 0
+            for k in ["count", "invested", "returned", "hits"]:
+                total_bets[bt][k] = total_bets[bt].get(k, 0) + b.get(k, 0)
+
+        mark_w = "*" if rois["win"] >= 100 else ""
+        train_label = f"~{train_end.strftime('%Y-%m')}"
+        test_label = f"{test_start.strftime('%Y-%m')}~{test_end.strftime('%Y-%m')}"
+        print(f"  W{window_idx:02d}     {train_label:>12s} {test_label:>18s} {n_races:>6d}"
+              f" {rois['win']:>6.1f}%{mark_w}"
+              f" {rois['place']:>6.1f}%"
+              f" {rois['quinella']:>6.1f}%"
+              f" {rois['wide']:>6.1f}%"
+              f" {rois['trio']:>6.1f}%")
+
+        all_window_results.append({
+            "window": window_idx,
+            "train_end": str(train_end.date()),
+            "test_start": str(test_start.date()),
+            "test_end": str(test_end.date()),
+            "races": n_races,
+            "rois": {bt: round(rois.get(bt, 0), 1) for bt in BET_TYPES},
+        })
+
+        window_idx += 1
+        train_end = test_end
+
+    # 総合結果
+    print(f"  {'─' * 90}")
+    total_rois = {}
+    for bt in BET_TYPES:
+        b = total_bets[bt]
+        total_rois[bt] = (b["returned"] / b["invested"] * 100) if b.get("invested", 0) > 0 else 0
+    total_races = sum(w["races"] for w in all_window_results)
+    mark_w = "*" if total_rois["win"] >= 100 else ""
+    print(f"  {'TOTAL':8s} {'':>12s} {'':>18s} {total_races:>6d}"
+          f" {total_rois['win']:>6.1f}%{mark_w}"
+          f" {total_rois['place']:>6.1f}%"
+          f" {total_rois['quinella']:>6.1f}%"
+          f" {total_rois['wide']:>6.1f}%"
+          f" {total_rois['trio']:>6.1f}%")
+    print(f"  {'─' * 90}")
+    print(f"  (* = 回収率100%超)")
+
+    return {
+        "windows": all_window_results,
+        "total_rois": {bt: round(total_rois.get(bt, 0), 1) for bt in BET_TYPES},
+        "total_races": total_races,
+    }
+
+
 def save_backtest_report(results: dict, output_path: Path = None):
     """バックテスト結果をJSONで保存"""
     output_path = output_path or (PROCESSED_DIR / "backtest_report.json")
