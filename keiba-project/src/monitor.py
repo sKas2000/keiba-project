@@ -1,6 +1,7 @@
 """
 オッズ監視サーバー（スケジュール方式）
 各レースの発走時刻N分前にオッズ取得→ML予測→Discord通知
+発走15分後に結果取得→回収率計算→Discord通知
 """
 import asyncio
 import copy
@@ -10,11 +11,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from config.settings import (
-    RACES_DIR, MODEL_DIR, setup_encoding,
+    RACES_DIR, MODEL_DIR, COURSE_NAME_TO_ID,
 )
 from src.data.storage import write_json
 from src.notify import (
-    send_notify, format_race_notification, get_webhook_url,
+    send_notify, format_race_notification, format_result_notification,
+    format_daily_summary, get_webhook_url,
 )
 
 
@@ -26,19 +28,15 @@ DEFAULT_POST_TIMES = {
     9: "14:25", 10: "14:55", 11: "15:25", 12: "15:40",
 }
 
+# 結果確認の待機時間（発走後N分）
+RESULT_CHECK_DELAY = 15
+
 
 class RaceMonitor:
     """レース発走時刻に合わせたスケジュール実行モニター"""
 
     def __init__(self, before: int = 5, token: str = None,
                  headless: bool = True, venue_filter: str = None):
-        """
-        Args:
-            before: 発走何分前にバッチ実行するか（デフォルト5分）
-            token: Discord Webhook URL
-            headless: ブラウザ非表示
-            venue_filter: 会場フィルタ（例: "東京", "中山,東京"）
-        """
         self.before = before
         self.webhook_url = token or get_webhook_url()
         self.headless = headless
@@ -46,9 +44,9 @@ class RaceMonitor:
 
         # データ
         self.monitor_dir = RACES_DIR / "monitor" / datetime.now().strftime("%Y%m%d")
-        self.races = {}          # race_key -> {data, enriched, race_info, post_time}
+        self.races = {}          # race_key -> {data, enriched, race_info, ...}
         self.meeting_info = []   # [(index, text, venue), ...]
-        self.schedule = []       # [(datetime, race_key), ...] sorted
+        self.schedule = []       # [(trigger_dt, post_dt, race_key), ...] sorted
 
     def log(self, msg: str):
         ts = datetime.now().strftime("%H:%M:%S")
@@ -60,8 +58,6 @@ class RaceMonitor:
 
     async def run(self):
         """メインループ"""
-        setup_encoding()
-
         if not self.webhook_url:
             print("=" * 60)
             print("[ERROR] Discord Webhook URLが未設定")
@@ -78,6 +74,7 @@ class RaceMonitor:
         self.monitor_dir.mkdir(parents=True, exist_ok=True)
         self.log("オッズ監視サーバー開始")
         self.log(f"  発走 {self.before}分前 にバッチ実行")
+        self.log(f"  発走 {RESULT_CHECK_DELAY}分後 に結果確認")
         self.log(f"  会場フィルタ: {self.venue_filter or '全会場'}")
 
         # Discord疎通テスト
@@ -118,11 +115,14 @@ class RaceMonitor:
             schedule_text = self._format_schedule()
             send_notify(schedule_text, self.webhook_url)
 
-            # Phase 3: スケジュール実行
+            # Phase 3: スケジュール実行（予測 + 結果確認）
             self.log("=" * 50)
             self.log("Phase 3: スケジュール実行開始")
             self.log("=" * 50)
             await self._run_schedule()
+
+            # 日次サマリ
+            self._send_daily_summary()
 
             self.log("[完了] 全レースの処理が終了しました")
             send_notify("\n[完了] 本日の全レース処理が終了しました", self.webhook_url)
@@ -147,11 +147,31 @@ class RaceMonitor:
                 self.log("[WARN] 開催情報が見つかりません")
                 return
 
-            self.meeting_info = []
+            # JRAサイトは土日2日分を同時表示するため、今日の開催のみ処理
+            # 土曜=先の開催（日数小）、日曜=後の開催（日数大）
+            all_meetings = []
             for i, m in enumerate(meetings):
                 venue = self._extract_venue(m["text"])
-                self.meeting_info.append((i, m["text"], venue))
+                all_meetings.append((i, m["text"], venue))
                 self.log(f"  開催{i+1}: {m['text']} ({venue})")
+
+            # 同じ会場が2回あるか判定
+            venue_meetings = {}
+            for idx, text, venue in all_meetings:
+                venue_meetings.setdefault(venue, []).append((idx, text, venue))
+
+            is_sunday = datetime.now().weekday() == 6  # 0=Mon, 6=Sun
+            self.meeting_info = []
+            for venue, entries in venue_meetings.items():
+                if len(entries) >= 2:
+                    # 土日2日分: 土曜なら先(0)、日曜なら後(-1)
+                    pick = entries[-1] if is_sunday else entries[0]
+                    skip = entries[0] if is_sunday else entries[-1]
+                    self.log(f"  → {pick[1]} を本日分として採用"
+                             f"（{skip[1]} はスキップ）")
+                    self.meeting_info.append(pick)
+                else:
+                    self.meeting_info.append(entries[0])
 
             for m_idx, m_text, venue in self.meeting_info:
                 if self.venue_filter and venue not in self.venue_filter:
@@ -180,7 +200,10 @@ class RaceMonitor:
                             "enriched": None,
                             "race_info": race_info,
                             "meeting_idx": m_idx,
+                            "meeting_text": m_text,
                             "post_time": post_time_str,
+                            "predicted_ev": None,
+                            "bet_results": None,
                         }
 
                         name = race_info.get("name", "")
@@ -218,7 +241,7 @@ class RaceMonitor:
             self.log(f"    {trigger_dt.strftime('%H:%M')} 実行 → {race_key} (発走{post_dt.strftime('%H:%M')})")
 
     def _format_schedule(self) -> str:
-        """スケジュールをLINE通知用にフォーマット"""
+        """スケジュールを通知用にフォーマット"""
         lines = [f"\n[スケジュール] {len(self.schedule)}レース (発走{self.before}分前に通知)"]
         for trigger_dt, post_dt, race_key in self.schedule:
             race = self.races[race_key]
@@ -382,36 +405,90 @@ class RaceMonitor:
         self.log(f"\n  補完完了: {enriched_count}/{total} レース")
 
     # ==========================================================
-    # Phase 3: スケジュール実行
+    # Phase 3: スケジュール実行（予測 + 結果確認）
     # ==========================================================
 
     async def _run_schedule(self):
-        """発走時刻に合わせてバッチ実行"""
-        for i, (trigger_dt, post_dt, race_key) in enumerate(self.schedule):
-            race = self.races.get(race_key)
-            if not race or not race.get("enriched"):
-                self.log(f"  {race_key}: enrichedデータなし（スキップ）")
+        """発走時刻に合わせてバッチ実行 + 結果確認"""
+        # 同一トリガー時刻のレースをグループ化
+        time_groups = []
+        current_trigger = None
+        for trigger_dt, post_dt, race_key in self.schedule:
+            if current_trigger != trigger_dt:
+                time_groups.append((trigger_dt, post_dt, []))
+                current_trigger = trigger_dt
+            time_groups[-1][2].append(race_key)
+
+        # 結果確認キュー: [(check_dt, post_dt, [race_keys])]
+        result_queue = []
+
+        for g_idx, (trigger_dt, post_dt, race_keys) in enumerate(time_groups):
+            # 待機（結果確認を挟む）
+            remaining = sum(len(g[2]) for g in time_groups[g_idx:])
+            await self._wait_with_result_checks(
+                trigger_dt, result_queue,
+                next_label=f"{race_keys[0]}他 発走{post_dt.strftime('%H:%M')}",
+                remaining=remaining,
+            )
+
+            # 予測実行
+            for race_key in race_keys:
+                race = self.races.get(race_key)
+                if not race or not race.get("enriched"):
+                    self.log(f"  {race_key}: enrichedデータなし（スキップ）")
+                    continue
+
+                self.log(f"\n{'=' * 50}")
+                self.log(f"[実行] {race_key} (発走{post_dt.strftime('%H:%M')})")
+                self.log(f"{'=' * 50}")
+                await self._scrape_predict_notify(race_key)
+
+            # 結果確認をスケジュール
+            check_dt = post_dt + timedelta(minutes=RESULT_CHECK_DELAY)
+            result_queue.append((check_dt, post_dt, race_keys))
+
+        # 残りの結果確認
+        result_queue.sort(key=lambda x: x[0])
+        for check_dt, post_dt, race_keys in result_queue:
+            wait = (check_dt - datetime.now()).total_seconds()
+            if wait > 0:
+                self.log(f"\n--- 結果確認待ち: {', '.join(race_keys)} "
+                         f"(あと{int(wait // 60)}分{int(wait % 60)}秒) ---")
+                await asyncio.sleep(wait)
+            await self._check_results_batch(race_keys)
+
+    async def _wait_with_result_checks(self, until_dt, result_queue,
+                                       next_label="", remaining=0):
+        """指定時刻まで待機しつつ、結果確認を実行"""
+        while datetime.now() < until_dt:
+            # 結果確認が必要なレースがあるか
+            ready = [i for i, q in enumerate(result_queue)
+                     if q[0] <= datetime.now()]
+            if ready:
+                for i in reversed(ready):
+                    _, _, race_keys = result_queue.pop(i)
+                    await self._check_results_batch(race_keys)
                 continue
 
-            now = datetime.now()
-            wait_seconds = (trigger_dt - now).total_seconds()
+            # 次のイベントまで待機
+            next_events = [until_dt]
+            next_events += [q[0] for q in result_queue]
+            next_event = min(next_events)
+            wait_secs = (next_event - datetime.now()).total_seconds()
 
-            if wait_seconds > 0:
-                remaining = len(self.schedule) - i
-                self.log(f"\n--- 次: {race_key} 発走{post_dt.strftime('%H:%M')} "
-                         f"(あと{int(wait_seconds//60)}分{int(wait_seconds%60)}秒待機, "
-                         f"残り{remaining}レース) ---")
-                await asyncio.sleep(wait_seconds)
-
-            self.log(f"\n{'=' * 50}")
-            self.log(f"[実行] {race_key} (発走{post_dt.strftime('%H:%M')})")
-            self.log(f"{'=' * 50}")
-
-            # 最新オッズ取得 + ML予測 + 通知
-            await self._scrape_predict_notify(race_key)
+            if wait_secs > 0:
+                if next_event == until_dt and next_label:
+                    self.log(f"\n--- 次: {next_label} "
+                             f"(あと{int(wait_secs // 60)}分{int(wait_secs % 60)}秒待機, "
+                             f"残り{remaining}レース) ---")
+                    # 長い待機は一気にsleep
+                    await asyncio.sleep(wait_secs)
+                else:
+                    # 結果確認までの短い待機
+                    await asyncio.sleep(min(wait_secs, 30))
 
     async def _scrape_predict_notify(self, race_key: str):
-        """単一レースのオッズ再取得→ML予測→LINE通知"""
+        """単一レースのオッズ再取得→ML予測→Discord通知"""
         from src.scraping.odds import OddsScraper
         from src.model.predictor import score_ml, calculate_ev
 
@@ -468,13 +545,14 @@ class RaceMonitor:
             return
 
         ev_results = calculate_ev(result)
+        race["predicted_ev"] = ev_results
 
         # ファイル保存
         result["ev_results"] = ev_results
         path = self.monitor_dir / f"{race_key}_predicted.json"
         write_json(result, path)
 
-        # LINE通知
+        # Discord通知
         text = format_race_notification(race_info, ev_results)
         send_notify(text, self.webhook_url)
 
@@ -486,6 +564,258 @@ class RaceMonitor:
             self.log(f"  確信度不足 → 見送り推奨")
         else:
             self.log(f"  推奨買い目なし")
+
+    # ==========================================================
+    # 結果確認 + 回収率計算
+    # ==========================================================
+
+    async def _check_results_batch(self, race_keys: list):
+        """レースグループの結果を確認"""
+        self.log(f"\n{'=' * 50}")
+        self.log(f"[結果確認] {', '.join(race_keys)}")
+        self.log(f"{'=' * 50}")
+
+        for race_key in race_keys:
+            race = self.races.get(race_key)
+            if not race:
+                continue
+
+            # 予測がないレースはスキップ
+            ev = race.get("predicted_ev")
+            if not ev:
+                self.log(f"  {race_key}: 予測なし（スキップ）")
+                continue
+
+            # netkeiba race_id 構築
+            race_id = self._construct_race_id(race)
+            if not race_id:
+                self.log(f"  {race_key}: race_id構築失敗")
+                continue
+
+            # 結果取得
+            results, payoffs = await self._fetch_race_results(race_id)
+            if not results:
+                self.log(f"  {race_key}: 結果未確定 ({race_id})")
+                continue
+
+            # 着順（上位3頭）
+            top3 = sorted(results, key=lambda r: r.get("finish_position", 99))[:3]
+
+            # 賭け結果を計算
+            bet_results = self._calculate_bet_results(race_key, payoffs, top3)
+            race["bet_results"] = bet_results
+
+            # 結果保存
+            result_path = self.monitor_dir / f"{race_key}_results.json"
+            write_json({
+                "race_id": race_id,
+                "top3": [{"num": r["horse_number"], "name": r["horse_name"],
+                          "pos": r["finish_position"]} for r in top3],
+                "payoffs": payoffs,
+                "bet_results": bet_results,
+            }, result_path)
+
+            # Discord通知
+            text = format_result_notification(race_key, race, bet_results)
+            send_notify(text, self.webhook_url)
+
+            if bet_results.get("bets"):
+                won = sum(1 for b in bet_results["bets"] if b["won"])
+                total = len(bet_results["bets"])
+                self.log(f"  {race_key}: {won}/{total}的中 "
+                         f"(投資{bet_results['total_invested']}円 "
+                         f"→ 回収{bet_results['total_returned']}円)")
+            else:
+                self.log(f"  {race_key}: 推奨買い目なし or 見送り")
+
+    def _construct_race_id(self, race: dict) -> str:
+        """meeting情報からnetkeiba race_idを構築
+        形式: YYYYCCKK DDNN (12桁)
+        """
+        m_text = race.get("meeting_text", "")
+        if not m_text:
+            # meeting_infoから検索
+            m_idx = race.get("meeting_idx")
+            for idx, text, venue in self.meeting_info:
+                if idx == m_idx:
+                    m_text = text
+                    break
+
+        if not m_text:
+            return ""
+
+        # "1回東京8日" → kai=1, day=8
+        m = re.match(r"(\d+)回(.+?)(\d+)日", m_text)
+        if not m:
+            return ""
+
+        kai = int(m.group(1))
+        day = int(m.group(3))
+
+        venue_name = race["race_info"].get("venue", "")
+        course_id = COURSE_NAME_TO_ID.get(venue_name, 0)
+        if not course_id:
+            return ""
+
+        race_num = race["race_info"].get("race_number", 0)
+        year = datetime.now().year
+
+        return f"{year:04d}{course_id:02d}{kai:02d}{day:02d}{race_num:02d}"
+
+    async def _fetch_race_results(self, race_id: str):
+        """netkeibaからレース結果と払戻金を取得"""
+        import httpx
+        from src.scraping.race import parse_race_html, parse_return_html
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/131.0.0.0 Safari/537.36"
+            ),
+        }
+
+        # race.netkeiba.com → db.netkeiba.com の順で試行
+        urls = [
+            f"https://race.netkeiba.com/race/result.html?race_id={race_id}",
+            f"https://db.netkeiba.com/race/{race_id}/",
+        ]
+
+        for url in urls:
+            try:
+                async with httpx.AsyncClient(
+                    timeout=15, headers=headers, follow_redirects=True,
+                ) as client:
+                    r = await client.get(url)
+                    if r.status_code != 200:
+                        continue
+
+                    results = parse_race_html(r.content, race_id)
+                    if not results:
+                        continue
+
+                    payoffs = parse_return_html(r.content, race_id)
+                    return results, payoffs
+            except Exception as e:
+                self.log(f"    結果取得エラー ({url}): {e}")
+                continue
+
+        return [], []
+
+    def _calculate_bet_results(self, race_key: str, payoffs: list,
+                               top3: list) -> dict:
+        """予測と実際の結果を比較してベット結果を計算"""
+        race = self.races[race_key]
+        ev = race.get("predicted_ev", {})
+
+        if not ev or ev.get("low_confidence"):
+            return {"skipped": True, "reason": "見送り", "bets": [],
+                    "total_invested": 0, "total_returned": 0,
+                    "top3": [{"num": r["horse_number"], "name": r["horse_name"]}
+                             for r in top3]}
+
+        # payoffをdict化: {bet_type: {normalized_combo: payout}}
+        payoff_map = {}
+        for p in payoffs:
+            bt = p["bet_type"]
+            combo = p["combination"]
+            # 組合せを正規化（数字のみ、ソート）
+            nums = sorted(re.findall(r"\d+", combo))
+            key = "-".join(nums)
+            payoff_map.setdefault(bt, {})[key] = p["payout"]
+
+        results = {
+            "bets": [],
+            "total_invested": 0,
+            "total_returned": 0,
+            "top3": [{"num": r["horse_number"], "name": r["horse_name"]}
+                     for r in top3],
+        }
+
+        # 馬連チェック
+        for bet in ev.get("quinella", []):
+            if bet["ev"] < 1.0:
+                continue
+            combo = bet.get("combo", "")
+            parts = sorted(re.findall(r"\d+", str(combo)))
+            norm = "-".join(parts)
+
+            invested = 100
+            results["total_invested"] += invested
+
+            returned = payoff_map.get("quinella", {}).get(norm, 0)
+            results["total_returned"] += returned
+            results["bets"].append({
+                "type": "馬連", "combo": combo,
+                "odds": bet["odds"], "ev": bet["ev"],
+                "invested": invested, "returned": returned,
+                "won": returned > 0,
+            })
+
+        # ワイドチェック
+        for bet in ev.get("wide", []):
+            if bet["ev"] < 1.0:
+                continue
+            combo = bet.get("combo", "")
+            parts = sorted(re.findall(r"\d+", str(combo)))
+            norm = "-".join(parts)
+
+            invested = 100
+            results["total_invested"] += invested
+
+            returned = payoff_map.get("wide", {}).get(norm, 0)
+            results["total_returned"] += returned
+            results["bets"].append({
+                "type": "ワイド", "combo": combo,
+                "odds": bet["odds"], "ev": bet["ev"],
+                "invested": invested, "returned": returned,
+                "won": returned > 0,
+            })
+
+        return results
+
+    def _send_daily_summary(self):
+        """日次の回収率サマリを送信"""
+        total_invested = 0
+        total_returned = 0
+        bet_count = 0
+        win_count = 0
+        by_type = {}
+
+        for race_key, race in self.races.items():
+            br = race.get("bet_results")
+            if not br or br.get("skipped"):
+                continue
+            for b in br.get("bets", []):
+                bt = b["type"]
+                bet_count += 1
+                total_invested += b["invested"]
+                total_returned += b["returned"]
+                if b["won"]:
+                    win_count += 1
+
+                st = by_type.setdefault(bt, {
+                    "count": 0, "wins": 0,
+                    "invested": 0, "returned": 0,
+                })
+                st["count"] += 1
+                st["invested"] += b["invested"]
+                st["returned"] += b["returned"]
+                if b["won"]:
+                    st["wins"] += 1
+
+        stats = {
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "bet_count": bet_count,
+            "win_count": win_count,
+            "total_invested": total_invested,
+            "total_returned": total_returned,
+            "by_type": by_type,
+        }
+
+        text = format_daily_summary(stats)
+        send_notify(text, self.webhook_url)
+        self.log(f"\n{text}")
 
     # ==========================================================
     # ヘルパー

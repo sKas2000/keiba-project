@@ -102,17 +102,75 @@ class OddsScraper(BaseScraper):
         except Exception as e:
             self.log(f"  race_title取得エラー: {e}")
 
-        # 発走時刻（ページ内テキストから HH:MM パターンを探索）
+        # 発走時刻（複数アプローチで検出）
         try:
-            body_text = await self.page.locator("body").first.text_content()
-            if body_text:
-                # 「発走 HH:MM」「HH:MM発走」「発走時刻 HH:MM」パターン
-                tm = re.search(r"発走[時刻]*\s*(\d{1,2}:\d{2})", body_text)
-                if not tm:
-                    tm = re.search(r"(\d{1,2}:\d{2})\s*発走", body_text)
-                if tm:
-                    info["post_time"] = tm.group(1)
-                    self.log(f"  発走時刻: {info['post_time']}")
+            post_time = ""
+
+            # Strategy 1: 特定CSSセレクタ（JRA odds page）
+            for selector in [".race_time", ".post_time", ".hassou",
+                             ".race_header_time", ".race_data time"]:
+                try:
+                    el = self.page.locator(selector).first
+                    if await el.count() > 0:
+                        text = await el.text_content()
+                        if text:
+                            tm = re.search(r"(\d{1,2}):(\d{2})", text)
+                            if not tm:
+                                tm = re.search(r"(\d{1,2})時(\d{2})分", text)
+                            if tm:
+                                post_time = f"{int(tm.group(1))}:{tm.group(2)}"
+                                break
+                except Exception:
+                    continue
+
+            # Strategy 2: race_title周辺のテキストから検出
+            if not post_time:
+                for selector in ["div.race_title", ".race_header",
+                                 ".race_detail", "h1", "h2"]:
+                    try:
+                        el = self.page.locator(selector).first
+                        if await el.count() > 0:
+                            text = await el.text_content()
+                            if text:
+                                # 日本語形式: 10時00分
+                                tm = re.search(
+                                    r"(\d{1,2})時(\d{2})分", text)
+                                if tm:
+                                    post_time = f"{int(tm.group(1))}:{tm.group(2)}"
+                                    break
+                                # HH:MM形式
+                                tm = re.search(r"(\d{1,2}:\d{2})", text)
+                                if tm:
+                                    h, m = tm.group(1).split(":")
+                                    if 7 <= int(h) <= 17:
+                                        post_time = tm.group(1)
+                                        break
+                    except Exception:
+                        continue
+
+            # Strategy 3: body全体から発走時刻パターン検索
+            if not post_time:
+                body_text = await self.page.locator("body").first.text_content()
+                if body_text:
+                    # 「発走 HH:MM」「HH:MM発走」
+                    tm = re.search(r"発走[時刻]*\s*(\d{1,2}:\d{2})", body_text)
+                    if not tm:
+                        tm = re.search(r"(\d{1,2}:\d{2})\s*発走", body_text)
+                    if tm:
+                        post_time = tm.group(1)
+                    # 日本語形式: 「発走 10時00分」
+                    if not post_time:
+                        tm = re.search(
+                            r"発走[時刻]*\s*(\d{1,2})時(\d{2})分", body_text)
+                        if not tm:
+                            tm = re.search(
+                                r"(\d{1,2})時(\d{2})分\s*発走", body_text)
+                        if tm:
+                            post_time = f"{int(tm.group(1))}:{tm.group(2)}"
+
+            if post_time:
+                info["post_time"] = post_time
+                self.log(f"  発走時刻: {info['post_time']}")
         except Exception:
             pass
 

@@ -112,6 +112,100 @@ def format_race_notification(race_info: dict, ev_results: dict) -> str:
     return "\n".join(lines)
 
 
+def format_result_notification(race_key: str, race: dict,
+                               bet_results: dict) -> str:
+    """レース結果通知をフォーマット"""
+    race_info = race.get("race_info", {})
+    venue = race_info.get("venue", "")
+    race_num = race_info.get("race_number", 0)
+    name = race_info.get("name", "")
+
+    lines = [f"**[結果] {venue}{race_num}R {name}**"]
+
+    if bet_results.get("skipped"):
+        lines.append("> 見送り")
+        return "\n".join(lines)
+
+    bets = bet_results.get("bets", [])
+    if not bets:
+        lines.append("推奨買い目なし")
+        return "\n".join(lines)
+
+    # 着順表示
+    top3 = bet_results.get("top3", [])
+    if top3:
+        order_str = " - ".join(
+            f"{h['num']}番{h['name']}" for h in top3
+        )
+        lines.append(f"> 着順: {order_str}")
+
+    lines.append("```")
+    lines.append(f"{'券種':6} {'組合せ':12} {'EV':>5}  結果")
+    lines.append("-" * 40)
+    for b in bets:
+        if b["won"]:
+            result = f"○ {b['returned']:,}円"
+        else:
+            result = "×"
+        lines.append(
+            f"{b['type']:6} {b['combo']:12} {b['ev']:5.2f}  {result}"
+        )
+    lines.append("```")
+
+    invested = bet_results["total_invested"]
+    returned = bet_results["total_returned"]
+    roi = (returned / invested * 100) if invested > 0 else 0
+    pnl = returned - invested
+    lines.append(
+        f"投資 {invested:,}円 → 回収 {returned:,}円 "
+        f"(回収率 {roi:.0f}%, {pnl:+,}円)"
+    )
+
+    return "\n".join(lines)
+
+
+def format_daily_summary(stats: dict) -> str:
+    """日次サマリをフォーマット"""
+    date_str = stats.get("date", "")
+    bet_count = stats.get("bet_count", 0)
+    win_count = stats.get("win_count", 0)
+    invested = stats.get("total_invested", 0)
+    returned = stats.get("total_returned", 0)
+    roi = (returned / invested * 100) if invested > 0 else 0
+    pnl = returned - invested
+
+    if bet_count == 0:
+        return f"\n**[日次サマリ] {date_str}**\n本日の推奨買い目: 0件"
+
+    hit_rate = win_count / bet_count * 100 if bet_count > 0 else 0
+
+    lines = [
+        f"**[日次サマリ] {date_str}**",
+        "```",
+        f"推奨買い目: {bet_count}件",
+        f"的中数:     {win_count}件 ({hit_rate:.0f}%)",
+        f"投資額:     {invested:,}円",
+        f"回収額:     {returned:,}円",
+        f"回収率:     {roi:.1f}%",
+        f"損益:       {pnl:+,}円",
+        "```",
+    ]
+
+    # 券種別内訳
+    by_type = stats.get("by_type", {})
+    if by_type:
+        lines.append("券種別:")
+        for bt, st in by_type.items():
+            t_roi = (st["returned"] / st["invested"] * 100
+                     if st["invested"] > 0 else 0)
+            lines.append(
+                f"> {bt}: {st['wins']}/{st['count']}的中 "
+                f"{st['invested']:,}→{st['returned']:,}円 ({t_roi:.0f}%)"
+            )
+
+    return "\n".join(lines)
+
+
 def format_odds_change_notification(
     race_info: dict, prev_bets: list, curr_bets: list
 ) -> str:

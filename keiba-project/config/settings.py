@@ -187,8 +187,18 @@ CSV_COLUMNS = [
 # ============================================================
 # Windows エンコーディング修正（起動時に1回だけ呼ぶ）
 # ============================================================
+_encoding_setup_done = False
+
 def setup_encoding():
+    global _encoding_setup_done
+    if _encoding_setup_done:
+        return
+    _encoding_setup_done = True
     if sys.platform == 'win32':
         import io
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+        if hasattr(sys.stdout, 'buffer'):
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+        if hasattr(sys.stderr, 'buffer'):
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer, encoding='utf-8', line_buffering=True)
