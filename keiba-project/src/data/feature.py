@@ -1038,12 +1038,23 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
         _compute_past_features(row, horse.get("past_races", []), race, surface, distance_cat)
 
         # 騎手成績: results.csvルックアップ優先（スケール一致のため）
+        # CSVの最近データは短縮名（2-3文字）が主流のため、プレフィックスマッチで対応
         jockey_stats = horse.get("jockey_stats", {})
         jockey_name_raw = horse.get("jockey", "")
-        # 騎手名を正規化（スペース除去）
         jockey_name_clean = jockey_name_raw.replace(" ", "").replace("\u3000", "")
-        if jockey_name_clean and jockey_name_clean in jockey_lookup:
-            jl = jockey_lookup[jockey_name_clean]
+        jl = None
+        if jockey_name_clean:
+            if jockey_name_clean in jockey_lookup:
+                jl = jockey_lookup[jockey_name_clean]
+            else:
+                # プレフィックスフォールバック（3文字→2文字の順で試行）
+                for plen in [3, 2]:
+                    if len(jockey_name_clean) >= plen:
+                        prefix = jockey_name_clean[:plen]
+                        if prefix in jockey_lookup:
+                            jl = jockey_lookup[prefix]
+                            break
+        if jl:
             row["jockey_win_rate_365d"] = jl["win_rate"]
             row["jockey_place_rate_365d"] = jl["place_rate"]
             row["jockey_ride_count_365d"] = jl["count"]
@@ -1054,10 +1065,22 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
             row["jockey_ride_count_365d"] = jockey_stats.get("races", 0)
 
         # 調教師成績（enriched_input.jsonのtrainer_name → results.csvルックアップ）
+        # CSVの短縮名（美浦xxx/栗東xxx→姓のみ）に対してプレフィックスマッチ
         trainer_name = horse.get("trainer_name", "")
-        if trainer_name and trainer_name in trainer_lookup:
-            row["trainer_win_rate_365d"] = trainer_lookup[trainer_name]["win_rate"]
-            row["trainer_place_rate_365d"] = trainer_lookup[trainer_name]["place_rate"]
+        tl = None
+        if trainer_name:
+            if trainer_name in trainer_lookup:
+                tl = trainer_lookup[trainer_name]
+            else:
+                for plen in [3, 2]:
+                    if len(trainer_name) >= plen:
+                        prefix = trainer_name[:plen]
+                        if prefix in trainer_lookup:
+                            tl = trainer_lookup[prefix]
+                            break
+        if tl:
+            row["trainer_win_rate_365d"] = tl["win_rate"]
+            row["trainer_place_rate_365d"] = tl["place_rate"]
         else:
             row["trainer_win_rate_365d"] = 0.0
             row["trainer_place_rate_365d"] = 0.0

@@ -309,6 +309,35 @@ class RaceMonitor:
         finally:
             await odds_scraper.close()
 
+        # netkeiba出馬表から馬体重・馬場状態・調教師名を補完
+        self.log("\n  netkeiba出馬表データ取得中...")
+        shutuba_cache = {}  # race_key -> shutuba data
+        for race_key, race in self.races.items():
+            if race_key not in scheduled_keys or not race.get("data"):
+                continue
+            race_id = self._construct_race_id(race)
+            if not race_id:
+                continue
+            try:
+                from src.scraping.race import fetch_shutuba
+                shutuba = await fetch_shutuba(race_id)
+                horses_s = shutuba.get("horses", [])
+                if horses_s:
+                    shutuba_cache[race_key] = shutuba
+                    self.log(f"    {race_key}: 出馬表取得OK ({len(horses_s)}頭)")
+                    # track_condition, weatherをraceに反映
+                    meta = shutuba.get("race_meta", {})
+                    race_data = race["data"].get("race", {})
+                    if meta.get("track_condition") and not race_data.get("track_condition"):
+                        race_data["track_condition"] = meta["track_condition"]
+                    if meta.get("weather") and not race_data.get("weather"):
+                        race_data["weather"] = meta["weather"]
+                else:
+                    self.log(f"    {race_key}: 出馬表データなし")
+            except Exception as e:
+                self.log(f"    {race_key}: 出馬表取得エラー ({e})")
+            await asyncio.sleep(1.0)
+
         # 馬データ補完
         horse_scraper = HorseScraper(headless=self.headless, debug=False)
         try:
@@ -323,6 +352,28 @@ class RaceMonitor:
                 data = copy.deepcopy(race["data"])
                 horses = data.get("horses", [])
                 self.log(f"\n[{r_idx}/{total}] {race_key}: {len(horses)}頭を補完中...")
+
+                # 出馬表データをマージ（馬体重・調教師名・馬場状態）
+                shutuba = shutuba_cache.get(race_key)
+                if shutuba:
+                    shutuba_horses = {h["horse_number"]: h
+                                      for h in shutuba.get("horses", [])}
+                    for horse in horses:
+                        sh = shutuba_horses.get(horse.get("num", 0))
+                        if not sh:
+                            continue
+                        # 馬体重（出馬表から取得、JRAより精度高い）
+                        if sh.get("horse_weight") and sh["horse_weight"] > 200:
+                            horse["weight"] = (
+                                f"{sh['horse_weight']}({sh['horse_weight_change']:+d})"
+                                if sh["horse_weight_change"] else str(sh["horse_weight"])
+                            )
+                        # 調教師名（出馬表 = CSV と同じフォーマット）
+                        if sh.get("trainer_name"):
+                            horse["trainer_name"] = sh["trainer_name"]
+                        # horse_id
+                        if sh.get("horse_id") and not horse.get("horse_id"):
+                            horse["horse_id"] = sh["horse_id"]
 
                 for i, horse in enumerate(horses):
                     horse_name = horse.get("name", "")

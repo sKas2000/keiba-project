@@ -439,6 +439,136 @@ def save_results_csv(results: list, output_path: Path, append: bool = False):
 
 
 # ============================================================
+# 出馬表パーサー（race.netkeiba.com/race/shutuba.html）
+# ============================================================
+
+def _build_shutuba_header_map(headers: list) -> dict:
+    """出馬表ヘッダーからカラムインデックスを構築"""
+    hmap = {}
+    for i, h in enumerate(headers):
+        h = h.strip()
+        if "枠" in h and "番" not in h:
+            hmap["frame"] = i
+        elif "馬番" in h:
+            hmap["horse_num"] = i
+        elif "馬名" in h:
+            hmap["horse_name"] = i
+        elif "性齢" in h or ("性" in h and "齢" in h):
+            hmap["sex_age"] = i
+        elif "斤量" in h:
+            hmap["weight_carried"] = i
+        elif "騎手" in h:
+            hmap["jockey"] = i
+        elif "調教師" in h or "厩舎" in h:
+            hmap["trainer"] = i
+        elif "馬体重" in h:
+            hmap["horse_weight"] = i
+    return hmap
+
+
+def parse_shutuba_html(html: bytes, race_id: str) -> dict:
+    """出馬表HTMLをパースして馬データと馬場状態を返す
+
+    Returns:
+        {
+            "race_meta": {surface, distance, track_condition, weather, ...},
+            "horses": [{horse_number, horse_name, jockey_name, trainer_name,
+                        horse_weight, horse_weight_change, weight_carried,
+                        sex_age, frame_number, horse_id}, ...]
+        }
+    """
+    soup = BeautifulSoup(html, "lxml")
+
+    # レースメタ情報（result pageと同じ形式）
+    race_meta = _parse_race_meta(soup, race_id)
+
+    # 出馬表テーブル検出
+    table = (soup.find("table", class_="Shutuba_Table")
+             or soup.find("table", class_="ShutubaTable")
+             or soup.find("table", class_="RaceTable01")
+             or soup.find("table", class_="nk_tb_common"))
+    if not table:
+        for t in soup.find_all("table"):
+            if t.find("th", string=re.compile("馬名")):
+                table = t
+                break
+    if not table:
+        return {"race_meta": race_meta, "horses": []}
+
+    all_tr = table.find_all("tr")
+    if not all_tr:
+        return {"race_meta": race_meta, "horses": []}
+
+    # ヘッダー解析
+    ths = all_tr[0].find_all("th")
+    headers = [th.get_text(strip=True) for th in ths]
+    header_map = _build_shutuba_header_map(headers)
+
+    def get(cells_text, key):
+        idx = header_map.get(key, -1)
+        return cells_text[idx] if 0 <= idx < len(cells_text) else ""
+
+    horses = []
+    for tr in all_tr[1:]:
+        cells = tr.find_all("td")
+        if len(cells) < 4:
+            continue
+
+        cell_texts = [c.get_text(strip=True) for c in cells]
+
+        horse = {}
+        horse["frame_number"] = safe_int(get(cell_texts, "frame"))
+        horse["horse_number"] = safe_int(get(cell_texts, "horse_num"))
+        horse["horse_name"] = get(cell_texts, "horse_name").replace("\n", "").strip()
+        horse["sex_age"] = get(cell_texts, "sex_age")
+        horse["weight_carried"] = safe_float(get(cell_texts, "weight_carried"))
+        horse["jockey_name"] = get(cell_texts, "jockey").replace("\n", "").strip()
+        horse["trainer_name"] = get(cell_texts, "trainer").replace("\n", "").strip()
+
+        # 馬体重（当日未発表なら空文字）
+        hw_text = get(cell_texts, "horse_weight")
+        hw, hwc = parse_horse_weight(hw_text)
+        horse["horse_weight"] = hw
+        horse["horse_weight_change"] = hwc
+
+        # horse_id をリンクから抽出
+        name_idx = header_map.get("horse_name", -1)
+        if 0 <= name_idx < len(cells):
+            link = cells[name_idx].find("a", href=re.compile(r"/horse/\d+"))
+            if link:
+                m = re.search(r"/horse/(\d{10})", link["href"])
+                if m:
+                    horse["horse_id"] = m.group(1)
+
+        if horse["horse_number"] > 0:
+            horses.append(horse)
+
+    return {"race_meta": race_meta, "horses": horses}
+
+
+async def fetch_shutuba(race_id: str) -> dict:
+    """netkeibaの出馬表ページを取得・パースする
+
+    Args:
+        race_id: 12桁のレースID (e.g. "202609020801")
+
+    Returns:
+        parse_shutuba_html() の結果
+    """
+    url = f"{_BASE}/race/shutuba.html?race_id={race_id}"
+    try:
+        async with httpx.AsyncClient(
+            timeout=15, follow_redirects=True, headers=_HEADERS,
+        ) as client:
+            r = await client.get(url)
+            if r.status_code != 200:
+                return {"race_meta": {}, "horses": []}
+            return parse_shutuba_html(r.content, race_id)
+    except Exception:
+        return {"race_meta": {}, "horses": []}
+
+
+# ============================================================
 # HTTP 一括収集
 # ============================================================
 
