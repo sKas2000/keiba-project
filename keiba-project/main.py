@@ -112,6 +112,12 @@ def cmd_monitor_summary(args):
     )
 
 
+def cmd_verify_monitor(args):
+    """モニター予測の事後検証"""
+    from src.analysis.live_verify import run_verify_monitor
+    run_verify_monitor(date=args.date)
+
+
 def main():
     setup_encoding()
 
@@ -199,6 +205,11 @@ def main():
     p_ms.add_argument("--all", action="store_true", help="全日付を一括処理")
     p_ms.add_argument("--cleanup", action="store_true", help="サマリー生成後に元ファイルを削除")
     p_ms.set_defaults(func=cmd_monitor_summary)
+
+    # verify-monitor: モニター予測の事後検証
+    p_vm = sub.add_parser("verify-monitor", help="モニター予測の事後検証（実結果と照合）")
+    p_vm.add_argument("--date", help="対象日（YYYYMMDD）。省略で最新日")
+    p_vm.set_defaults(func=cmd_verify_monitor)
 
     args = parser.parse_args()
     if not args.command:
