@@ -568,7 +568,8 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                    "prev_margin_1", "prev_last3f_1",
                    "distance_change", "running_style",
                    "avg_early_position_last5", "track_cond_place_rate",
-                   "class_change", "weight_carried_change"]:
+                   "class_change", "weight_carried_change",
+                   "prev_interval_2"]:
             row[k] = 0
         row["days_since_last_race"] = 365
         return
@@ -618,7 +619,9 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
     row["career_win_rate"] = round((all_finishes == 1).mean(), 3) if len(all_finishes) > 0 else 0
     row["career_place_rate"] = round((all_finishes <= 3).mean(), 3) if len(all_finishes) > 0 else 0
 
-    surface_races = [r for r in past_races if r.get("surface", "") == surface]
+    # surface比較: "ダート"と"ダ"の不一致を吸収（先頭1文字で比較）
+    surface_key = surface[:1] if surface else ""
+    surface_races = [r for r in past_races if r.get("surface", "")[:1] == surface_key]
     if surface_races:
         sf = np.array([safe_int(r.get("finish", 0)) for r in surface_races if safe_int(r.get("finish", 0)) > 0])
         row["surface_win_rate"] = round((sf == 1).mean(), 3) if len(sf) > 0 else 0
@@ -721,9 +724,30 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
     else:
         row["weight_carried_change"] = 0
 
+    # v5: 前々走間隔（prev_interval_2）
+    row["prev_interval_2"] = 0
+    if len(past_races) >= 2:
+        d0 = past_races[0].get("date", "")
+        d1 = past_races[1].get("date", "")
+        if d0 and d1:
+            try:
+                from datetime import datetime
+                dt0 = datetime.strptime(d0.replace("/", "-"), "%Y-%m-%d")
+                dt1 = datetime.strptime(d1.replace("/", "-"), "%Y-%m-%d")
+                row["prev_interval_2"] = abs((dt0 - dt1).days)
+            except Exception:
+                pass
+
 
 def _load_trainer_lookup(race_date_str: str) -> dict:
-    """results.csvから調教師の直近365日成績をルックアップ辞書で返す"""
+    """results.csvから調教師の直近365日成績をルックアップ辞書で返す
+
+    CSVの調教師名形式:
+    - [東]岩戸孝樹 (17K行) — フルネーム
+    - 美浦岩戸 (58K行) — 姓のみ
+    - 栗東矢作 (62K行) — 姓のみ
+    全形式を統合してフルネームでルックアップ可能にする
+    """
     results_path = RAW_DIR / "results.csv"
     if not results_path.exists():
         return {}
@@ -736,15 +760,43 @@ def _load_trainer_lookup(race_date_str: str) -> dict:
         df = df.dropna(subset=["race_date", "trainer_name"])
         df["finish_position"] = pd.to_numeric(df["finish_position"], errors="coerce")
         df = df[df["finish_position"] > 0]
+
+        # Step 1: [東]xxx → フルネーム, 美浦xxx/栗東xxx → 姓のみに正規化
+        df["_short"] = df["trainer_name"].str.replace(
+            r"^\[.+?\]", "", regex=True
+        ).str.replace(r"^(美浦|栗東|地方)", "", regex=True)
+
+        # Step 2: [東]形式からフルネーム→姓のマッピングを構築
+        bracket_mask = df["trainer_name"].str.startswith("[")
+        full_to_short = {}
+        if bracket_mask.any():
+            for full_name in df.loc[bracket_mask, "_short"].unique():
+                # 姓 = フルネームの先頭部分（美浦/栗東形式と一致する部分）
+                short_names = df.loc[~bracket_mask, "_short"].unique()
+                for short in short_names:
+                    if len(short) >= 2 and full_name.startswith(short) and full_name != short:
+                        full_to_short[full_name] = short
+                        break
+
+        # Step 3: 全レコードを姓キーに統一して集計
+        df["_key"] = df["_short"].map(lambda x: full_to_short.get(x, x))
+
         cutoff = race_date - timedelta(days=365)
         recent = df[(df["race_date"] >= cutoff) & (df["race_date"] < race_date)]
         if len(recent) == 0:
             return {}
-        stats = recent.groupby("trainer_name")["finish_position"].agg(
+        stats = recent.groupby("_key")["finish_position"].agg(
             win_rate=lambda x: round((x == 1).mean(), 3),
             place_rate=lambda x: round((x <= 3).mean(), 3),
         )
-        return stats.to_dict(orient="index")
+        result = stats.to_dict(orient="index")
+
+        # Step 4: フルネームでもルックアップできるようにエイリアス追加
+        for full_name, short in full_to_short.items():
+            if short in result and full_name not in result:
+                result[full_name] = result[short]
+
+        return result
     except Exception:
         return {}
 
@@ -811,6 +863,88 @@ def _load_jockey_horse_course_lookup(
         return {}, {}
 
 
+def _load_jockey_lookup(race_date_str: str) -> dict:
+    """results.csvから騎手の直近365日成績をルックアップ辞書で返す
+
+    CSVに同姓の別騎手（横山和生/横山武史等）が存在するため、
+    フルネーム直接マッチのみ（短縮名マージはしない）。
+    マッチしない場合はnetkeiba enrichedデータにフォールバック。
+
+    Returns:
+        {jockey_name: {win_rate, place_rate, count}}
+    """
+    results_path = RAW_DIR / "results.csv"
+    if not results_path.exists():
+        return {}
+    try:
+        from datetime import datetime, timedelta
+        race_date = datetime.strptime(race_date_str.replace("/", "-"), "%Y-%m-%d")
+        df = pd.read_csv(results_path, dtype={"race_id": str},
+                         usecols=["race_date", "jockey_name", "finish_position"])
+        df["race_date"] = pd.to_datetime(df["race_date"], errors="coerce")
+        df = df.dropna(subset=["race_date", "jockey_name"])
+        df["finish_position"] = pd.to_numeric(df["finish_position"], errors="coerce")
+        df = df[df["finish_position"] > 0]
+
+        # ▲△☆◇マーク除去
+        df["jockey_name"] = df["jockey_name"].str.replace(
+            r"^[▲△☆◇]", "", regex=True)
+
+        cutoff = race_date - timedelta(days=365)
+        recent = df[(df["race_date"] >= cutoff) & (df["race_date"] < race_date)]
+        if len(recent) == 0:
+            return {}
+        stats = recent.groupby("jockey_name").agg(
+            win_rate=("finish_position", lambda x: round((x == 1).mean(), 3)),
+            place_rate=("finish_position", lambda x: round((x <= 3).mean(), 3)),
+            count=("finish_position", "count"),
+        )
+        return stats.to_dict(orient="index")
+    except Exception:
+        return {}
+
+
+def _load_post_position_bias_lookup(
+    race_date_str: str, course_id_code: int, distance_cat: int
+) -> dict:
+    """results.csvからコース×距離カテゴリ×枠番の複勝率バイアスをルックアップ
+
+    Returns:
+        {frame_number: bias_value}
+    """
+    results_path = RAW_DIR / "results.csv"
+    if not results_path.exists():
+        return {}
+    try:
+        from datetime import datetime
+        race_date = datetime.strptime(race_date_str.replace("/", "-"), "%Y-%m-%d")
+        cols = ["race_date", "course_id", "distance", "frame_number",
+                "finish_position"]
+        df = pd.read_csv(results_path, dtype={"race_id": str},
+                         usecols=cols)
+        df["race_date"] = pd.to_datetime(df["race_date"], errors="coerce")
+        df = df.dropna(subset=["race_date"])
+        df["finish_position"] = pd.to_numeric(df["finish_position"], errors="coerce")
+        df = df[(df["finish_position"] > 0) & (df["race_date"] < race_date)]
+        df["frame_number"] = pd.to_numeric(df["frame_number"], errors="coerce")
+        df = df[df["frame_number"] > 0]
+
+        # コースと距離カテゴリでフィルタ
+        df["_cid"] = pd.to_numeric(df["course_id"], errors="coerce").fillna(0).astype(int)
+        df["_dc"] = df["distance"].apply(
+            lambda d: _dist_cat(int(d)) if pd.notna(d) and int(d) > 0 else -1)
+        matched = df[(df["_cid"] == course_id_code) & (df["_dc"] == distance_cat)]
+
+        lookup = {}
+        for fn, grp in matched.groupby("frame_number"):
+            if len(grp) >= 20:
+                rate = (grp["finish_position"] <= 3).mean()
+                lookup[int(fn)] = round(rate - 0.22, 4)
+        return lookup
+    except Exception:
+        return {}
+
+
 def extract_features_from_enriched(data: dict) -> pd.DataFrame:
     """enriched_input.json -> ML 特徴量 DataFrame"""
     race = data.get("race", {})
@@ -818,7 +952,8 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
     num_entries = len(horses)
 
     surface = race.get("surface", "")
-    surface_code = SURFACE_MAP.get(surface, 0)
+    # "ダート"→"ダ", "芝"→"芝" にフォールバック（JRA odds.pyは"ダート"を返す）
+    surface_code = SURFACE_MAP.get(surface, SURFACE_MAP.get(surface[:1], 0) if surface else 0)
     distance = race.get("distance", 0)
     track_condition_code = TRACK_CONDITION_MAP.get(race.get("track_condition", ""), 0)
     race_class_code = CLASS_MAP.get(race.get("grade", ""), 3)
@@ -836,19 +971,30 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
         except Exception:
             pass
 
-    # 調教師成績ルックアップ（results.csvから直近365日分を事前計算）
+    # 騎手・調教師成績ルックアップ（results.csvから直近365日分を事前計算）
     trainer_lookup = _load_trainer_lookup(race_date_str) if race_date_str else {}
+    jockey_lookup = _load_jockey_lookup(race_date_str) if race_date_str else {}
 
     # v9/v10: 騎手×馬・コース適性ルックアップ
     jh_lookup, ca_lookup = _load_jockey_horse_course_lookup(
         race_date_str, course_id_code, surface_code, distance_cat)
+
+    # 枠番推定: JRAルール（8頭以下=馬番=枠番、9頭以上=8枠制）
+    def _estimate_frame(horse_num, n):
+        if n <= 8:
+            return horse_num
+        doubles = n - 8  # 2頭入る枠の数
+        singles = 8 - doubles  # 1頭枠の数
+        if horse_num <= singles:
+            return horse_num
+        return singles + (horse_num - singles - 1) // 2 + 1
 
     rows = []
     for horse in horses:
         row = {}
         row["horse_name"] = horse.get("name", "")
         row["horse_number"] = horse.get("num", 0)
-        row["frame_number"] = horse.get("frame_number", 0)
+        row["frame_number"] = horse.get("frame_number", 0) or _estimate_frame(horse.get("num", 0), num_entries)
         row["num_entries"] = num_entries
 
         sex_age = horse.get("sex_age", "")
@@ -867,6 +1013,20 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
         else:
             row["horse_weight"] = safe_int(weight_raw)
             row["horse_weight_change"] = safe_int(horse.get("weight_change", 0))
+
+        # horse_weightが0の場合: 過去走の馬体重から推定（学習データとの分布一致のため）
+        if row["horse_weight"] == 0:
+            past_races = horse.get("past_races", [])
+            for pr in past_races:
+                # 過去走にweight情報がある場合もある（将来の拡張用）
+                pw = pr.get("horse_weight", 0)
+                if pw and int(pw) > 200:
+                    row["horse_weight"] = int(pw)
+                    break
+            # それでも0なら性別による平均値を使用
+            if row["horse_weight"] == 0:
+                sex = m.group(1) if m else ""
+                row["horse_weight"] = 440 if sex == "牝" else 480
         row["surface_code"] = surface_code
         row["distance"] = distance
         row["track_condition_code"] = track_condition_code
@@ -877,10 +1037,21 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
 
         _compute_past_features(row, horse.get("past_races", []), race, surface, distance_cat)
 
+        # 騎手成績: results.csvルックアップ優先（スケール一致のため）
         jockey_stats = horse.get("jockey_stats", {})
-        row["jockey_win_rate_365d"] = jockey_stats.get("win_rate", 0.0)
-        row["jockey_place_rate_365d"] = jockey_stats.get("place_rate", 0.0)
-        row["jockey_ride_count_365d"] = jockey_stats.get("races", 0)
+        jockey_name_raw = horse.get("jockey", "")
+        # 騎手名を正規化（スペース除去）
+        jockey_name_clean = jockey_name_raw.replace(" ", "").replace("\u3000", "")
+        if jockey_name_clean and jockey_name_clean in jockey_lookup:
+            jl = jockey_lookup[jockey_name_clean]
+            row["jockey_win_rate_365d"] = jl["win_rate"]
+            row["jockey_place_rate_365d"] = jl["place_rate"]
+            row["jockey_ride_count_365d"] = jl["count"]
+        else:
+            # フォールバック: netkeiba enrichedデータ
+            row["jockey_win_rate_365d"] = jockey_stats.get("win_rate", 0.0)
+            row["jockey_place_rate_365d"] = jockey_stats.get("place_rate", 0.0)
+            row["jockey_ride_count_365d"] = jockey_stats.get("races", 0)
 
         # 調教師成績（enriched_input.jsonのtrainer_name → results.csvルックアップ）
         trainer_name = horse.get("trainer_name", "")
@@ -923,6 +1094,40 @@ def extract_features_from_enriched(data: dict) -> pd.DataFrame:
         rows.append(row)
 
     df = pd.DataFrame(rows)
+
+    # v6: 展開予測特徴量（レース内脚質構成）
+    if "running_style" in df.columns:
+        styles = df["running_style"].values
+        n_front = int(np.sum(styles <= 1))  # 逃げ+先行
+        n_mid = int(np.sum(styles == 2))    # 差し
+        n_back = int(np.sum(styles == 3))   # 追込
+        df["race_n_front"] = n_front
+        df["race_n_mid"] = n_mid
+        df["race_n_back"] = n_back
+        # ペース有利不利
+        df["pace_advantage"] = 0.0
+        for idx in df.index:
+            style = df.at[idx, "running_style"]
+            if n_front >= 4:
+                df.at[idx, "pace_advantage"] = 1.0 if style >= 2 else -1.0
+            elif n_front <= 2:
+                df.at[idx, "pace_advantage"] = 1.0 if style <= 1 else -1.0
+    else:
+        df["race_n_front"] = 0
+        df["race_n_mid"] = 0
+        df["race_n_back"] = 0
+        df["pace_advantage"] = 0.0
+
+    # v7: コース×距離×枠順バイアス（results.csvから累積統計）
+    df["post_position_bias"] = 0.0
+    if "frame_number" in df.columns:
+        ppb_lookup = _load_post_position_bias_lookup(
+            race_date_str, course_id_code, distance_cat)
+        if ppb_lookup:
+            for idx in df.index:
+                fn = int(df.at[idx, "frame_number"])
+                if fn in ppb_lookup:
+                    df.at[idx, "post_position_bias"] = ppb_lookup[fn]
 
     # v8: レース内Z-score（全馬の特徴量が揃った後に計算）
     for col in Z_SCORE_BASE_COLS:
