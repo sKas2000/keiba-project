@@ -1,6 +1,5 @@
 """
-予測モジュール
-ML予測 + 後方互換re-export（scoring / ev）
+予測モジュール: ML予測（LightGBM binary/win + Isotonic校正）
 """
 import json
 from pathlib import Path
@@ -8,19 +7,6 @@ from pathlib import Path
 import numpy as np
 
 from config.settings import FEATURE_COLUMNS, MODEL_DIR
-
-# 後方互換: scoring.py / ev.py から re-export
-from src.model.scoring import (  # noqa: F401
-    score_rule_based,
-    calculate_ability_score, calculate_jockey_score,
-    calculate_fitness_score, calculate_form_score,
-    calculate_other_score,
-)
-from src.model.ev import (  # noqa: F401
-    softmax, calc_place_probs, calc_quinella_prob,
-    calc_wide_prob, calc_trio_prob, get_ev_rank,
-    calculate_ev, print_ev_results,
-)
 
 
 # ============================================================
@@ -35,7 +21,7 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
     Isotonic校正があればPlatt Scalingより優先
     """
     import lightgbm as lgb
-    from src.data.feature import extract_features_from_enriched
+    from src.data.feature_extract import extract_features_from_enriched
 
     model_dir = model_dir or MODEL_DIR
     binary_model_path = model_dir / "binary_model.txt"

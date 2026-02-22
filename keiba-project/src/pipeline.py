@@ -29,7 +29,8 @@ async def run_rule_pipeline(
     """ルールベース全自動パイプライン"""
     from src.scraping.odds import OddsScraper, build_input_json
     from src.scraping.horse import HorseScraper, enrich_race_data
-    from src.model.predictor import score_rule_based, calculate_ev, print_ev_results
+    from src.model.scoring import score_rule_based
+    from src.model.ev import calculate_ev, print_ev_results
 
     logger.info("ルールベースパイプライン開始")
 
@@ -107,7 +108,8 @@ async def run_ml_pipeline(
     model_dir: Path = None,
 ):
     """MLモデルベースパイプライン"""
-    from src.model.predictor import score_ml, calculate_ev, print_ev_results
+    from src.model.predictor import score_ml
+    from src.model.ev import calculate_ev, print_ev_results
 
     logger.info("MLパイプライン開始 (input=%s)", input_file or "scraping")
     model_dir = model_dir or MODEL_DIR
@@ -155,7 +157,7 @@ async def run_ml_pipeline(
     result = score_ml(data, model_dir=model_dir)
     if result is None:
         print("[WARN] MLモデル未学習。ルールベースにフォールバック")
-        from src.model.predictor import score_rule_based
+        from src.model.scoring import score_rule_based
         result = score_rule_based(data)
 
     grade = data.get("race", {}).get("grade", "")
@@ -224,10 +226,14 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           kelly_fraction: float = 0.0,
                           analyze_cond: bool = False):
     """バックテストパイプライン"""
-    from src.model.evaluator import (
-        run_backtest, print_backtest_report, save_backtest_report,
-        compare_ev_thresholds, print_ev_comparison, optimize_temperature,
+    from src.model.evaluator import run_backtest
+    from src.model.optimization import (
+        compare_ev_thresholds, optimize_temperature,
         explore_strategies, analyze_by_condition,
+    )
+    from src.model.reporting import (
+        print_backtest_report, save_backtest_report,
+        print_ev_comparison,
     )
 
     model_path = Path(model_dir) if model_dir else None
@@ -335,7 +341,9 @@ async def run_monitor_pipeline(before: int = 5, webhook: str = None,
 
 def run_score(input_file: str, mode: str = "rule"):
     """既存の enriched_input.json にスコアリングだけ実行"""
-    from src.model.predictor import score_rule_based, score_ml, calculate_ev, print_ev_results
+    from src.model.scoring import score_rule_based
+    from src.model.predictor import score_ml
+    from src.model.ev import calculate_ev, print_ev_results
 
     data = read_json(input_file)
 

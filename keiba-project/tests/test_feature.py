@@ -4,10 +4,8 @@ import numpy as np
 import pandas as pd
 
 from config.settings import FEATURE_COLUMNS, distance_category as _dist_cat
-from src.data.feature import (
-    extract_features_from_enriched,
-    create_target,
-)
+from src.data.feature import create_target
+from src.data.feature_extract import extract_features_from_enriched
 
 
 class TestDistCat:

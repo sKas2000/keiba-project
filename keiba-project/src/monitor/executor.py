@@ -92,7 +92,8 @@ class ExecutorMixin:
     async def _scrape_predict_notify(self, race_key: str):
         """単一レースのオッズ再取得→ML予測→Discord通知"""
         from src.scraping.odds import OddsScraper
-        from src.model.predictor import score_ml, calculate_ev
+        from src.model.predictor import score_ml
+        from src.model.ev import calculate_ev
 
         race = self.races[race_key]
         race_info = race["race_info"]

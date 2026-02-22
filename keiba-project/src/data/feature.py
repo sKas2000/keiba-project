@@ -540,14 +540,3 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
     return df_features
 
 
-# ============================================================
-# enriched_input.json -> 特徴量ベクトル変換（feature_extract.py に移行）
-# 後方互換 re-export
-# ============================================================
-
-# 後方互換エイリアス: settings.distance_category が正規の定義
-from config.settings import distance_category as _dist_cat  # noqa: E402, F401
-
-
-# 後方互換: feature_extract.py から re-export
-from src.data.feature_extract import extract_features_from_enriched  # noqa: E402, F401

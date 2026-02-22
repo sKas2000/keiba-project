@@ -717,19 +717,3 @@ def _record_bet(results: dict, month_key: str, bet_type: str,
         results["monthly"][month_key][bet_type]["hits"] += 1
 
 
-# ============================================================
-# 後方互換 re-export（optimization.py / reporting.py）
-# ============================================================
-from src.model.optimization import (  # noqa: F401
-    compare_ev_thresholds,
-    optimize_temperature,
-    explore_strategies,
-    analyze_by_condition,
-    expanding_window_backtest,
-    aggregate_windows_by_period,
-)
-from src.model.reporting import (  # noqa: F401
-    print_backtest_report,
-    print_ev_comparison,
-    save_backtest_report,
-)

@@ -13,14 +13,16 @@ from config.settings import FEATURE_COLUMNS
 from src.data.preprocessing import load_results, encode_categoricals
 from src.data.feature import (
     compute_horse_history_features, compute_jockey_features,
-    create_target, select_features, extract_features_from_enriched,
+    create_target, select_features,
 )
+from src.data.feature_extract import extract_features_from_enriched
 from src.model.trainer import (
     time_based_split, train_binary_model, train_ranking_model,
     save_model, get_feature_importance,
 )
 from src.model.evaluator import run_backtest
-from src.model.predictor import score_rule_based, calculate_ev
+from src.model.scoring import score_rule_based
+from src.model.ev import calculate_ev
 
 
 # ============================================================
