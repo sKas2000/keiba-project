@@ -1,0 +1,290 @@
+<mxfile host="app.diagrams.net" modified="2026-02-22T12:00:00.000Z" agent="Claude" version="24.0.0" type="device">
+  <diagram id="data-architecture" name="データアーキテクチャ">
+    <mxGraphModel dx="1800" dy="1200" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ===== タイトル ===== -->
+        <mxCell id="title" value="競馬分析システム データアーキテクチャ" style="text;html=1;fontSize=22;fontStyle=1;align=center;verticalAlign=middle;whiteSpace=wrap;fillColor=none;strokeColor=none;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="400" y="10" width="800" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ===== 外部データソース (最上段) ===== -->
+        <mxCell id="group_sources" value="外部データソース" style="swimlane;startSize=25;fillColor=#E8EAF6;strokeColor=#5C6BC0;fontStyle=1;fontSize=14;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="60" width="1520" height="170" as="geometry" />
+        </mxCell>
+
+        <!-- JRA -->
+        <mxCell id="src_jra" value="&lt;b&gt;JRA公式&lt;/b&gt;&#xa;www.jra.go.jp&#xa;&#xa;・レースメタ（名称,グレード,距離,馬場）&#xa;・オッズ（単勝,複勝,馬連,ワイド,3連複）&#xa;・出走馬基本情報（馬番,馬名,斤量,騎手）" style="shape=mxgraph.basic.cloud_callout;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="group_sources">
+          <mxGeometry x="20" y="35" width="340" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- netkeiba horse -->
+        <mxCell id="src_horse" value="&lt;b&gt;netkeiba 馬ページ&lt;/b&gt;&#xa;db.netkeiba.com/horse/&#xa;&#xa;・過去走成績（直近4走）&#xa;・騎手ID&#xa;・調教師名&#xa;・馬ID" style="shape=mxgraph.basic.cloud_callout;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="group_sources">
+          <mxGeometry x="390" y="35" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- netkeiba jockey -->
+        <mxCell id="src_jockey" value="&lt;b&gt;netkeiba 騎手ページ&lt;/b&gt;&#xa;db.netkeiba.com/jockey/&#xa;&#xa;・年間成績（勝率,連対率）&#xa;・騎乗回数" style="shape=mxgraph.basic.cloud_callout;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="group_sources">
+          <mxGeometry x="700" y="35" width="250" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- netkeiba shutuba (NEW) -->
+        <mxCell id="src_shutuba" value="&lt;b&gt;netkeiba 出馬表&lt;/b&gt; ⭐NEW&#xa;race.netkeiba.com/race/shutuba.html&#xa;&#xa;・馬体重・増減&#xa;・調教師名&#xa;・馬場状態・天気&#xa;・馬ID" style="shape=mxgraph.basic.cloud_callout;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#E91E63;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="group_sources">
+          <mxGeometry x="980" y="35" width="260" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- netkeiba results -->
+        <mxCell id="src_results" value="&lt;b&gt;netkeiba レース結果&lt;/b&gt;&#xa;race.netkeiba.com/race/result.html&#xa;&#xa;・全着順・タイム・上がり3F&#xa;・馬体重・斤量・通過順&#xa;・払戻金（全券種）" style="shape=mxgraph.basic.cloud_callout;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=11;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="group_sources">
+          <mxGeometry x="1270" y="35" width="230" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ===== スクレイパーモジュール ===== -->
+        <mxCell id="group_scrapers" value="スクレイパー (src/scraping/)" style="swimlane;startSize=25;fillColor=#F3E5F5;strokeColor=#8E24AA;fontStyle=1;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="260" width="1520" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scr_odds" value="&lt;b&gt;odds.py&lt;/b&gt;&#xa;OddsScraper&#xa;(Playwright)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontSize=11;" vertex="1" parent="group_scrapers">
+          <mxGeometry x="80" y="35" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scr_horse" value="&lt;b&gt;horse.py&lt;/b&gt;&#xa;HorseScraper&#xa;(Playwright)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=11;" vertex="1" parent="group_scrapers">
+          <mxGeometry x="360" y="35" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scr_jockey" value="&lt;b&gt;horse.py&lt;/b&gt;&#xa;get_jockey_stats&#xa;(Playwright)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=11;" vertex="1" parent="group_scrapers">
+          <mxGeometry x="580" y="35" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scr_shutuba" value="&lt;b&gt;race.py&lt;/b&gt;&#xa;fetch_shutuba&#xa;(HTTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#E91E63;fontSize=11;" vertex="1" parent="group_scrapers">
+          <mxGeometry x="810" y="35" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="scr_race" value="&lt;b&gt;race.py&lt;/b&gt;&#xa;collect_races&#xa;(HTTP)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=11;" vertex="1" parent="group_scrapers">
+          <mxGeometry x="1100" y="35" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ソース→スクレイパー 矢印 -->
+        <mxCell id="e_jra_odds" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeColor=#FB8C00;strokeWidth=2;" edge="1" source="src_jra" target="scr_odds" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_horse_scr" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeColor=#43A047;strokeWidth=2;" edge="1" source="src_horse" target="scr_horse" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_jockey_scr" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeColor=#43A047;strokeWidth=2;" edge="1" source="src_jockey" target="scr_jockey" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_shutuba_scr" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeColor=#E91E63;strokeWidth=2;" edge="1" source="src_shutuba" target="scr_shutuba" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_results_scr" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeColor=#1E88E5;strokeWidth=2;" edge="1" source="src_results" target="scr_race" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ライブパイプライン（左側） ===== -->
+        <mxCell id="group_live" value="ライブ予測パイプライン" style="swimlane;startSize=25;fillColor=#FFFDE7;strokeColor=#F9A825;fontStyle=1;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="400" width="680" height="520" as="geometry" />
+        </mxCell>
+
+        <!-- input.json -->
+        <mxCell id="json_input" value="&lt;b&gt;input.json&lt;/b&gt;&#xa;&#xa;race: {date, venue, grade, surface, distance}&#xa;horses: [{num, name, odds_win, odds_place, jockey, sex_age}]&#xa;combo_odds: {quinella, wide, trio}" style="shape=note;size=15;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="group_live">
+          <mxGeometry x="20" y="40" width="310" height="95" as="geometry" />
+        </mxCell>
+
+        <!-- enriched_input.json -->
+        <mxCell id="json_enriched" value="&lt;b&gt;enriched_input.json&lt;/b&gt;&#xa;&#xa;+ past_races: [{date,venue,finish,time,last3f,margin}] × 4走&#xa;+ jockey_stats: {win_rate, place_rate, rides}&#xa;+ trainer_name, horse_id&#xa;+ weight (馬体重) ← shutuba ⭐&#xa;+ track_condition, weather ← shutuba ⭐" style="shape=note;size=15;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="group_live">
+          <mxGeometry x="20" y="165" width="330" height="115" as="geometry" />
+        </mxCell>
+
+        <!-- scored.json -->
+        <mxCell id="json_scored" value="&lt;b&gt;base_scored.json / ml_scored.json&lt;/b&gt;&#xa;&#xa;+ score: 0-100 (ルール) / ML確率×100&#xa;+ score_breakdown: {ability/50, jockey/20, fitness/15, form/10, other/5}&#xa;+ win_prob, place_prob (softmax)" style="shape=note;size=15;whiteSpace=wrap;html=1;fillColor=#E1F5FE;strokeColor=#0288D1;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="group_live">
+          <mxGeometry x="20" y="310" width="330" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- ev_results.json -->
+        <mxCell id="json_ev" value="&lt;b&gt;ev_results.json&lt;/b&gt;&#xa;&#xa;+ recommendations: [{bet_type, combination,&#xa;  odds, ev_rate, invest, confidence, rank: S/A/B/C}]&#xa;+ summary: {favorite, dark_horse}" style="shape=note;size=15;whiteSpace=wrap;html=1;fillColor=#F3E5F5;strokeColor=#8E24AA;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="group_live">
+          <mxGeometry x="20" y="420" width="330" height="85" as="geometry" />
+        </mxCell>
+
+        <!-- プロセスボックス（ライブ側） -->
+        <mxCell id="proc_enrich" value="horse.py&#xa;enrich_race_data()&#xa;+ shutuba merge" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#388E3C;fontSize=10;fontStyle=1;" vertex="1" parent="group_live">
+          <mxGeometry x="430" y="90" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="proc_feat_live" value="feature.py&#xa;extract_features&#xa;_from_enriched()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="group_live">
+          <mxGeometry x="430" y="200" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="proc_score" value="predictor.py&#xa;score_rule_based()&#xa;/ score_ml()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#BBDEFB;strokeColor=#1565C0;fontSize=10;fontStyle=1;" vertex="1" parent="group_live">
+          <mxGeometry x="430" y="310" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <mxCell id="proc_ev" value="predictor.py&#xa;calculate_ev()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E1BEE7;strokeColor=#7B1FA2;fontSize=10;fontStyle=1;" vertex="1" parent="group_live">
+          <mxGeometry x="430" y="420" width="140" height="55" as="geometry" />
+        </mxCell>
+
+        <!-- ライブパイプライン内矢印 -->
+        <mxCell id="e_input_enrich" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#388E3C;" edge="1" source="json_input" target="proc_enrich" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_enrich_json" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#388E3C;" edge="1" source="proc_enrich" target="json_enriched" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_enriched_feat" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#1565C0;" edge="1" source="json_enriched" target="proc_feat_live" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_feat_score" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#1565C0;" edge="1" source="proc_feat_live" target="proc_score" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_score_json" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#1565C0;" edge="1" source="proc_score" target="json_scored" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_scored_ev" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#7B1FA2;" edge="1" source="json_scored" target="proc_ev" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ev_json" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#7B1FA2;" edge="1" source="proc_ev" target="json_ev" parent="group_live">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== ML学習パイプライン（右側） ===== -->
+        <mxCell id="group_ml" value="ML学習パイプライン" style="swimlane;startSize=25;fillColor=#E8EAF6;strokeColor=#3F51B5;fontStyle=1;fontSize=13;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="780" y="400" width="780" height="520" as="geometry" />
+        </mxCell>
+
+        <!-- results.csv -->
+        <mxCell id="csv_results" value="&lt;b&gt;data/raw/results.csv&lt;/b&gt;&#xa;&#xa;32カラム × 126,000行&#xa;race_id, race_date, course_name, race_number,&#xa;finish_position, horse_name, horse_id,&#xa;jockey_name, trainer_name, sex, age,&#xa;weight_carried, horse_weight, horse_weight_change,&#xa;finish_time_sec, margin, passing_order, last_3f,&#xa;win_odds, popularity, surface, distance,&#xa;track_condition, weather, num_entries, prize_money..." style="shape=document;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;size=0.1;" vertex="1" parent="group_ml">
+          <mxGeometry x="20" y="40" width="340" height="165" as="geometry" />
+        </mxCell>
+
+        <!-- returns.csv -->
+        <mxCell id="csv_returns" value="&lt;b&gt;data/raw/returns.csv&lt;/b&gt;&#xa;&#xa;5カラム × ~100,000行&#xa;race_id, bet_type, combination,&#xa;payout, popularity" style="shape=document;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;size=0.1;" vertex="1" parent="group_ml">
+          <mxGeometry x="400" y="40" width="200" height="90" as="geometry" />
+        </mxCell>
+
+        <!-- preprocessing -->
+        <mxCell id="proc_preprocess" value="preprocessing.py&#xa;load_results()&#xa;日付パース、カテゴリ変換&#xa;通過順パース、タイム変換" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C5CAE9;strokeColor=#283593;fontSize=10;fontStyle=1;" vertex="1" parent="group_ml">
+          <mxGeometry x="440" y="165" width="170" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- features.csv -->
+        <mxCell id="csv_features" value="&lt;b&gt;data/processed/features.csv&lt;/b&gt;&#xa;&#xa;59カラム × 139,072行&#xa;&#xa;【特徴量 50列】&#xa;基本: frame_number, horse_number, sex_code, age, weight_carried...&#xa;過去成績: prev_finish_1/2/3, avg_finish_last5, win_rate_last5...&#xa;騎手: jockey_win_rate_365d, jockey_place_rate_365d, jockey_ride_count_365d&#xa;調教師: trainer_win_rate_365d, trainer_place_rate_365d&#xa;適性: surface_win_rate, distance_cat_win_rate, track_cond_place_rate&#xa;脚質: running_style, avg_early_position_last5, pace_advantage&#xa;Z-score: z_surface_place_rate, z_jockey_place_rate_365d...&#xa;&#xa;【メタ 9列】&#xa;race_id, race_date, horse_name, horse_id, jockey_name,&#xa;finish_position, top3, win_odds, popularity" style="shape=document;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;size=0.06;" vertex="1" parent="group_ml">
+          <mxGeometry x="20" y="260" width="380" height="240" as="geometry" />
+        </mxCell>
+
+        <!-- feature engineering -->
+        <mxCell id="proc_feature" value="&lt;b&gt;feature.py :: run_feature_pipeline()&lt;/b&gt;&#xa;&#xa;compute_horse_history_features() → 過去成績集約&#xa;compute_jockey_features() → 騎手365日成績&#xa;compute_trainer_features() → 調教師365日成績&#xa;compute_race_pace_features() → 脚質構成&#xa;compute_post_position_bias() → 枠順バイアス&#xa;compute_zscore_features() → レース内Z-score" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C5CAE9;strokeColor=#283593;fontSize=10;align=left;spacingLeft=8;verticalAlign=middle;" vertex="1" parent="group_ml">
+          <mxGeometry x="440" y="280" width="310" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- models -->
+        <mxCell id="model_lgbm" value="&lt;b&gt;models/lgbm_model.pkl&lt;/b&gt;&#xa;LightGBM二値分類&#xa;（3着以内予測）" style="shape=cylinder3;whiteSpace=wrap;html=1;size=8;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=10;align=center;" vertex="1" parent="group_ml">
+          <mxGeometry x="460" y="440" width="140" height="65" as="geometry" />
+        </mxCell>
+
+        <mxCell id="model_calib" value="&lt;b&gt;models/calibrator.pkl&lt;/b&gt;&#xa;Isotonic Calibration&#xa;（確率校正）" style="shape=cylinder3;whiteSpace=wrap;html=1;size=8;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=10;align=center;" vertex="1" parent="group_ml">
+          <mxGeometry x="620" y="440" width="140" height="65" as="geometry" />
+        </mxCell>
+
+        <!-- trainer -->
+        <mxCell id="proc_train" value="trainer.py&#xa;train_all()&#xa;3-way split&#xa;Train: ~2024-12&#xa;Val: 2025-01~06&#xa;Test: 2025-07~" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=10;fontStyle=1;" vertex="1" parent="group_ml">
+          <mxGeometry x="250" y="430" width="150" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ML内矢印 -->
+        <mxCell id="e_res_pre" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#283593;" edge="1" source="csv_results" target="proc_preprocess" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_pre_feat" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#283593;" edge="1" source="proc_preprocess" target="proc_feature" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_res_feat" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#2E7D32;" edge="1" source="proc_feature" target="csv_features" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_feat_train" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#C62828;" edge="1" source="csv_features" target="proc_train" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_train_model" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#C62828;" edge="1" source="proc_train" target="model_lgbm" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_train_calib" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#C62828;" edge="1" source="proc_train" target="model_calib" parent="group_ml">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== スクレイパー→パイプライン矢印 ===== -->
+        <mxCell id="e_odds_input" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#FB8C00;" edge="1" source="scr_odds" target="json_input" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_horse_enrich" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#43A047;dashed=1;" edge="1" source="scr_horse" target="proc_enrich" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_jockey_enrich" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#43A047;dashed=1;" edge="1" source="scr_jockey" target="proc_enrich" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_shutuba_enrich" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#E91E63;dashed=1;" edge="1" source="scr_shutuba" target="proc_enrich" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_race_csv" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#1E88E5;" edge="1" source="scr_race" target="csv_results" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== CSV → ライブ特徴量 Lookup 矢印 ===== -->
+        <mxCell id="e_csv_live_lookup" value="Lookup&#xa;(騎手/調教師/枠順バイアス)" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=3;strokeColor=#FF5722;dashed=1;dashPattern=8 4;fontStyle=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" source="csv_features" target="proc_feat_live" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="640" />
+              <mxPoint x="760" y="640" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== モデル → ライブ予測 矢印 ===== -->
+        <mxCell id="e_model_live" value="ML予測時に使用" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=3;strokeColor=#C62828;dashed=1;dashPattern=8 4;fontStyle=1;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" source="model_lgbm" target="proc_score" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="760" y="870" />
+              <mxPoint x="760" y="750" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- ===== backtest returns ===== -->
+        <mxCell id="e_returns_bt" value="バックテスト&#xa;払戻計算" style="edgeStyle=orthogonalEdgeStyle;curved=1;strokeWidth=2;strokeColor=#1E88E5;dashed=1;dashPattern=4 4;fontSize=10;labelBackgroundColor=#FFFFFF;" edge="1" source="csv_returns" target="proc_train" parent="1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- ===== 凡例 ===== -->
+        <mxCell id="legend" value="" style="swimlane;startSize=25;fillColor=#FAFAFA;strokeColor=#9E9E9E;fontSize=12;fontStyle=1;rounded=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="940" width="700" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="leg_title" value="凡例" style="text;html=1;fontSize=12;fontStyle=1;align=left;verticalAlign=middle;whiteSpace=wrap;" vertex="1" parent="legend">
+          <mxGeometry x="5" y="0" width="50" height="25" as="geometry" />
+        </mxCell>
+        <mxCell id="leg1" value="JRA" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#FB8C00;fontSize=10;" vertex="1" parent="legend">
+          <mxGeometry x="20" y="35" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="leg2" value="netkeiba馬/騎手" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8F5E9;strokeColor=#43A047;fontSize=10;" vertex="1" parent="legend">
+          <mxGeometry x="100" y="35" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="leg3" value="netkeiba出馬表" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FCE4EC;strokeColor=#E91E63;fontSize=10;" vertex="1" parent="legend">
+          <mxGeometry x="210" y="35" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="leg4" value="netkeibaレース結果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E3F2FD;strokeColor=#1E88E5;fontSize=10;" vertex="1" parent="legend">
+          <mxGeometry x="320" y="35" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="leg5" value="CSV/特徴量" style="shape=document;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=10;size=0.15;" vertex="1" parent="legend">
+          <mxGeometry x="450" y="30" width="80" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="leg6" value="学習済みモデル" style="shape=cylinder3;whiteSpace=wrap;html=1;size=8;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=10;" vertex="1" parent="legend">
+          <mxGeometry x="545" y="30" width="100" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ===== 既知のバグ/課題 ===== -->
+        <mxCell id="bugs" value="&lt;b&gt;⚠ 既知の特徴量ギャップ (BAD)&lt;/b&gt;&#xa;&#xa;• horse_weight_change: JRA発表前は0% → shutuba統合で改善予定&#xa;• jockey_win/place_rate_365d: 名前形式不一致 → prefix matching実装済&#xa;• trainer_win/place_rate_365d: 33.8%がtrainer_name欠損 → shutuba統合で改善予定&#xa;• track_cond_place_rate: 馬場状態未取得 → shutuba統合で改善予定&#xa;• weight_carried_change: 過去走にweight_carried未格納&#xa;• days_since_last_race: enrichedは直近4走のみ（構造的制約）" style="shape=callout;whiteSpace=wrap;html=1;perimeter=calloutPerimeter;position2=0.5;base=15;size=10;fillColor=#FFF9C4;strokeColor=#F57F17;fontSize=10;align=left;spacingLeft=10;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="780" y="940" width="500" height="130" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

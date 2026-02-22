@@ -102,6 +102,16 @@ def cmd_monitor(args):
     ))
 
 
+def cmd_monitor_summary(args):
+    """モニターデータのサマリー生成＋クリーンアップ"""
+    from src.monitor_summary import run_monitor_summary
+    run_monitor_summary(
+        date=args.date,
+        cleanup=args.cleanup,
+        all_dates=args.all,
+    )
+
+
 def main():
     setup_encoding()
 
@@ -182,6 +192,13 @@ def main():
     p_mon.add_argument("--venue", help="会場フィルタ（例: 東京 or 中山,東京）")
     p_mon.add_argument("--no-headless", action="store_true", help="ブラウザを表示")
     p_mon.set_defaults(func=cmd_monitor)
+
+    # monitor-summary: モニターデータのサマリー＋クリーンアップ
+    p_ms = sub.add_parser("monitor-summary", help="モニターデータのサマリー生成＋クリーンアップ")
+    p_ms.add_argument("--date", help="対象日（YYYYMMDD）。省略で最新日")
+    p_ms.add_argument("--all", action="store_true", help="全日付を一括処理")
+    p_ms.add_argument("--cleanup", action="store_true", help="サマリー生成後に元ファイルを削除")
+    p_ms.set_defaults(func=cmd_monitor_summary)
 
     args = parser.parse_args()
     if not args.command:

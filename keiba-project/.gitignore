@@ -1,12 +1,26 @@
-node_modules/
-.DS_Store
-*.log
+# Python
 __pycache__/
 *.pyc
+*.pyo
+.pytest_cache/
+
+# 環境
 .env
 .claude/
-test_*.json
+
+# データ (大容量・再生成可能)
+data/raw/
+data/processed/
+data/races/
+data/features/
+
+# モデル (再学習可能)
 models/
+
+# ログ
 logs/
-.test_tmp/
-.pytest_cache/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
