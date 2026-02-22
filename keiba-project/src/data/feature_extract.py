@@ -13,7 +13,8 @@ from config.settings import (
     SEX_MAP, SURFACE_MAP, TRACK_CONDITION_MAP, CLASS_MAP, COURSE_NAME_TO_ID,
     RAW_DIR,
 )
-from src.data.feature import _dist_cat, Z_SCORE_BASE_COLS
+from config.settings import distance_category as _dist_cat
+from src.data.feature import Z_SCORE_BASE_COLS
 from src.scraping.parsers import safe_float, safe_int
 
 

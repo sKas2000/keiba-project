@@ -3,6 +3,7 @@
 ルールベース / ML / ハイブリッドの各パイプラインを統合実行
 """
 import json
+import logging
 from pathlib import Path
 
 from config.settings import (
@@ -10,6 +11,8 @@ from config.settings import (
     EXPANDING_BEST_PARAMS, setup_encoding,
 )
 from src.data.storage import read_json, write_json, generate_output_filename
+
+logger = logging.getLogger("keiba.pipeline")
 
 
 # ============================================================
@@ -27,6 +30,8 @@ async def run_rule_pipeline(
     from src.scraping.odds import OddsScraper, build_input_json
     from src.scraping.horse import HorseScraper, enrich_race_data
     from src.model.predictor import score_rule_based, calculate_ev, print_ev_results
+
+    logger.info("ルールベースパイプライン開始")
 
     # Step 1: JRA オッズ取得
     print("\n[Step 1/4] JRA オッズ取得")
@@ -84,6 +89,7 @@ async def run_rule_pipeline(
     print(f"  出力: {ev_path}")
 
     print_ev_results(ev_results, data.get("race", {}))
+    logger.info("ルールベースパイプライン完了: %s", ev_path)
     return data
 
 
@@ -103,6 +109,7 @@ async def run_ml_pipeline(
     """MLモデルベースパイプライン"""
     from src.model.predictor import score_ml, calculate_ev, print_ev_results
 
+    logger.info("MLパイプライン開始 (input=%s)", input_file or "scraping")
     model_dir = model_dir or MODEL_DIR
 
     if input_file:
@@ -171,6 +178,7 @@ async def run_ml_pipeline(
     print(f"  出力: {ev_path}")
 
     print_ev_results(ev_results, result.get("race", {}))
+    logger.info("MLパイプライン完了: %s", ev_path)
     return result
 
 
@@ -295,6 +303,7 @@ async def run_collect_pipeline(start_date: str, end_date: str,
                                headless: bool = True,
                                append: bool = False):
     """過去レース結果収集"""
+    logger.info("レース収集開始: %s ~ %s", start_date, end_date)
     from src.scraping.race import collect_races
     await collect_races(
         start_date=start_date, end_date=end_date,

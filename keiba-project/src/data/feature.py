@@ -545,14 +545,8 @@ def run_feature_pipeline(input_path: str | Path = None, output_path: str | Path 
 # 後方互換 re-export
 # ============================================================
 
-def _dist_cat(distance: int) -> int:
-    if distance <= 1400:
-        return 0
-    elif distance <= 1800:
-        return 1
-    elif distance <= 2200:
-        return 2
-    return 3
+# 後方互換エイリアス: settings.distance_category が正規の定義
+from config.settings import distance_category as _dist_cat  # noqa: E402, F401
 
 
 # 後方互換: feature_extract.py から re-export

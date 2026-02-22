@@ -6,7 +6,7 @@ import asyncio
 import sys
 from argparse import ArgumentParser
 
-from config.settings import setup_encoding
+from config.settings import setup_encoding, setup_logging
 
 
 def cmd_run(args):
@@ -120,6 +120,7 @@ def cmd_verify_monitor(args):
 
 def main():
     setup_encoding()
+    setup_logging()
 
     parser = ArgumentParser(description="keiba-ai 競馬分析CLI")
     sub = parser.add_subparsers(dest="command", help="実行コマンド")

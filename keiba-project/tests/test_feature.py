@@ -3,11 +3,10 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from config.settings import FEATURE_COLUMNS
+from config.settings import FEATURE_COLUMNS, distance_category as _dist_cat
 from src.data.feature import (
     extract_features_from_enriched,
     create_target,
-    _dist_cat,
 )
 
 

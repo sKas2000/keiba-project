@@ -51,6 +51,18 @@ COURSE_CODES = {
 
 COURSE_NAME_TO_ID = {v: int(k) for k, v in COURSE_CODES.items()}
 
+
+def distance_category(distance: int) -> int:
+    """距離をカテゴリに変換 (0=短距離~1400, 1=マイル~1800, 2=中距離~2200, 3=長距離)"""
+    if distance <= 1400:
+        return 0
+    elif distance <= 1800:
+        return 1
+    elif distance <= 2200:
+        return 2
+    return 3
+
+
 # ============================================================
 # スコアリング
 # ============================================================
@@ -202,3 +214,42 @@ def setup_encoding():
         if hasattr(sys.stderr, 'buffer'):
             sys.stderr = io.TextIOWrapper(
                 sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+
+
+_logging_setup_done = False
+
+def setup_logging():
+    """Python標準loggingを設定（コンソール + ファイル出力）"""
+    global _logging_setup_done
+    if _logging_setup_done:
+        return
+    _logging_setup_done = True
+
+    import logging
+
+    LOG_DIR.mkdir(exist_ok=True)
+    log_file = LOG_DIR / "keiba.log"
+
+    fmt = logging.Formatter(
+        "%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # ファイルハンドラ（UTF-8, 追記, 5MB ローテーション）
+    from logging.handlers import RotatingFileHandler
+    fh = RotatingFileHandler(
+        str(log_file), maxBytes=5 * 1024 * 1024, backupCount=3,
+        encoding="utf-8",
+    )
+    fh.setLevel(logging.DEBUG)
+    fh.setFormatter(fmt)
+
+    # コンソールハンドラ
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(fmt)
+
+    root = logging.getLogger("keiba")
+    root.setLevel(logging.DEBUG)
+    root.addHandler(fh)
+    root.addHandler(ch)
