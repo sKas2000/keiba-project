@@ -2,6 +2,7 @@
 keiba-ai 設定ファイル
 全定数・パス・マップを一元管理
 """
+import os
 import sys
 from pathlib import Path
 
@@ -250,3 +251,25 @@ def setup_logging():
     root.setLevel(logging.DEBUG)
     root.addHandler(fh)
     root.addHandler(ch)
+
+
+# ============================================================
+# 環境変数ヘルパー（.envファイル対応）
+# ============================================================
+
+def load_env_var(key: str, default: str = "") -> str:
+    """環境変数 or .envファイルから値を取得"""
+    val = os.environ.get(key, "")
+    if val:
+        return val
+
+    env_path = PROJECT_ROOT / ".env"
+    if env_path.exists():
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            if k.strip() == key:
+                return v.strip().strip('"').strip("'")
+    return default

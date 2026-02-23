@@ -146,6 +146,7 @@ class HorseScraper(BaseScraper):
                         "着順": "finish", "騎手": "jockey", "タイム": "time",
                         "着差": "margin", "上がり": "last3f", "上り": "last3f",
                         "通過": "position",
+                        "タイム指数": "time_index",  # プレミアム会員時のみ表示
                     }
                     for i, h in enumerate(headers):
                         for keyword, key in keyword_map.items():
@@ -177,6 +178,7 @@ class HorseScraper(BaseScraper):
                     "distance": "", "surface": "", "finish": 0,
                     "jockey_name": "", "jockey_id": "",
                     "margin": "", "time": "", "last3f": "", "position": "",
+                    "time_index": "",  # タイム指数（プレミアム会員時のみ）
                 }
 
                 if "date" in header_map and header_map["date"] < len(cell_texts):
@@ -221,6 +223,8 @@ class HorseScraper(BaseScraper):
                     race_data["last3f"] = cell_texts[header_map["last3f"]]
                 if "position" in header_map and header_map["position"] < len(cell_texts):
                     race_data["position"] = cell_texts[header_map["position"]]
+                if "time_index" in header_map and header_map["time_index"] < len(cell_texts):
+                    race_data["time_index"] = cell_texts[header_map["time_index"]]
 
                 if race_data["finish"] > 0 or race_data["date"]:
                     past_races.append(race_data)
@@ -594,6 +598,7 @@ async def enrich_race_data(scraper_or_path, data=None):
     scraper = HorseScraper(headless=True, debug=True)
     try:
         await scraper.start()
+        await scraper.login_netkeiba()
         data = await _enrich_horses(scraper, data)
 
         output_file = input_file.parent / input_file.name.replace("_input.json", "_enriched_input.json")

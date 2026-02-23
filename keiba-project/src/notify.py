@@ -9,18 +9,8 @@ import urllib.request
 
 def get_webhook_url() -> str:
     """Discord Webhook URLを取得（環境変数 or .envファイル）"""
-    url = os.environ.get("DISCORD_WEBHOOK_URL", "")
-    if url:
-        return url
-
-    from config.settings import PROJECT_ROOT
-    env_path = PROJECT_ROOT / ".env"
-    if env_path.exists():
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line.startswith("DISCORD_WEBHOOK_URL="):
-                return line.split("=", 1)[1].strip().strip('"').strip("'")
-    return ""
+    from config.settings import load_env_var
+    return load_env_var("DISCORD_WEBHOOK_URL")
 
 
 def send_notify(message: str, webhook_url: str = None) -> bool:

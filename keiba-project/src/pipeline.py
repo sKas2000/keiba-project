@@ -58,6 +58,7 @@ async def run_rule_pipeline(
     print("-" * 40)
     horse_scraper = HorseScraper(headless=headless)
     await horse_scraper.start()
+    await horse_scraper.login_netkeiba()
     try:
         data = await enrich_race_data(horse_scraper, data)
     finally:
@@ -142,6 +143,7 @@ async def run_ml_pipeline(
         print("-" * 40)
         horse_scraper = HorseScraper(headless=headless)
         await horse_scraper.start()
+        await horse_scraper.login_netkeiba()
         try:
             data = await enrich_race_data(horse_scraper, data)
         finally:

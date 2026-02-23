@@ -3,11 +3,14 @@
 Playwright ブラウザ管理、リトライ、レート制限
 """
 import asyncio
+import logging
 
 from config.settings import (
     PLAYWRIGHT_VIEWPORT, PLAYWRIGHT_LOCALE, PLAYWRIGHT_TIMEOUT,
-    MAX_RETRIES, RETRY_DELAY,
+    MAX_RETRIES, RETRY_DELAY, load_env_var,
 )
+
+logger = logging.getLogger("keiba.scraping.base")
 
 try:
     from playwright.async_api import async_playwright
@@ -27,6 +30,7 @@ class BaseScraper:
         self.page = None
         self.max_retries = MAX_RETRIES
         self.retry_delay = RETRY_DELAY
+        self._netkeiba_logged_in = False
 
     def log(self, msg):
         if self.debug:
@@ -62,6 +66,9 @@ class BaseScraper:
         await self.close()
         await asyncio.sleep(2)
         await self.start()
+        # 再起動後にnetkeiba再ログイン
+        if self._netkeiba_logged_in:
+            await self.login_netkeiba()
         self.log("ブラウザ再起動完了")
 
     async def retry(self, coro_func, *args, max_retries=None, delay=None):
@@ -85,3 +92,88 @@ class BaseScraper:
     async def rate_limit(self, delay=None):
         """負荷軽減のための待機"""
         await asyncio.sleep(delay or self.retry_delay)
+
+    # ----------------------------------------------------------
+    # netkeiba ログイン
+    # ----------------------------------------------------------
+
+    async def login_netkeiba(self) -> bool:
+        """netkeibaにログイン（.envに認証情報がある場合のみ）
+
+        Returns:
+            True: ログイン成功, False: 認証情報なし or 失敗
+        """
+        email = load_env_var("NETKEIBA_EMAIL")
+        password = load_env_var("NETKEIBA_PASSWORD")
+        if not email or not password:
+            return False
+
+        try:
+            self.log("netkeibaログイン中...")
+            await self.page.goto(
+                "https://regist.netkeiba.com/account/",
+                wait_until="domcontentloaded", timeout=30000,
+            )
+            await asyncio.sleep(2)
+
+            # メールアドレス入力
+            email_input = self.page.locator('input[name="login_id"]')
+            if await email_input.count() == 0:
+                # フォールバック: 他のセレクタを試行
+                email_input = self.page.locator(
+                    'input[type="email"], input[type="text"][name*="mail"], '
+                    'input[type="text"][name*="id"]'
+                )
+            if await email_input.count() > 0:
+                await email_input.first.fill(email)
+            else:
+                self.log("  [!] メール入力フィールドが見つかりません")
+                return False
+
+            # パスワード入力
+            pw_input = self.page.locator('input[name="pswd"]')
+            if await pw_input.count() == 0:
+                pw_input = self.page.locator('input[type="password"]')
+            if await pw_input.count() > 0:
+                await pw_input.first.fill(password)
+            else:
+                self.log("  [!] パスワード入力フィールドが見つかりません")
+                return False
+
+            # ログインボタンクリック
+            await asyncio.sleep(0.5)
+            login_btn = self.page.locator(
+                'input[type="submit"], button[type="submit"], '
+                'a.loginBtn, button.loginBtn'
+            )
+            if await login_btn.count() > 0:
+                await login_btn.first.click()
+            else:
+                await self.page.keyboard.press("Enter")
+
+            await asyncio.sleep(3)
+
+            # ログイン成功確認: ログインページから遷移しているか
+            current_url = self.page.url
+            if "account" not in current_url or "mypage" in current_url:
+                self._netkeiba_logged_in = True
+                self.log("  [OK] netkeibaログイン成功")
+                logger.info("netkeibaログイン成功 (email=%s)", email[:3] + "***")
+                return True
+
+            # 追加チェック: ページ内にログアウトリンクがあればログイン成功
+            logout_link = self.page.locator('a[href*="logout"]')
+            if await logout_link.count() > 0:
+                self._netkeiba_logged_in = True
+                self.log("  [OK] netkeibaログイン成功")
+                logger.info("netkeibaログイン成功 (email=%s)", email[:3] + "***")
+                return True
+
+            self.log("  [!] netkeibaログイン失敗（ページ遷移なし）")
+            logger.warning("netkeibaログイン失敗")
+            return False
+
+        except Exception as e:
+            self.log(f"  [ERROR] netkeibaログインエラー: {e}")
+            logger.error("netkeibaログインエラー: %s", e)
+            return False
