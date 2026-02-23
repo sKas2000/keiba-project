@@ -163,6 +163,8 @@ FEATURE_COLUMNS = [
     "same_jockey_rides", "same_jockey_win_rate",
     # v10: コース適性（Phase14再精査で復活: B7全体の一部として貢献）
     "course_dist_win_rate", "course_dist_place_rate",
+    # v11: 時間減衰特徴量 — 実験の結果、ROI悪化（市場追従化）のため不採用
+    # "decay_finish_30d", "decay_finish_60d", "decay_finish_90d", "momentum",
 ]
 
 CATEGORICAL_FEATURES = [
