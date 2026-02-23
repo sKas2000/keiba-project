@@ -413,10 +413,14 @@ def simulate_bets(prepared: dict,
             rank_probs = exp_rs / exp_rs.sum()
             bp = np.clip(race_group["pred_prob"].values, 1e-6, 1 - 1e-6)
             bp_norm = bp / bp.sum()
-            # 加重平均: binary 0.6 + ranking 0.4（binaryの方が確率として信頼性が高い）
+            # 単勝・複勝用: binary重視 (0.6 binary + 0.4 ranking)
             ensemble_sort = 0.6 * bp_norm + 0.4 * rank_probs
+            # 馬連・ワイド・3連複用: ranking重視 (0.4 binary + 0.6 ranking)
+            # rankingモデルは相対順位予測に特化 → 複数馬選択に適する
+            multi_sort = 0.4 * bp_norm + 0.6 * rank_probs
             race_group = race_group.copy()
             race_group["_ensemble_sort"] = ensemble_sort
+            race_group["_multi_sort"] = multi_sort
             race_group = race_group.sort_values("_ensemble_sort", ascending=False)
         else:
             race_group = race_group.sort_values("pred_prob", ascending=False)
@@ -485,6 +489,13 @@ def simulate_bets(prepared: dict,
         horse_numbers = top_horses["horse_number"].values if "horse_number" in top_horses.columns else []
         finish_positions = top_horses["finish_position"].values
 
+        # 馬連・ワイド・3連複用: ランキング重視ソートで馬選択
+        if "_multi_sort" in race_group.columns:
+            top_horses_multi = race_group.sort_values("_multi_sort", ascending=False).head(effective_top)
+        else:
+            top_horses_multi = top_horses
+        horse_numbers_multi = top_horses_multi["horse_number"].values if "horse_number" in top_horses_multi.columns else []
+
         # --- 単勝シミュレーション ---
         for i, (_, horse) in enumerate(top_horses.head(top_n).iterrows()):
             odds = horse.get("win_odds", 0)
@@ -552,11 +563,11 @@ def simulate_bets(prepared: dict,
 
         # --- 馬連シミュレーション（top_n から2頭組合せ、順不同） ---
         q_top = quinella_top_n if quinella_top_n > 0 else top_n
-        if len(horse_numbers) >= 2:
-            for idx_pair in combinations(range(min(q_top, len(top_horses))), 2):
+        if len(horse_numbers_multi) >= 2:
+            for idx_pair in combinations(range(min(q_top, len(top_horses_multi))), 2):
                 i, j = idx_pair
-                h_i = top_horses.iloc[i]
-                h_j = top_horses.iloc[j]
+                h_i = top_horses_multi.iloc[i]
+                h_j = top_horses_multi.iloc[j]
                 nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
                 if 0 in nums:
                     continue
@@ -576,16 +587,16 @@ def simulate_bets(prepared: dict,
 
         # --- ワイド シミュレーション（top_n から2頭組合せ、3着以内） ---
         w_top = wide_top_n if wide_top_n > 0 else top_n
-        if len(horse_numbers) >= 2:
+        if len(horse_numbers_multi) >= 2:
             # 実際の3着以内馬番セット
             actual_top3 = set(
                 race_group[race_group["finish_position"] <= 3]["horse_number"].astype(int).tolist()
             ) if "horse_number" in race_group.columns else set()
 
-            for idx_pair in combinations(range(min(w_top, len(top_horses))), 2):
+            for idx_pair in combinations(range(min(w_top, len(top_horses_multi))), 2):
                 i, j = idx_pair
-                h_i = top_horses.iloc[i]
-                h_j = top_horses.iloc[j]
+                h_i = top_horses_multi.iloc[i]
+                h_j = top_horses_multi.iloc[j]
                 nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
                 if 0 in nums:
                     continue
@@ -632,13 +643,13 @@ def simulate_bets(prepared: dict,
                         _record_bet(results, month_key, "exacta", 100, hit, payout)
 
         # --- 3連複シミュレーション（top_n=3 の場合1点、順不同） ---
-        if len(horse_numbers) >= 3:
-            for idx_trio in combinations(range(min(top_n, len(top_horses))), 3):
+        if len(horse_numbers_multi) >= 3:
+            for idx_trio in combinations(range(min(top_n, len(top_horses_multi))), 3):
                 i, j, k = idx_trio
                 nums = [
-                    top_horses.iloc[i].get("horse_number", 0),
-                    top_horses.iloc[j].get("horse_number", 0),
-                    top_horses.iloc[k].get("horse_number", 0),
+                    top_horses_multi.iloc[i].get("horse_number", 0),
+                    top_horses_multi.iloc[j].get("horse_number", 0),
+                    top_horses_multi.iloc[k].get("horse_number", 0),
                 ]
                 if 0 in nums:
                     continue

@@ -469,8 +469,120 @@ class HorseScraper(BaseScraper):
 # enriched_input.json 生成
 # ============================================================
 
-async def enrich_race_data(input_path: str):
-    """input.json を読み込み、netkeiba から追加データを取得して enriched_input.json に保存"""
+def _extract_horse_id_from_url(url: str) -> str:
+    """馬ページURLからhorse_idを抽出"""
+    m = re.search(r'/horse/(\d{10})', url)
+    return m.group(1) if m else ""
+
+
+async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
+    """馬データのスクレイピング + キャッシュ統合コア処理"""
+    from src.scraping.cache import HorseCache
+
+    cache = HorseCache()
+    cache_stats = {"horse_hit": 0, "horse_miss": 0, "jockey_hit": 0, "jockey_miss": 0}
+
+    horses = data.get("horses", [])
+    print(f"[対象馬] {len(horses)}頭")
+
+    for i, horse in enumerate(horses):
+        horse_name = horse.get("name", "")
+        print(f"\n[{i+1}/{len(horses)}] {horse_name}")
+
+        if i > 0 and i % 5 == 0:
+            print("\n[メモリリフレッシュ] ブラウザを再起動します...")
+            await scraper.restart()
+
+        if not horse_name:
+            horse["past_races"] = []
+            horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
+            continue
+
+        # 生年計算
+        birth_year = 0
+        sex_age = horse.get("sex_age", "")
+        race_year_str = data.get("race", {}).get("date", "")[:4]
+        if sex_age and race_year_str:
+            age_match = re.search(r'(\d+)', sex_age)
+            if age_match:
+                birth_year = int(race_year_str) - int(age_match.group(1))
+
+        # キャッシュから馬データを検索（horse_idが判明している場合）
+        horse_id = horse.get("horse_id", "")
+        cached_horse = cache.get_horse(horse_id) if horse_id else None
+
+        if cached_horse:
+            # キャッシュヒット
+            horse["past_races"] = cached_horse["past_races"]
+            if cached_horse["trainer_name"]:
+                horse["trainer_name"] = cached_horse["trainer_name"]
+            cache_stats["horse_hit"] += 1
+            print(f"  [cache] 馬データ取得済み (horse_id={horse_id})")
+        else:
+            # キャッシュミス → スクレイピング
+            horse_url = await scraper.search_horse(horse_name, birth_year=birth_year)
+            if horse_url:
+                past_races = await scraper.scrape_horse_past_races(horse_url)
+                horse["past_races"] = past_races
+                trainer_name = await scraper.get_trainer_name()
+                if trainer_name:
+                    horse["trainer_name"] = trainer_name
+                # キャッシュに保存
+                scraped_id = _extract_horse_id_from_url(horse_url)
+                if scraped_id:
+                    horse["horse_id"] = scraped_id
+                    cache.set_horse(scraped_id, horse_name, past_races,
+                                    horse.get("trainer_name", ""))
+            else:
+                horse["past_races"] = []
+            cache_stats["horse_miss"] += 1
+
+        # 騎手成績
+        jockey_name = horse.get("jockey", "")
+        if jockey_name:
+            cached_jockey = cache.get_jockey(jockey_name)
+            if cached_jockey:
+                horse["jockey_stats"] = cached_jockey
+                cache_stats["jockey_hit"] += 1
+                print(f"  [cache] 騎手成績取得済み ({jockey_name})")
+            else:
+                past_races = horse.get("past_races", [])
+                jockey_id = scraper.extract_jockey_id_from_past_races(jockey_name, past_races)
+                if jockey_id:
+                    jockey_stats = await scraper.get_jockey_stats_by_id(jockey_id, jockey_name)
+                else:
+                    jockey_stats = await scraper.search_jockey(jockey_name)
+                horse["jockey_stats"] = jockey_stats
+                cache.set_jockey(jockey_name, jockey_stats)
+                cache_stats["jockey_miss"] += 1
+        else:
+            horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
+
+        await asyncio.sleep(2.0)
+
+    # キャッシュ統計
+    db_stats = cache.stats()
+    print(f"\n[キャッシュ] 馬: hit={cache_stats['horse_hit']}, miss={cache_stats['horse_miss']} "
+          f"| 騎手: hit={cache_stats['jockey_hit']}, miss={cache_stats['jockey_miss']} "
+          f"| DB: 馬{db_stats['horses']}件, 騎手{db_stats['jockeys']}件")
+    cache.close()
+
+    return data
+
+
+async def enrich_race_data(scraper_or_path, data=None):
+    """input.json を読み込み、netkeiba から追加データを取得して enriched_input.json に保存
+
+    呼び出しパターン:
+      1. enrich_race_data(scraper, data)  — パイプラインから（外部管理のscraper使用）
+      2. enrich_race_data("path/to/input.json")  — CLI直接実行（内部でscraper作成）
+    """
+    # パターン1: パイプラインからの呼び出し（scraper + data）
+    if data is not None and isinstance(scraper_or_path, HorseScraper):
+        return await _enrich_horses(scraper_or_path, data)
+
+    # パターン2: CLI直接実行（ファイルパスのみ）
+    input_path = str(scraper_or_path)
     input_file = Path(input_path)
     if not input_file.exists():
         print(f"[ERROR] ファイルが見つかりません: {input_path}")
@@ -479,60 +591,10 @@ async def enrich_race_data(input_path: str):
     with open(input_file, "r", encoding="utf-8") as f:
         data = json.load(f)
 
-    horses = data.get("horses", [])
-    print(f"[対象馬] {len(horses)}頭")
-
     scraper = HorseScraper(headless=True, debug=True)
     try:
         await scraper.start()
-
-        for i, horse in enumerate(horses):
-            horse_name = horse.get("name", "")
-            print(f"\n[{i+1}/{len(horses)}] {horse_name}")
-
-            if i > 0 and i % 5 == 0:
-                print("\n[メモリリフレッシュ] ブラウザを再起動します...")
-                await scraper.restart()
-
-            if not horse_name:
-                horse["past_races"] = []
-                horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
-                continue
-
-            # 生年計算
-            birth_year = 0
-            sex_age = horse.get("sex_age", "")
-            race_year_str = data.get("race", {}).get("date", "")[:4]
-            if sex_age and race_year_str:
-                import re as _re
-                age_match = _re.search(r'(\d+)', sex_age)
-                if age_match:
-                    birth_year = int(race_year_str) - int(age_match.group(1))
-
-            horse_url = await scraper.search_horse(horse_name, birth_year=birth_year)
-            if horse_url:
-                past_races = await scraper.scrape_horse_past_races(horse_url)
-                horse["past_races"] = past_races
-                # 調教師名を馬ページから抽出（ページはまだ開いている）
-                trainer_name = await scraper.get_trainer_name()
-                if trainer_name:
-                    horse["trainer_name"] = trainer_name
-            else:
-                horse["past_races"] = []
-
-            jockey_name = horse.get("jockey", "")
-            if jockey_name:
-                past_races = horse.get("past_races", [])
-                jockey_id = scraper.extract_jockey_id_from_past_races(jockey_name, past_races)
-                if jockey_id:
-                    jockey_stats = await scraper.get_jockey_stats_by_id(jockey_id, jockey_name)
-                else:
-                    jockey_stats = await scraper.search_jockey(jockey_name)
-                horse["jockey_stats"] = jockey_stats
-            else:
-                horse["jockey_stats"] = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
-
-            await asyncio.sleep(2.0)
+        data = await _enrich_horses(scraper, data)
 
         output_file = input_file.parent / input_file.name.replace("_input.json", "_enriched_input.json")
         with open(output_file, "w", encoding="utf-8") as f:
