@@ -111,21 +111,15 @@ class BaseScraper:
         try:
             self.log("netkeibaログイン中...")
             await self.page.goto(
-                "https://regist.netkeiba.com/account/",
+                "https://regist.netkeiba.com/account/?pid=login",
                 wait_until="domcontentloaded", timeout=30000,
             )
-            await asyncio.sleep(2)
+            await asyncio.sleep(3)
 
             # メールアドレス入力
             email_input = self.page.locator('input[name="login_id"]')
-            if await email_input.count() == 0:
-                # フォールバック: 他のセレクタを試行
-                email_input = self.page.locator(
-                    'input[type="email"], input[type="text"][name*="mail"], '
-                    'input[type="text"][name*="id"]'
-                )
             if await email_input.count() > 0:
-                await email_input.first.fill(email)
+                await email_input.fill(email)
             else:
                 self.log("  [!] メール入力フィールドが見つかりません")
                 return False
@@ -140,38 +134,33 @@ class BaseScraper:
                 self.log("  [!] パスワード入力フィールドが見つかりません")
                 return False
 
-            # ログインボタンクリック
+            # ログインボタンクリック（type="image" のログインボタン）
             await asyncio.sleep(0.5)
             login_btn = self.page.locator(
-                'input[type="submit"], button[type="submit"], '
-                'a.loginBtn, button.loginBtn'
+                'input[type="image"], input[type="submit"], '
+                'button[type="submit"]'
             )
             if await login_btn.count() > 0:
                 await login_btn.first.click()
             else:
                 await self.page.keyboard.press("Enter")
 
+            # ページ遷移を待機
+            await self.page.wait_for_load_state("domcontentloaded")
             await asyncio.sleep(3)
 
-            # ログイン成功確認: ログインページから遷移しているか
+            # ログイン成功確認
             current_url = self.page.url
-            if "account" not in current_url or "mypage" in current_url:
-                self._netkeiba_logged_in = True
-                self.log("  [OK] netkeibaログイン成功")
-                logger.info("netkeibaログイン成功 (email=%s)", email[:3] + "***")
-                return True
+            # ログインページにまだいる（pid=login）なら失敗
+            if "pid=login" in current_url:
+                self.log("  [!] netkeibaログイン失敗（認証情報を確認してください）")
+                logger.warning("netkeibaログイン失敗")
+                return False
 
-            # 追加チェック: ページ内にログアウトリンクがあればログイン成功
-            logout_link = self.page.locator('a[href*="logout"]')
-            if await logout_link.count() > 0:
-                self._netkeiba_logged_in = True
-                self.log("  [OK] netkeibaログイン成功")
-                logger.info("netkeibaログイン成功 (email=%s)", email[:3] + "***")
-                return True
-
-            self.log("  [!] netkeibaログイン失敗（ページ遷移なし）")
-            logger.warning("netkeibaログイン失敗")
-            return False
+            self._netkeiba_logged_in = True
+            self.log("  [OK] netkeibaログイン成功")
+            logger.info("netkeibaログイン成功 (email=%s)", email[:3] + "***")
+            return True
 
         except Exception as e:
             self.log(f"  [ERROR] netkeibaログインエラー: {e}")
