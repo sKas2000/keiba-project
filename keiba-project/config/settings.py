@@ -93,29 +93,24 @@ BACKTEST_BEST_PARAMS = {
     "calibrated": True,
 }
 
-# Expanding Window最適パラメータ（Phase9-13: 9ウィンドウ + 3-way split検証済み）
-# Isotonic校正あり + ランキングなし = 全ウィンドウで安定
-# Kelly基準はWin/Placeを悪化させるためフラットベット
-# 校正割合10%が最適（訓練データ最大化 + 十分な校正品質）
-# Phase 13: Val(W04-05)/Test(W06-08)分離評価でパラメータの妥当性を検証
+# Expanding Window最適パラメータ（Phase14: 体系的再精査実験で再検証済み）
+# B7特徴量（+9列）+ Isotonic校正 + ランキングなし + 6ヶ月ウィンドウ
+# 再精査実験: バグ修正後のコードで全パラメータを体系的に再検証
+# エビデンス: docs/reeval_evidence.md
 EXPANDING_BEST_PARAMS = {
     "kelly_fraction": 0,          # フラットベット（Kelly非使用）
-    "confidence_min": 0.04,       # 確信度フィルタ（Val/Testで安定）
-    "quinella_top_n": 2,          # 馬連: top2のみ（Val 109.7%, Test 110.7%）
-    "wide_top_n": 2,              # ワイド: top2のみ（Test 107.3%）
+    "confidence_min": 0.02,       # 確信度フィルタ（再精査: 0.02が最適、Val/Test安定）
+    "quinella_top_n": 2,          # 馬連: top2のみ
+    "wide_top_n": 2,              # ワイド: top2のみ
     "skip_classes": [4, 6],       # 2勝+OP除外（全券種改善）
     "top_n": 3,
-    "use_calibration": True,      # Isotonic校正（必須、+29pt）
-    "use_ranking": False,         # ランキング不使用（-14.7pt）
+    "use_calibration": True,      # Isotonic校正（必須）
+    "use_ranking": False,         # ランキング不使用
     "calibration_pct": 0.10,      # 最適校正割合（10%）
-    "window_months": 3,           # テスト期間（3ヶ月）
-    # 3-way split検証結果 (Phase 13):
-    #           Val(W04-05)  Test(W06-08)  ALL(W00-08)
-    # 馬連:     109.7%       110.7%        118.3%  ← Val/Test両方で黒字（信頼性高）
-    # ワイド:    92.5%       107.3%        103.1%  ← Testで黒字
-    # 3連複:    110.6%        93.4%        111.3%  ← Valのみ黒字（要注意）
-    # 単勝:      86.2%        92.7%         89.4%
-    # 複勝:      87.2%        95.5%         91.5%
+    "window_months": 6,           # テスト期間（6ヶ月、再精査: 3→6で安定性向上）
+    # 再精査実験結果 (Phase14 — B7_full + 6mo + conf=0.02):
+    #   Val ROI: 125.9%  Test ROI: 111.4%  （旧ベースライン: Val 104.3% / Test 103.8%）
+    # 正則化: 現行 l1=0.1/l2=1.0 維持（l1=0.01/l2=0.1はTest+3.8ptだがVal不安定）
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）
@@ -160,15 +155,14 @@ FEATURE_COLUMNS = [
     "post_position_bias",
     # プルーニング済み（importance < 0.15%でノイズ源）:
     # track_condition_code(0.03%), is_second_start(0.06%), distance_cat(0.11%)
-    # v8: レース内Z-score → ROI悪化のため除外（AUC+0.007だがKelly ROI -21pt）
-    # Z-scoreは予測の分散を減らし、confidence gapを縮小→Kelly基準のエッジ検出力が低下
-    # "z_surface_place_rate", "z_jockey_place_rate_365d",
-    # "z_avg_finish_last5", "z_career_place_rate", "z_trainer_place_rate_365d",
-    # v9: 騎手×馬の騎乗経験 → ROI悪化のため除外（Kelly ROI 110.4%→80.8%）
-    # スパースな特徴量が予測の安定性を損ない、Kelly基準のエッジ検出力が低下
-    # "same_jockey_rides", "same_jockey_win_rate",
-    # v10: コース適性 → v9と同時に追加してROI悪化、単独効果未検証
-    # "course_dist_win_rate", "course_dist_place_rate",
+    # v8: レース内Z-score（Phase14再精査で復活: B7_full Val 125.9% / Test 111.4%）
+    # バグ修正後のフラットベットでは安定してROI改善
+    "z_surface_place_rate", "z_jockey_place_rate_365d",
+    "z_avg_finish_last5", "z_career_place_rate", "z_trainer_place_rate_365d",
+    # v9: 騎手×馬の騎乗経験（Phase14再精査で復活: B7全体の一部として貢献）
+    "same_jockey_rides", "same_jockey_win_rate",
+    # v10: コース適性（Phase14再精査で復活: B7全体の一部として貢献）
+    "course_dist_win_rate", "course_dist_place_rate",
 ]
 
 CATEGORICAL_FEATURES = [
