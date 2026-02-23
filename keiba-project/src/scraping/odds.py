@@ -3,12 +3,15 @@ JRA オッズ取得
 JRA公式サイトからオッズ・馬情報をスクレイピング
 """
 import asyncio
+import logging
 import re
 from datetime import datetime
 
 from src.scraping.base import BaseScraper
 from src.scraping.parsers import safe_float, parse_odds_range, parse_odds_range_low, extract_venue
 from config.settings import GRADE_DEFAULTS
+
+logger = logging.getLogger("keiba.scraping.odds")
 
 
 class OddsScraper(BaseScraper):
@@ -68,8 +71,8 @@ class OddsScraper(BaseScraper):
             if text:
                 info["name"] = text.strip()
                 self.log(f"  レース名: {info['name']}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("レース名取得スキップ: %s", e)
 
         # DIV.race_title
         try:
@@ -120,7 +123,8 @@ class OddsScraper(BaseScraper):
                             if tm:
                                 post_time = f"{int(tm.group(1))}:{tm.group(2)}"
                                 break
-                except Exception:
+                except Exception as e:
+                    logger.debug("発走時刻Strategy1 要素スキップ: %s", e)
                     continue
 
             # Strategy 2: race_title周辺のテキストから検出
@@ -145,7 +149,8 @@ class OddsScraper(BaseScraper):
                                     if 7 <= int(h) <= 17:
                                         post_time = tm.group(1)
                                         break
-                    except Exception:
+                    except Exception as e:
+                        logger.debug("発走時刻Strategy2 要素スキップ: %s", e)
                         continue
 
             # Strategy 3: body全体から発走時刻パターン検索
@@ -171,8 +176,8 @@ class OddsScraper(BaseScraper):
             if post_time:
                 info["post_time"] = post_time
                 self.log(f"  発走時刻: {info['post_time']}")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("発走時刻検出エラー: %s", e)
 
         # レース名フォールバック
         if not info["name"]:
@@ -185,8 +190,8 @@ class OddsScraper(BaseScraper):
                                      "未勝利", "新馬", "1勝", "2勝", "3勝"]):
                         info["name"] = text.strip()
                         break
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("レース名フォールバックスキップ: %s", e)
 
         missing = [k for k in ["name", "surface", "distance", "grade"]
                    if not info.get(k)]

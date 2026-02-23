@@ -4,6 +4,7 @@ race.netkeiba.com から過去レース結果を httpx + BeautifulSoup でスク
 """
 import asyncio
 import csv
+import logging
 import re
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,8 @@ from src.scraping.parsers import (
     safe_int, safe_float, time_to_seconds, parse_horse_weight, parse_sex_age,
 )
 from config.settings import COURSE_CODES, CSV_COLUMNS, RAW_DIR
+
+logger = logging.getLogger("keiba.scraping.race")
 
 # 同時リクエスト数（高すぎるとブロックされる）
 CONCURRENCY = 3
@@ -176,8 +179,8 @@ def _parse_race_meta(soup: BeautifulSoup, race_id: str) -> dict:
                         f"-{int(dm.group(3)):02d}"
                     )
                     break
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning("レースメタ解析エラー (race_id=%s): %s", race_id, e)
     return meta
 
 
@@ -564,7 +567,8 @@ async def fetch_shutuba(race_id: str) -> dict:
             if r.status_code != 200:
                 return {"race_meta": {}, "horses": []}
             return parse_shutuba_html(r.content, race_id)
-    except Exception:
+    except Exception as e:
+        logger.warning("出馬表取得エラー (race_id=%s): %s", race_id, e)
         return {"race_meta": {}, "horses": []}
 
 
@@ -624,7 +628,8 @@ async def _fetch_race_ids(client: httpx.AsyncClient, date_str: str) -> list:
             else:
                 _db_blocked = True
                 print("  [INFO] db.netkeiba.com blocked -> race.netkeiba.com にフォールバック")
-        except Exception:
+        except Exception as e:
+            logger.warning("db.netkeiba.com レースID取得エラー (date=%s): %s", date_str, e)
             _db_blocked = True
 
     # フォールバック: race.netkeiba.com

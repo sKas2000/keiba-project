@@ -4,11 +4,14 @@ netkeiba.com から馬詳細ページ・騎手ページをスクレイピング
 """
 import asyncio
 import json
+import logging
 import re
 from pathlib import Path
 
 from src.scraping.base import BaseScraper
 from src.scraping.parsers import safe_int, safe_float, normalize_jockey_name
+
+logger = logging.getLogger("keiba.scraping.horse")
 
 
 class HorseScraper(BaseScraper):
@@ -39,8 +42,8 @@ class HorseScraper(BaseScraper):
                     if await input_field.count() > 0:
                         await input_field.fill(horse_name)
                         input_found = True
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("input_field検索フォールバック: %s", e)
 
                 if not input_found:
                     try:
@@ -48,8 +51,8 @@ class HorseScraper(BaseScraper):
                         if text_inputs:
                             await text_inputs[0].fill(horse_name)
                             input_found = True
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("text_inputs検索フォールバック: %s", e)
 
                 if not input_found:
                     self.log("  [!] 検索フォームが見つかりません")
@@ -62,13 +65,13 @@ class HorseScraper(BaseScraper):
                     if await submit_button.count() > 0:
                         await submit_button.first.click()
                         submit_clicked = True
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("submit_button検索フォールバック: %s", e)
                 if not submit_clicked:
                     try:
                         await self.page.keyboard.press("Enter")
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug("Enter送信フォールバック: %s", e)
 
                 await asyncio.sleep(3)
 

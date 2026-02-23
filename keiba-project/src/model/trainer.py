@@ -710,14 +710,14 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
     df["race_date"] = pd.to_datetime(df["race_date"])
     print(f"  全体: {len(df)}行, {df['race_id'].nunique()}レース")
 
-    if surface_split:
-        # 障害レース除外
-        if "surface_code" in df.columns:
-            n_hurdle = len(df[df["surface_code"] == 2])
+    # 障害レース除外（常時。平地レースと性質が異なりノイズ源になる）
+    if "surface_code" in df.columns:
+        n_hurdle = len(df[df["surface_code"] == 2])
+        if n_hurdle > 0:
             df = df[df["surface_code"] != 2].copy()
-            if n_hurdle > 0:
-                print(f"  [フィルタ] 障害レース {n_hurdle}行を除外")
+            print(f"  [フィルタ] 障害レース {n_hurdle}行を除外 → {len(df)}行")
 
+    if surface_split:
         available_features = [c for c in FEATURE_COLUMNS if c in df.columns]
 
         binary_params = DEFAULT_BINARY_PARAMS.copy()

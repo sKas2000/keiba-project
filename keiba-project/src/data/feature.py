@@ -49,6 +49,10 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
     for col in feature_cols:
         df[col] = 0.0
 
+    # running_style: デフォルト1（先行）。0（逃げ）だとコーナー通過順が
+    # 欠損の馬が全て逃げ馬として扱われ、race_n_front が実態より膨らむ
+    df["running_style"] = 1.0
+
     has_margin = "margin_float" in df.columns
     has_corner = "first_corner_pos" in df.columns
 
