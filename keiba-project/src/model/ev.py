@@ -124,6 +124,7 @@ def calculate_ev(data: dict, strategy: dict = None) -> dict:
     confidence_min = strategy.get("confidence_min", 0)
     quinella_top_n = strategy.get("quinella_top_n", 0) or top_n
     wide_top_n = strategy.get("wide_top_n", 0) or top_n
+    trio_top_n = strategy.get("trio_top_n", 0) or top_n
     skip_classes = strategy.get("skip_classes", [])
 
     warnings = []
@@ -218,7 +219,7 @@ def calculate_ev(data: dict, strategy: dict = None) -> dict:
 
     # 3連複
     t_map = {tuple(sorted(i["combo"])): i["odds"] for i in combo_odds.get("trio", [])}
-    trio_indices = [h["index"] for h in ranked[:min(top_n, 7)]]
+    trio_indices = [h["index"] for h in ranked[:min(trio_top_n, 7)]]
     trio_bets = []
     for a, b, c in combinations(trio_indices, 3):
         i, j, k = sorted([a, b, c])
@@ -239,7 +240,8 @@ def calculate_ev(data: dict, strategy: dict = None) -> dict:
         "temperature": temperature, "budget": budget,
         "strategy": {
             "top_n": top_n, "quinella_top_n": quinella_top_n,
-            "wide_top_n": wide_top_n, "confidence_min": confidence_min,
+            "wide_top_n": wide_top_n, "trio_top_n": trio_top_n,
+            "confidence_min": confidence_min,
             "skip_classes": skip_classes,
             "has_win_model": has_win_model,
         },

@@ -21,6 +21,9 @@ models/
 logs/
 *.log
 
+# テスト一時ファイル（LightGBMの日本語パス問題回避用）
+tests/_tmp_retrain/
+
 # OS
 .DS_Store
 Thumbs.db

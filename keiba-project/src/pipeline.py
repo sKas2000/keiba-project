@@ -197,6 +197,18 @@ def run_train_pipeline(input_path: str = None, val_start: str = "2025-01-01",
 
 
 # ============================================================
+# 自動再学習パイプライン（Expanding Window本番展開）
+# ============================================================
+
+def run_retrain_pipeline(input_path: str = None, calibration_pct: float = 0.10,
+                         keep_versions: int = 3):
+    """Expanding Window方式の自動再学習パイプライン"""
+    from src.model.trainer import retrain
+    retrain(input_path=input_path, calibration_pct=calibration_pct,
+            keep_versions=keep_versions)
+
+
+# ============================================================
 # 特徴量エンジニアリングパイプライン
 # ============================================================
 

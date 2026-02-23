@@ -102,6 +102,7 @@ EXPANDING_BEST_PARAMS = {
     "confidence_min": 0.02,       # 確信度フィルタ（再精査: 0.02が最適、Val/Test安定）
     "quinella_top_n": 2,          # 馬連: top2のみ
     "wide_top_n": 2,              # ワイド: top2のみ
+    "trio_top_n": 4,              # 3連複: top4（4点買い。top3=1点は的中率低すぎ）
     "skip_classes": [4, 6],       # 2勝+OP除外（全券種改善）
     "top_n": 3,
     "use_calibration": True,      # Isotonic校正（必須）

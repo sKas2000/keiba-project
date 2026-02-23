@@ -362,6 +362,7 @@ def simulate_bets(prepared: dict,
                   skip_classes: list = None,
                   quinella_top_n: int = 0,
                   wide_top_n: int = 0,
+                  trio_top_n: int = 0,
                   ) -> dict:
     """賭けシミュレーション（prepare済みデータに対して実行）
 
@@ -371,6 +372,7 @@ def simulate_bets(prepared: dict,
         skip_classes: スキップするクラスコードのリスト（例: [5] で3勝クラスを除外）
         quinella_top_n: 馬連用top_n（0でtop_nを使用）
         wide_top_n: ワイド用top_n（0でtop_nを使用）
+        trio_top_n: 3連複用top_n（0でtop_nを使用）
         他のパラメータはrun_backtestと同一
     """
     val_df = prepared["val_df"]
@@ -484,7 +486,7 @@ def simulate_bets(prepared: dict,
                 continue
 
         # 馬番と着順の取得（券種別top_nの最大値を使用）
-        effective_top = max(top_n, quinella_top_n, wide_top_n)
+        effective_top = max(top_n, quinella_top_n, wide_top_n, trio_top_n)
         top_horses = race_group.head(effective_top)
         horse_numbers = top_horses["horse_number"].values if "horse_number" in top_horses.columns else []
         finish_positions = top_horses["finish_position"].values
@@ -643,8 +645,9 @@ def simulate_bets(prepared: dict,
                         _record_bet(results, month_key, "exacta", 100, hit, payout)
 
         # --- 3連複シミュレーション（top_n=3 の場合1点、順不同） ---
+        t_top = trio_top_n if trio_top_n > 0 else top_n
         if len(horse_numbers_multi) >= 3:
-            for idx_trio in combinations(range(min(top_n, len(top_horses_multi))), 3):
+            for idx_trio in combinations(range(min(t_top, len(top_horses_multi))), 3):
                 i, j, k = idx_trio
                 nums = [
                     top_horses_multi.iloc[i].get("horse_number", 0),
@@ -748,6 +751,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  skip_classes: list = None,
                  quinella_top_n: int = 0,
                  wide_top_n: int = 0,
+                 trio_top_n: int = 0,
                  _prepared: dict = None,
                  surface_split: bool = False,
                  ) -> dict:
@@ -775,6 +779,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         skip_classes=skip_classes,
         quinella_top_n=quinella_top_n,
         wide_top_n=wide_top_n,
+        trio_top_n=trio_top_n,
     )
 
 

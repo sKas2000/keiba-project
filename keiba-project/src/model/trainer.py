@@ -2,9 +2,12 @@
 モデル学習モジュール
 LightGBM 二値分類 + 勝率直接推定 + ランキング（LambdaRank）
 + Platt Scaling / Isotonic Regression キャリブレーション
++ 自動再学習（Expanding Window本番展開）
 """
 import json
 import pickle
+import shutil
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -768,3 +771,255 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
 
         print(f"\n  [OK] 学習完了")
         print(f"  モデル出力: {MODEL_DIR}")
+
+
+# ============================================================
+# 自動再学習（Expanding Window本番展開）
+# ============================================================
+
+def _get_version_tag() -> str:
+    """現在日時からバージョンタグを生成"""
+    return f"v{datetime.now().strftime('%Y%m%d')}"
+
+
+def _list_model_versions(model_dir: Path = None) -> list:
+    """バージョンディレクトリ一覧を古い順に返す"""
+    model_dir = model_dir or MODEL_DIR
+    versions = []
+    for d in model_dir.iterdir():
+        if d.is_dir() and d.name.startswith("v") and len(d.name) == 9:
+            # v20260223 形式
+            if (d / "binary_model.txt").exists():
+                versions.append(d.name)
+    return sorted(versions)
+
+
+def get_active_model_dir(model_dir: Path = None) -> Path:
+    """アクティブなモデルディレクトリを返す
+
+    優先順位:
+    1. active_version.txt で指定されたバージョン
+    2. MODEL_DIR 直下（後方互換）
+    """
+    model_dir = model_dir or MODEL_DIR
+    version_file = model_dir / "active_version.txt"
+    if version_file.exists():
+        version = version_file.read_text(encoding="utf-8").strip()
+        versioned_dir = model_dir / version
+        if (versioned_dir / "binary_model.txt").exists():
+            return versioned_dir
+    return model_dir
+
+
+def retrain(input_path: str = None, calibration_pct: float = 0.10,
+            keep_versions: int = 3) -> Path | None:
+    """Expanding Window方式の自動再学習
+
+    全データを使い、末尾calibration_pctをキャリブレーション用に分割。
+    expanding_window_backtest()のインライン学習と同一ロジックで
+    binary + win + Isotonic校正を学習し、バージョン付きディレクトリに保存。
+
+    Args:
+        input_path: features.csv パス（Noneでデフォルト）
+        calibration_pct: キャリブレーション用データ割合（0.10 = 直近10%）
+        keep_versions: 保持するモデルバージョン数（古いものを自動削除）
+
+    Returns:
+        保存先ディレクトリ (Path) or None
+    """
+    input_path = input_path or str(PROCESSED_DIR / "features.csv")
+
+    print(f"\n{'═' * 60}")
+    print(f"  [自動再学習] Expanding Window方式")
+    print(f"{'═' * 60}")
+
+    # --- データ読み込み ---
+    print(f"\n[1/5] データ読み込み: {input_path}")
+    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
+    df["race_date"] = pd.to_datetime(df["race_date"])
+    print(f"  全体: {len(df)}行, {df['race_id'].nunique()}レース")
+
+    # フィルタ（expanding_window_backtestと同一条件）
+    pre_filter = len(df)
+    if "race_class_code" in df.columns:
+        df = df[df["race_class_code"] != 1]  # 新馬除外
+    if "surface_code" in df.columns:
+        df = df[df["surface_code"] != 2]  # 障害除外
+    if "num_entries" in df.columns:
+        df = df[df["num_entries"] >= 6]  # 少頭数除外
+    filtered = pre_filter - len(df)
+    if filtered > 0:
+        print(f"  [フィルタ] {filtered}行除外（新馬/障害/少頭数）→ {len(df)}行")
+
+    date_range = f"{df['race_date'].min().strftime('%Y-%m-%d')} ～ {df['race_date'].max().strftime('%Y-%m-%d')}"
+    print(f"  データ期間: {date_range}")
+
+    # --- Train / Cal 分割（日付ベース） ---
+    print(f"\n[2/5] データ分割（calibration_pct={calibration_pct:.0%}）")
+    available = [c for c in FEATURE_COLUMNS if c in df.columns]
+    cat_indices = _get_categorical_indices(available)
+
+    train_dates = np.sort(df["race_date"].unique())
+    cal_idx = int(len(train_dates) * (1 - calibration_pct))
+    cal_split_date = train_dates[cal_idx]
+
+    train_df = df[df["race_date"] < cal_split_date].copy()
+    cal_df = df[df["race_date"] >= cal_split_date].copy()
+
+    print(f"  学習: {len(train_df)}行 ({train_df['race_date'].min().strftime('%Y-%m-%d')} ～ "
+          f"{train_df['race_date'].max().strftime('%Y-%m-%d')})")
+    print(f"  校正: {len(cal_df)}行 ({cal_df['race_date'].min().strftime('%Y-%m-%d')} ～ "
+          f"{cal_df['race_date'].max().strftime('%Y-%m-%d')})")
+
+    if len(train_df) < 1000 or len(cal_df) < 200:
+        print("[ERROR] データ量が不足しています（学習>=1000, 校正>=200 必要）")
+        return None
+
+    # --- バージョンディレクトリ作成 ---
+    version_tag = _get_version_tag()
+    output_dir = MODEL_DIR / version_tag
+    output_dir.mkdir(parents=True, exist_ok=True)
+    print(f"\n  出力先: {output_dir}")
+
+    X_train = train_df[available].values.astype(np.float32)
+    X_cal = cal_df[available].values.astype(np.float32)
+    y_train_top3 = train_df["top3"].values
+    y_train_win = (train_df["finish_position"] == 1).astype(int).values
+    y_cal_top3 = cal_df["top3"].values
+    y_cal_win = (cal_df["finish_position"] == 1).astype(int).values
+
+    quiet_cb = [lgb.log_evaluation(100), lgb.early_stopping(50)]
+
+    # --- Binary Model ---
+    print(f"\n[3/5] 二値分類モデル（3着以内予測）")
+    bp = DEFAULT_BINARY_PARAMS.copy()
+    d_tr = lgb.Dataset(X_train, label=y_train_top3, feature_name=available,
+                       categorical_feature=cat_indices if cat_indices else "auto")
+    d_cal = lgb.Dataset(X_cal, label=y_cal_top3, feature_name=available, reference=d_tr)
+    binary_model = lgb.train(bp, d_tr, num_boost_round=1000,
+                             valid_sets=[d_tr, d_cal], valid_names=["train", "cal"],
+                             callbacks=quiet_cb)
+
+    # Binary metrics on cal set
+    raw_binary = binary_model.predict(X_cal)
+    binary_auc = roc_auc_score(y_cal_top3, raw_binary)
+    binary_logloss = log_loss(y_cal_top3, raw_binary)
+    binary_acc = accuracy_score(y_cal_top3, (raw_binary >= 0.5).astype(int))
+    binary_metrics = {
+        "auc": round(binary_auc, 4),
+        "logloss": round(binary_logloss, 4),
+        "accuracy": round(binary_acc, 4),
+        "num_iterations": binary_model.best_iteration,
+        "train_size": len(X_train),
+        "cal_size": len(X_cal),
+    }
+    print(f"  AUC:        {binary_metrics['auc']}")
+    print(f"  LogLoss:    {binary_metrics['logloss']}")
+    print(f"  Iterations: {binary_metrics['num_iterations']}")
+    save_model(binary_model, binary_metrics, available, "binary", output_dir)
+
+    fi = get_feature_importance(binary_model, available)
+    print(f"\n  [特徴量重要度 Top10]")
+    for _, row in fi.head(10).iterrows():
+        print(f"    {row['feature']:30s} {row['importance_pct']:5.1f}%")
+
+    # Isotonic Calibration for binary
+    iso_binary = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+    iso_binary.fit(raw_binary, y_cal_top3)
+    iso_path = output_dir / "binary_isotonic.pkl"
+    with open(iso_path, "wb") as f:
+        pickle.dump(iso_binary, f)
+    cal_probs = iso_binary.predict(raw_binary)
+    raw_brier = brier_score_loss(y_cal_top3, np.clip(raw_binary, 0, 1))
+    cal_brier = brier_score_loss(y_cal_top3, cal_probs)
+    improvement = (raw_brier - cal_brier) / raw_brier * 100 if raw_brier > 0 else 0
+    print(f"\n  [Isotonic Calibration (Binary)]")
+    print(f"    Brier (raw):        {raw_brier:.6f}")
+    print(f"    Brier (calibrated): {cal_brier:.6f}")
+    print(f"    改善: {improvement:.1f}%")
+
+    # --- Win Model ---
+    print(f"\n[4/5] 勝率直接推定モデル（1着予測）")
+    wp = DEFAULT_BINARY_PARAMS.copy()
+    wp["is_unbalance"] = True
+    d_tr_w = lgb.Dataset(X_train, label=y_train_win, feature_name=available,
+                         categorical_feature=cat_indices if cat_indices else "auto")
+    d_cal_w = lgb.Dataset(X_cal, label=y_cal_win, feature_name=available, reference=d_tr_w)
+    win_model = lgb.train(wp, d_tr_w, num_boost_round=1000,
+                          valid_sets=[d_tr_w, d_cal_w], valid_names=["train", "cal"],
+                          callbacks=quiet_cb)
+
+    raw_win = win_model.predict(X_cal)
+    win_auc = roc_auc_score(y_cal_win, raw_win)
+    win_metrics = {
+        "auc": round(win_auc, 4),
+        "num_iterations": win_model.best_iteration,
+        "train_size": len(X_train),
+        "cal_size": len(X_cal),
+        "positive_rate": round(float(y_cal_win.mean()), 4),
+    }
+    print(f"  AUC:        {win_metrics['auc']}")
+    print(f"  Iterations: {win_metrics['num_iterations']}")
+    print(f"  陽性率:     {win_metrics['positive_rate']}")
+    save_model(win_model, win_metrics, available, "win", output_dir)
+
+    # Isotonic Calibration for win
+    iso_win = IsotonicRegression(y_min=0.001, y_max=0.999, out_of_bounds='clip')
+    iso_win.fit(raw_win, y_cal_win)
+    iso_win_path = output_dir / "win_isotonic.pkl"
+    with open(iso_win_path, "wb") as f:
+        pickle.dump(iso_win, f)
+    cal_win = iso_win.predict(raw_win)
+    raw_brier_w = brier_score_loss(y_cal_win, np.clip(raw_win, 0, 1))
+    cal_brier_w = brier_score_loss(y_cal_win, cal_win)
+    improvement_w = (raw_brier_w - cal_brier_w) / raw_brier_w * 100 if raw_brier_w > 0 else 0
+    print(f"\n  [Isotonic Calibration (Win)]")
+    print(f"    Brier (raw):        {raw_brier_w:.6f}")
+    print(f"    Brier (calibrated): {cal_brier_w:.6f}")
+    print(f"    改善: {improvement_w:.1f}%")
+
+    # --- メタデータ保存 ---
+    print(f"\n[5/5] バージョン管理")
+    version_meta = {
+        "version": version_tag,
+        "created_at": datetime.now().isoformat(),
+        "data_range": date_range,
+        "train_rows": len(train_df),
+        "cal_rows": len(cal_df),
+        "cal_split_date": str(cal_split_date)[:10],
+        "calibration_pct": calibration_pct,
+        "binary_auc": binary_metrics["auc"],
+        "win_auc": win_metrics["auc"],
+        "feature_count": len(available),
+        "method": "expanding_window_retrain",
+    }
+    meta_path = output_dir / "version_meta.json"
+    with open(meta_path, "w", encoding="utf-8") as f:
+        json.dump(version_meta, f, ensure_ascii=False, indent=2)
+    print(f"  バージョンメタ: {meta_path}")
+
+    # active_version.txt 更新
+    active_path = MODEL_DIR / "active_version.txt"
+    active_path.write_text(version_tag, encoding="utf-8")
+    print(f"  アクティブバージョン: {version_tag}")
+
+    # 古いバージョン削除
+    versions = _list_model_versions()
+    if len(versions) > keep_versions:
+        to_delete = versions[:len(versions) - keep_versions]
+        for old_ver in to_delete:
+            old_dir = MODEL_DIR / old_ver
+            if old_dir.exists():
+                shutil.rmtree(old_dir)
+                print(f"  [削除] 古いバージョン: {old_ver}")
+
+    # 最終サマリー
+    all_versions = _list_model_versions()
+    print(f"\n{'═' * 60}")
+    print(f"  [完了] 自動再学習 {version_tag}")
+    print(f"  Binary AUC: {binary_metrics['auc']}  Win AUC: {win_metrics['auc']}")
+    print(f"  保存先: {output_dir}")
+    print(f"  保持バージョン数: {len(all_versions)} ({', '.join(all_versions)})")
+    print(f"{'═' * 60}")
+
+    return output_dir

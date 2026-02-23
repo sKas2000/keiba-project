@@ -55,6 +55,16 @@ def cmd_train(args):
     )
 
 
+def cmd_retrain(args):
+    """自動再学習（Expanding Window本番展開）"""
+    from src.pipeline import run_retrain_pipeline
+    run_retrain_pipeline(
+        input_path=args.input,
+        calibration_pct=args.calibration_pct,
+        keep_versions=args.keep,
+    )
+
+
 def cmd_backtest(args):
     """バックテスト"""
     from src.pipeline import run_backtest_pipeline
@@ -120,6 +130,12 @@ def cmd_verify_monitor(args):
     run_verify_monitor(date=args.date)
 
 
+def cmd_dashboard(args):
+    """ライブ検証ダッシュボード"""
+    from src.analysis.dashboard import run_dashboard
+    run_dashboard()
+
+
 def main():
     setup_encoding()
     setup_logging()
@@ -163,6 +179,13 @@ def main():
     p_train.add_argument("--tune", action="store_true", help="Optuna最適化")
     p_train.add_argument("--surface-split", action="store_true", help="芝・ダート別モデル学習（障害除外）")
     p_train.set_defaults(func=cmd_train)
+
+    # retrain: 自動再学習（Expanding Window本番展開）
+    p_rt = sub.add_parser("retrain", help="自動再学習（Expanding Window方式、バージョン管理付き）")
+    p_rt.add_argument("--input", help="特徴量CSV")
+    p_rt.add_argument("--calibration-pct", type=float, default=0.10, help="キャリブレーション用データ割合（デフォルト10%%）")
+    p_rt.add_argument("--keep", type=int, default=3, help="保持するモデルバージョン数（デフォルト3）")
+    p_rt.set_defaults(func=cmd_retrain)
 
     # backtest: バックテスト
     p_bt = sub.add_parser("backtest", help="バックテスト実行")
@@ -215,6 +238,10 @@ def main():
     p_vm = sub.add_parser("verify-monitor", help="モニター予測の事後検証（実結果と照合）")
     p_vm.add_argument("--date", help="対象日（YYYYMMDD）。省略で最新日")
     p_vm.set_defaults(func=cmd_verify_monitor)
+
+    # dashboard: ライブ検証ダッシュボード
+    p_db = sub.add_parser("dashboard", help="ライブ検証ダッシュボード（月次ROI + モデルバージョン）")
+    p_db.set_defaults(func=cmd_dashboard)
 
     args = parser.parse_args()
     if not args.command:

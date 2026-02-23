@@ -43,12 +43,23 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
     binary_model: 3着以内確率（ソート・スコア用）
     win_model: 勝率直接推定（EV計算のwin_prob用）
     Isotonic校正があればPlatt Scalingより優先
-    芝・ダート分離モデルが存在すればそちらを優先使用
+    モデル読み込み優先順位:
+      1. active_version.txt で指定されたバージョン
+      2. 芝・ダート分離モデル（turf/dirt）
+      3. MODEL_DIR 直下（後方互換）
     """
     import lightgbm as lgb
     from src.data.feature_extract import extract_features_from_enriched
+    from src.model.trainer import get_active_model_dir
 
     model_dir = model_dir or MODEL_DIR
+
+    # バージョン管理: active_version.txt があればそちらを優先
+    active_dir = get_active_model_dir(model_dir)
+    if active_dir != model_dir:
+        print(f"  [モデルバージョン] {active_dir.name} 使用")
+        model_dir = active_dir
+
     model_dir = _resolve_model_dir(data, model_dir)
     binary_model_path = model_dir / "binary_model.txt"
     if not binary_model_path.exists():
