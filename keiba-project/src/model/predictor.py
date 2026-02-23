@@ -13,17 +13,43 @@ from config.settings import FEATURE_COLUMNS, MODEL_DIR
 # ML 予測
 # ============================================================
 
+def _resolve_model_dir(data: dict, base_dir: Path) -> Path:
+    """レースの馬場種別に応じてモデルディレクトリを決定
+
+    models/turf/ or models/dirt/ が存在すればそちらを使用、
+    なければ base_dir（統合モデル）にフォールバック。
+    """
+    surface = None
+    race_info = data.get("race_info", data.get("race", {}))
+    surface_raw = race_info.get("surface", "")
+    if surface_raw:
+        if "芝" in surface_raw:
+            surface = "turf"
+        elif "ダ" in surface_raw:
+            surface = "dirt"
+
+    if surface:
+        surface_dir = base_dir / surface
+        if (surface_dir / "binary_model.txt").exists():
+            print(f"  [モデル選択] {surface}モデル使用: {surface_dir}")
+            return surface_dir
+
+    return base_dir
+
+
 def score_ml(data: dict, model_dir: Path = None) -> dict | None:
     """ML モデルで予測してスコア付与
 
     binary_model: 3着以内確率（ソート・スコア用）
     win_model: 勝率直接推定（EV計算のwin_prob用）
     Isotonic校正があればPlatt Scalingより優先
+    芝・ダート分離モデルが存在すればそちらを優先使用
     """
     import lightgbm as lgb
     from src.data.feature_extract import extract_features_from_enriched
 
     model_dir = model_dir or MODEL_DIR
+    model_dir = _resolve_model_dir(data, model_dir)
     binary_model_path = model_dir / "binary_model.txt"
     if not binary_model_path.exists():
         print(f"[WARN] モデル未学習: {binary_model_path}")

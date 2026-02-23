@@ -188,6 +188,54 @@ def _empty_bet_stats():
     return {"count": 0, "invested": 0, "returned": 0, "hits": 0}
 
 
+def _predict_with_model(val_df: pd.DataFrame, model_dir: Path) -> tuple:
+    """指定ディレクトリのモデルで予測を付与。(val_df, has_win_model, has_ranking, calibrator) を返す"""
+    from src.model.trainer import (
+        load_calibrator, calibrate_probs,
+        load_isotonic_calibrator, calibrate_isotonic,
+    )
+
+    binary_model_path = model_dir / "binary_model.txt"
+    if not binary_model_path.exists():
+        return None, False, False, None
+
+    model = lgb.Booster(model_file=str(binary_model_path))
+
+    available = [c for c in FEATURE_COLUMNS if c in val_df.columns]
+    X_val = val_df[available].values.astype(np.float32)
+    raw_probs = model.predict(X_val)
+
+    # Platt Scaling キャリブレーション（利用可能な場合）
+    calibrator = load_calibrator(model_dir)
+    if calibrator is not None:
+        val_df["pred_prob"] = calibrate_probs(raw_probs, calibrator)
+    else:
+        val_df["pred_prob"] = raw_probs
+
+    # 勝率直接推定モデル（利用可能な場合）
+    win_model_path = model_dir / "win_model.txt"
+    has_win_model = False
+    if win_model_path.exists():
+        win_model = lgb.Booster(model_file=str(win_model_path))
+        win_raw = win_model.predict(X_val)
+        win_iso = load_isotonic_calibrator("win_isotonic", model_dir)
+        if win_iso is not None:
+            val_df["win_prob_direct"] = calibrate_isotonic(win_raw, win_iso)
+        else:
+            val_df["win_prob_direct"] = win_raw
+        has_win_model = True
+
+    # ランキングモデル（アンサンブル用）
+    ranking_model_path = model_dir / "ranking_model.txt"
+    has_ranking = False
+    if ranking_model_path.exists():
+        ranking_model = lgb.Booster(model_file=str(ranking_model_path))
+        val_df["rank_score"] = ranking_model.predict(X_val)
+        has_ranking = True
+
+    return val_df, has_win_model, has_ranking, calibrator
+
+
 def prepare_backtest_data(input_path: str = None, model_dir: Path = None,
                           returns_path: str = None,
                           val_start: str = "2025-01-01",
@@ -195,8 +243,12 @@ def prepare_backtest_data(input_path: str = None, model_dir: Path = None,
                           exclude_newcomer: bool = True,
                           exclude_hurdle: bool = True,
                           min_entries: int = 6,
+                          surface_split: bool = False,
                           ) -> dict | None:
     """バックテストのデータ準備（CSV読込・モデル予測・キャリブレーション）
+
+    Args:
+        surface_split: True の場合、芝・ダート別モデルで予測
 
     Returns:
         dict with keys: val_df, returns, has_win_model, has_ranking, calibrator
@@ -228,46 +280,58 @@ def prepare_backtest_data(input_path: str = None, model_dir: Path = None,
         print("[ERROR] 検証期間のデータがありません")
         return None
 
-    binary_model_path = model_dir / "binary_model.txt"
-    if not binary_model_path.exists():
-        print(f"[ERROR] モデルが見つかりません: {binary_model_path}")
-        return None
+    if surface_split and "surface_code" in val_df.columns:
+        # 芝・ダート別モデルで予測し結合
+        turf_dir = model_dir / "turf"
+        dirt_dir = model_dir / "dirt"
 
-    model = lgb.Booster(model_file=str(binary_model_path))
+        if not (turf_dir / "binary_model.txt").exists():
+            print(f"[ERROR] 芝モデルが見つかりません: {turf_dir}")
+            return None
+        if not (dirt_dir / "binary_model.txt").exists():
+            print(f"[ERROR] ダートモデルが見つかりません: {dirt_dir}")
+            return None
 
-    available = [c for c in FEATURE_COLUMNS if c in val_df.columns]
-    X_val = val_df[available].values.astype(np.float32)
-    raw_probs = model.predict(X_val)
+        turf_df = val_df[val_df["surface_code"] == 0].copy()
+        dirt_df = val_df[val_df["surface_code"] == 1].copy()
 
-    # Platt Scaling キャリブレーション（利用可能な場合）
-    from src.model.trainer import load_calibrator, calibrate_probs
-    calibrator = load_calibrator(model_dir)
-    if calibrator is not None:
-        val_df["pred_prob"] = calibrate_probs(raw_probs, calibrator)
-    else:
-        val_df["pred_prob"] = raw_probs
+        print(f"  [芝・ダート分離予測] 芝={len(turf_df)}行, ダート={len(dirt_df)}行")
 
-    # Phase 3: 勝率直接推定モデル（利用可能な場合）
-    win_model_path = model_dir / "win_model.txt"
-    has_win_model = False
-    if win_model_path.exists():
-        from src.model.trainer import load_isotonic_calibrator, calibrate_isotonic
-        win_model = lgb.Booster(model_file=str(win_model_path))
-        win_raw = win_model.predict(X_val)
-        win_iso = load_isotonic_calibrator("win_isotonic", model_dir)
-        if win_iso is not None:
-            val_df["win_prob_direct"] = calibrate_isotonic(win_raw, win_iso)
-        else:
-            val_df["win_prob_direct"] = win_raw
+        parts = []
         has_win_model = True
-
-    # Phase 4-4: ランキングモデル（アンサンブル用）
-    ranking_model_path = model_dir / "ranking_model.txt"
-    has_ranking = False
-    if ranking_model_path.exists():
-        ranking_model = lgb.Booster(model_file=str(ranking_model_path))
-        val_df["rank_score"] = ranking_model.predict(X_val)
         has_ranking = True
+        calibrator = None
+
+        if len(turf_df) > 0:
+            turf_result, t_win, t_rank, t_cal = _predict_with_model(turf_df, turf_dir)
+            if turf_result is None:
+                print("[ERROR] 芝モデルの予測に失敗")
+                return None
+            parts.append(turf_result)
+            has_win_model &= t_win
+            has_ranking &= t_rank
+
+        if len(dirt_df) > 0:
+            dirt_result, d_win, d_rank, d_cal = _predict_with_model(dirt_df, dirt_dir)
+            if dirt_result is None:
+                print("[ERROR] ダートモデルの予測に失敗")
+                return None
+            parts.append(dirt_result)
+            has_win_model &= d_win
+            has_ranking &= d_rank
+
+        val_df = pd.concat(parts, ignore_index=False).sort_values(["race_date", "race_id", "horse_number"])
+    else:
+        # 統合モデルで予測（従来動作）
+        binary_model_path = model_dir / "binary_model.txt"
+        if not binary_model_path.exists():
+            print(f"[ERROR] モデルが見つかりません: {binary_model_path}")
+            return None
+
+        val_df, has_win_model, has_ranking, calibrator = _predict_with_model(val_df, model_dir)
+        if val_df is None:
+            print(f"[ERROR] モデルの予測に失敗")
+            return None
 
     # 払い戻しデータ読み込み
     returns = _load_returns(returns_path)
@@ -674,6 +738,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  quinella_top_n: int = 0,
                  wide_top_n: int = 0,
                  _prepared: dict = None,
+                 surface_split: bool = False,
                  ) -> dict:
     """全券種対応EVフィルタ付きバックテスト（後方互換ラッパー）
 
@@ -684,7 +749,7 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
             input_path=input_path, model_dir=model_dir,
             returns_path=returns_path, val_start=val_start, val_end=val_end,
             exclude_newcomer=exclude_newcomer, exclude_hurdle=exclude_hurdle,
-            min_entries=min_entries,
+            min_entries=min_entries, surface_split=surface_split,
         )
         if _prepared is None:
             return {}

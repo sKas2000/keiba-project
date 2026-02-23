@@ -189,10 +189,11 @@ async def run_ml_pipeline(
 # ============================================================
 
 def run_train_pipeline(input_path: str = None, val_start: str = "2025-01-01",
-                       tune: bool = False):
+                       tune: bool = False, surface_split: bool = False):
     """ML学習パイプライン"""
     from src.model.trainer import train_all
-    train_all(input_path=input_path, val_start=val_start, tune=tune)
+    train_all(input_path=input_path, val_start=val_start, tune=tune,
+              surface_split=surface_split)
 
 
 # ============================================================
@@ -224,7 +225,8 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           odds_max: float = 0.0,
                           axis_flow: bool = False,
                           kelly_fraction: float = 0.0,
-                          analyze_cond: bool = False):
+                          analyze_cond: bool = False,
+                          surface_split: bool = False):
     """バックテストパイプライン"""
     from src.model.evaluator import run_backtest
     from src.model.optimization import (
@@ -291,6 +293,7 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
         odds_max=odds_max,
         axis_flow=axis_flow,
         kelly_fraction=kelly_fraction,
+        surface_split=surface_split,
     )
     print_backtest_report(results)
 

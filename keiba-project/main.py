@@ -51,6 +51,7 @@ def cmd_train(args):
         input_path=args.input,
         val_start=args.val_start,
         tune=args.tune,
+        surface_split=args.surface_split,
     )
 
 
@@ -76,6 +77,7 @@ def cmd_backtest(args):
         axis_flow=getattr(args, "axis_flow", False),
         kelly_fraction=getattr(args, "kelly", 0.0),
         analyze_cond=getattr(args, "analyze_cond", False),
+        surface_split=getattr(args, "surface_split", False),
     )
 
 
@@ -159,6 +161,7 @@ def main():
     p_train.add_argument("--input", help="特徴量CSV")
     p_train.add_argument("--val-start", default="2025-01-01", help="検証開始日")
     p_train.add_argument("--tune", action="store_true", help="Optuna最適化")
+    p_train.add_argument("--surface-split", action="store_true", help="芝・ダート別モデル学習（障害除外）")
     p_train.set_defaults(func=cmd_train)
 
     # backtest: バックテスト
@@ -181,6 +184,7 @@ def main():
     p_bt.add_argument("--axis-flow", action="store_true", help="馬単・3連単をTop1軸流しに変更")
     p_bt.add_argument("--kelly", type=float, default=0.0, help="Kelly基準の割合（0=均一賭け、0.25=1/4 Kelly推奨）")
     p_bt.add_argument("--analyze-cond", action="store_true", help="条件別分析（クラス・馬場・距離別ROI）")
+    p_bt.add_argument("--surface-split", action="store_true", help="芝・ダート分離モデルでバックテスト")
     p_bt.set_defaults(func=cmd_backtest)
 
     # collect: レース結果収集

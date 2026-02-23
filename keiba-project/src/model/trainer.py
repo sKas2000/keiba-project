@@ -637,40 +637,21 @@ def load_model(model_type: str = "binary", model_dir: Path = None) -> tuple:
 # 学習実行
 # ============================================================
 
-def train_all(input_path: str = None, val_start: str = "2025-01-01",
-              tune: bool = False):
-    """全モデルを学習"""
-    input_path = input_path or str(PROCESSED_DIR / "features.csv")
-
-    print(f"\n[データ読み込み] {input_path}")
-    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
-    df["race_date"] = pd.to_datetime(df["race_date"])
-    print(f"  全体: {len(df)}行, {df['race_id'].nunique()}レース")
-
-    train_df, val_df = time_based_split(df, val_start)
-    print(f"  学習: {len(train_df)}行 (~{val_start})")
-    print(f"  検証: {len(val_df)}行 ({val_start}~)")
-
-    if len(train_df) == 0 or len(val_df) == 0:
-        print("[ERROR] 学習/検証データが空です")
-        return
-
-    available_features = [c for c in FEATURE_COLUMNS if c in df.columns]
-
-    binary_params = DEFAULT_BINARY_PARAMS.copy()
-    if tune:
-        print(f"\n[Optuna最適化] 50試行")
-        binary_params = optimize_hyperparams(train_df, val_df)
+def _train_single(train_df: pd.DataFrame, val_df: pd.DataFrame,
+                  available_features: list, output_dir: Path,
+                  binary_params: dict, label: str = ""):
+    """単一馬場のモデル学習（binary + win + calibration + ranking）"""
+    prefix = f"[{label}] " if label else ""
 
     # 二値分類モデル
     print(f"\n{'─' * 40}")
-    print(f"[二値分類モデル]")
+    print(f"{prefix}[二値分類モデル]")
     binary_model, binary_metrics = train_binary_model(train_df, val_df, binary_params)
     print(f"  AUC:        {binary_metrics['auc']}")
     print(f"  LogLoss:    {binary_metrics['logloss']}")
     print(f"  Accuracy:   {binary_metrics['accuracy']}")
     print(f"  Top3的中率: {binary_metrics['top3_hit_rate']}")
-    save_model(binary_model, binary_metrics, available_features, "binary")
+    save_model(binary_model, binary_metrics, available_features, "binary", output_dir)
 
     fi = get_feature_importance(binary_model, available_features)
     print(f"\n  [特徴量重要度 Top10]")
@@ -679,19 +660,19 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
 
     # Platt Scaling キャリブレーション
     print(f"\n{'─' * 40}")
-    print(f"[Platt Scaling キャリブレーション]")
-    fit_calibrator(binary_model, val_df)
+    print(f"{prefix}[Platt Scaling キャリブレーション]")
+    fit_calibrator(binary_model, val_df, model_dir=output_dir)
 
     # 勝率直接推定モデル
     print(f"\n{'─' * 40}")
-    print(f"[勝率直接推定モデル（1着予測）]")
+    print(f"{prefix}[勝率直接推定モデル（1着予測）]")
     win_params = binary_params.copy()
     win_model, win_metrics = train_win_model(train_df, val_df, win_params)
     print(f"  AUC:        {win_metrics['auc']}")
     print(f"  LogLoss:    {win_metrics['logloss']}")
     print(f"  Top1的中率: {win_metrics['top1_hit_rate']}")
     print(f"  陽性率:     {win_metrics['positive_rate']}")
-    save_model(win_model, win_metrics, available_features, "win")
+    save_model(win_model, win_metrics, available_features, "win", output_dir)
 
     fi_win = get_feature_importance(win_model, available_features)
     print(f"\n  [特徴量重要度 Top10 (Win)]")
@@ -700,19 +681,90 @@ def train_all(input_path: str = None, val_start: str = "2025-01-01",
 
     # CV-Isotonic Regression キャリブレーション（リーク無し）
     print(f"\n{'─' * 40}")
-    print(f"[CV-Isotonic Regression キャリブレーション（Train OOF）]")
+    print(f"{prefix}[CV-Isotonic Regression キャリブレーション（Train OOF）]")
     fit_isotonic_cv(train_df, binary_params, target="top3",
-                    save_name="binary_isotonic", model_dir=MODEL_DIR)
+                    save_name="binary_isotonic", model_dir=output_dir)
     win_cv_params = binary_params.copy()
     fit_isotonic_cv(train_df, win_cv_params, target="win",
-                    save_name="win_isotonic", model_dir=MODEL_DIR)
+                    save_name="win_isotonic", model_dir=output_dir)
 
     # ランキングモデル
     print(f"\n{'─' * 40}")
-    print(f"[ランキングモデル]")
+    print(f"{prefix}[ランキングモデル]")
     rank_model, rank_metrics = train_ranking_model(train_df, val_df)
     print(f"  Top3的中率: {rank_metrics['top3_hit_rate']}")
-    save_model(rank_model, rank_metrics, available_features, "ranking")
+    save_model(rank_model, rank_metrics, available_features, "ranking", output_dir)
 
-    print(f"\n  [OK] 学習完了")
-    print(f"  モデル出力: {MODEL_DIR}")
+
+def train_all(input_path: str = None, val_start: str = "2025-01-01",
+              tune: bool = False, surface_split: bool = False):
+    """全モデルを学習
+
+    Args:
+        surface_split: True の場合、芝・ダート別にモデルを学習（障害は除外）
+    """
+    input_path = input_path or str(PROCESSED_DIR / "features.csv")
+
+    print(f"\n[データ読み込み] {input_path}")
+    df = pd.read_csv(input_path, dtype={"race_id": str, "horse_id": str})
+    df["race_date"] = pd.to_datetime(df["race_date"])
+    print(f"  全体: {len(df)}行, {df['race_id'].nunique()}レース")
+
+    if surface_split:
+        # 障害レース除外
+        if "surface_code" in df.columns:
+            n_hurdle = len(df[df["surface_code"] == 2])
+            df = df[df["surface_code"] != 2].copy()
+            if n_hurdle > 0:
+                print(f"  [フィルタ] 障害レース {n_hurdle}行を除外")
+
+        available_features = [c for c in FEATURE_COLUMNS if c in df.columns]
+
+        binary_params = DEFAULT_BINARY_PARAMS.copy()
+        if tune:
+            print(f"\n[Optuna最適化] 芝データで50試行")
+            turf_df = df[df["surface_code"] == 0]
+            t_train, t_val = time_based_split(turf_df, val_start)
+            binary_params = optimize_hyperparams(t_train, t_val)
+
+        for surface_code, surface_name, subdir in [(0, "芝", "turf"), (1, "ダート", "dirt")]:
+            surface_df = df[df["surface_code"] == surface_code].copy()
+            print(f"\n{'═' * 50}")
+            print(f"[{surface_name}モデル] {len(surface_df)}行, {surface_df['race_id'].nunique()}レース")
+            print(f"{'═' * 50}")
+
+            train_df, val_df = time_based_split(surface_df, val_start)
+            print(f"  学習: {len(train_df)}行 (~{val_start})")
+            print(f"  検証: {len(val_df)}行 ({val_start}~)")
+
+            if len(train_df) == 0 or len(val_df) == 0:
+                print(f"[ERROR] {surface_name}: 学習/検証データが空です")
+                continue
+
+            output_dir = MODEL_DIR / subdir
+            _train_single(train_df, val_df, available_features, output_dir,
+                          binary_params, label=surface_name)
+
+        print(f"\n  [OK] 芝・ダート分離学習完了")
+        print(f"  モデル出力: {MODEL_DIR / 'turf'}, {MODEL_DIR / 'dirt'}")
+    else:
+        train_df, val_df = time_based_split(df, val_start)
+        print(f"  学習: {len(train_df)}行 (~{val_start})")
+        print(f"  検証: {len(val_df)}行 ({val_start}~)")
+
+        if len(train_df) == 0 or len(val_df) == 0:
+            print("[ERROR] 学習/検証データが空です")
+            return
+
+        available_features = [c for c in FEATURE_COLUMNS if c in df.columns]
+
+        binary_params = DEFAULT_BINARY_PARAMS.copy()
+        if tune:
+            print(f"\n[Optuna最適化] 50試行")
+            binary_params = optimize_hyperparams(train_df, val_df)
+
+        _train_single(train_df, val_df, available_features, MODEL_DIR,
+                      binary_params)
+
+        print(f"\n  [OK] 学習完了")
+        print(f"  モデル出力: {MODEL_DIR}")
