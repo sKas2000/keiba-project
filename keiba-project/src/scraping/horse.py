@@ -141,12 +141,26 @@ class HorseScraper(BaseScraper):
                     result_table = table
                     header_map = {}
                     keyword_map = {
+                        # 既存フィールド
                         "日付": "date", "開催": "venue", "競馬場": "venue",
                         "レース名": "race", "距離": "distance", "馬場": "surface",
                         "着順": "finish", "騎手": "jockey", "タイム": "time",
                         "着差": "margin", "上がり": "last3f", "上り": "last3f",
                         "通過": "position",
                         "タイム指数": "time_index",  # プレミアム会員時のみ表示
+
+                        # スーパープレミアム追加フィールド
+                        "ペース": "pace",           # 37.4-39.6形式
+                        "オッズ": "odds",
+                        "人気": "popularity",
+                        "斤量": "weight_carried",
+                        "馬体重": "horse_weight",    # 465(-1)形式
+                        "頭数": "horse_count",
+                        "賞金": "prize_money",
+                        "天気": "weather",
+                        "枠番": "gate_number",
+                        "馬番": "horse_number",
+                        "R": "race_number",
                     }
                     for i, h in enumerate(headers):
                         for keyword, key in keyword_map.items():
@@ -163,7 +177,7 @@ class HorseScraper(BaseScraper):
                 rows = await result_table.locator("tr").all()
                 rows = [r for r in rows if await r.locator("th").count() == 0]
 
-            for row_idx, row in enumerate(rows[:4]):
+            for row_idx, row in enumerate(rows[:10]):  # 4走 → 10走に拡大
                 cells = await row.locator("td").all()
                 if len(cells) < 5:
                     continue
@@ -174,11 +188,23 @@ class HorseScraper(BaseScraper):
                     cell_texts.append(text.strip() if text else "")
 
                 race_data = {
+                    # 既存フィールド
                     "date": "", "venue": "", "race": "",
                     "distance": "", "surface": "", "finish": 0,
                     "jockey_name": "", "jockey_id": "",
                     "margin": "", "time": "", "last3f": "", "position": "",
                     "time_index": "",  # タイム指数（プレミアム会員時のみ）
+
+                    # スーパープレミアム追加フィールド
+                    "pace_front": "", "pace_back": "",  # ペースを分割
+                    "odds": "", "popularity": "",
+                    "weight_carried": "",
+                    "weight": "", "weight_change": "",  # 馬体重を分割
+                    "horse_count": "",
+                    "prize_money": "",
+                    "weather": "",
+                    "gate_number": "", "horse_number": "",
+                    "race_number": "",
                 }
 
                 if "date" in header_map and header_map["date"] < len(cell_texts):
@@ -225,6 +251,52 @@ class HorseScraper(BaseScraper):
                     race_data["position"] = cell_texts[header_map["position"]]
                 if "time_index" in header_map and header_map["time_index"] < len(cell_texts):
                     race_data["time_index"] = cell_texts[header_map["time_index"]]
+
+                # スーパープレミアム追加フィールドのパース
+                # ペース（37.4-39.6形式を分割）
+                if "pace" in header_map and header_map["pace"] < len(cell_texts):
+                    pace_text = cell_texts[header_map["pace"]]
+                    if "-" in pace_text:
+                        pace_parts = pace_text.split("-")
+                        race_data["pace_front"] = pace_parts[0].strip()
+                        race_data["pace_back"] = pace_parts[1].strip() if len(pace_parts) > 1 else ""
+
+                # オッズ・人気
+                if "odds" in header_map and header_map["odds"] < len(cell_texts):
+                    race_data["odds"] = cell_texts[header_map["odds"]]
+                if "popularity" in header_map and header_map["popularity"] < len(cell_texts):
+                    race_data["popularity"] = cell_texts[header_map["popularity"]]
+
+                # 斤量
+                if "weight_carried" in header_map and header_map["weight_carried"] < len(cell_texts):
+                    race_data["weight_carried"] = cell_texts[header_map["weight_carried"]]
+
+                # 馬体重（465(-1)形式を分割）
+                if "horse_weight" in header_map and header_map["horse_weight"] < len(cell_texts):
+                    weight_text = cell_texts[header_map["horse_weight"]]
+                    weight_match = re.match(r'(\d+)\(([+-]?\d+)\)', weight_text)
+                    if weight_match:
+                        race_data["weight"] = weight_match.group(1)
+                        race_data["weight_change"] = weight_match.group(2)
+                    else:
+                        # マッチしない場合は数値部分だけ抽出
+                        race_data["weight"] = re.sub(r'[^\d]', '', weight_text)
+
+                # 頭数・賞金
+                if "horse_count" in header_map and header_map["horse_count"] < len(cell_texts):
+                    race_data["horse_count"] = cell_texts[header_map["horse_count"]]
+                if "prize_money" in header_map and header_map["prize_money"] < len(cell_texts):
+                    race_data["prize_money"] = cell_texts[header_map["prize_money"]]
+
+                # 天気・枠番・馬番・R
+                if "weather" in header_map and header_map["weather"] < len(cell_texts):
+                    race_data["weather"] = cell_texts[header_map["weather"]]
+                if "gate_number" in header_map and header_map["gate_number"] < len(cell_texts):
+                    race_data["gate_number"] = cell_texts[header_map["gate_number"]]
+                if "horse_number" in header_map and header_map["horse_number"] < len(cell_texts):
+                    race_data["horse_number"] = cell_texts[header_map["horse_number"]]
+                if "race_number" in header_map and header_map["race_number"] < len(cell_texts):
+                    race_data["race_number"] = cell_texts[header_map["race_number"]]
 
                 if race_data["finish"] > 0 or race_data["date"]:
                     past_races.append(race_data)
