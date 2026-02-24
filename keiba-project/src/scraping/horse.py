@@ -361,8 +361,10 @@ class HorseScraper(BaseScraper):
     # ----------------------------------------------------------
 
     async def get_jockey_stats_by_id(self, jockey_id: str, jockey_name: str = "") -> dict:
-        if jockey_name and jockey_name in self.jockey_cache:
-            return self.jockey_cache[jockey_name]
+        # キャッシュキーは正規化した名前を使用（表記揺れ吸収）
+        cache_key = normalize_jockey_name(jockey_name) if jockey_name else ""
+        if cache_key and cache_key in self.jockey_cache:
+            return self.jockey_cache[cache_key]
 
         result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
         try:
@@ -370,8 +372,10 @@ class HorseScraper(BaseScraper):
             await self.page.goto(jockey_url, wait_until="domcontentloaded", timeout=30000)
             await asyncio.sleep(1.5)
             result = await self._parse_jockey_stats_from_page()
-            if jockey_name:
-                self.jockey_cache[jockey_name] = result
+            if result["races"] == 0:
+                logger.info("騎手成績が0件 (ID=%s, name=%s): ページ構造変更の可能性", jockey_id, jockey_name)
+            if cache_key:
+                self.jockey_cache[cache_key] = result
         except Exception as e:
             self.log(f"  [ERROR] 騎手成績取得エラー: {e}")
         return result
@@ -381,8 +385,10 @@ class HorseScraper(BaseScraper):
     # ----------------------------------------------------------
 
     async def search_jockey(self, jockey_name: str) -> dict:
-        if jockey_name in self.jockey_cache:
-            return self.jockey_cache[jockey_name]
+        # キャッシュキーは正規化した名前を使用（表記揺れ吸収）
+        cache_key = normalize_jockey_name(jockey_name)
+        if cache_key in self.jockey_cache:
+            return self.jockey_cache[cache_key]
 
         result = {"win_rate": 0.0, "place_rate": 0.0, "wins": 0, "races": 0}
 
@@ -408,7 +414,7 @@ class HorseScraper(BaseScraper):
                         break
 
                 if not jockey_form:
-                    self.jockey_cache[jockey_name] = result
+                    self.jockey_cache[cache_key] = result
                     return result
 
                 search_name = re.sub(r'[★▲△☆◇]', '', jockey_name)
@@ -450,14 +456,14 @@ class HorseScraper(BaseScraper):
                                     break
 
                     if not jockey_page_url:
-                        self.jockey_cache[jockey_name] = result
+                        self.jockey_cache[cache_key] = result
                         return result
 
                     await self.page.goto(jockey_page_url, wait_until="domcontentloaded")
                     await asyncio.sleep(1.5)
                     result = await self._parse_jockey_stats_from_page()
 
-                self.jockey_cache[jockey_name] = result
+                self.jockey_cache[cache_key] = result
                 return result
 
             except Exception as e:
@@ -465,7 +471,13 @@ class HorseScraper(BaseScraper):
                 if attempt < self.max_retries - 1:
                     await asyncio.sleep(self.retry_delay * (2 ** attempt))
 
-        self.jockey_cache[jockey_name] = result
+        if result["races"] == 0:
+            logger.info(
+                "騎手検索で成績取得不可 (name=%s): リーダーボード外またはページ構造変更。"
+                " results.csv のCSVルックアップにフォールバックします。",
+                jockey_name,
+            )
+        self.jockey_cache[cache_key] = result
         return result
 
 

@@ -34,11 +34,13 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                    "surface_win_rate", "surface_place_rate",
                    "distance_cat_win_rate",
                    "prev_margin_1", "prev_last3f_1",
-                   "distance_change", "running_style",
+                   "distance_change",
                    "avg_early_position_last5", "track_cond_place_rate",
                    "class_change", "weight_carried_change",
                    "prev_interval_2"]:
             row[k] = 0
+        # feature.py（CSV学習側）と統一: 通過順データなし → 1（先行）
+        row["running_style"] = 1
         row["days_since_last_race"] = 365
         return
 
@@ -155,7 +157,8 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
         else:
             row["running_style"] = 3  # 追込
     else:
-        row["running_style"] = 0
+        # feature.py（CSV学習側）と統一: 通過順データなし → 1（先行）
+        row["running_style"] = 1
         row["avg_early_position_last5"] = 0
 
     # v2: 馬場状態適性（過去走から算出）

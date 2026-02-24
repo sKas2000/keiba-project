@@ -2,11 +2,14 @@
 予測モジュール: ML予測（LightGBM binary/win + Isotonic校正）
 """
 import json
+import logging
 from pathlib import Path
 
 import numpy as np
 
 from config.settings import FEATURE_COLUMNS, MODEL_DIR
+
+logger = logging.getLogger("keiba.model.predictor")
 
 
 # ============================================================
@@ -91,12 +94,20 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
     if iso_binary is not None:
         probs = calibrate_isotonic(raw_probs, iso_binary)
         cal_method = "isotonic"
+        logger.info("Binary校正: Isotonic使用 (model_dir=%s)", model_dir.name)
     elif platt_cal is not None:
         probs = calibrate_probs(raw_probs, platt_cal)
         cal_method = "platt"
+        logger.info("Binary校正: Platt Scaling使用 (model_dir=%s)", model_dir.name)
     else:
         probs = raw_probs
         cal_method = "raw"
+        logger.warning(
+            "Binary校正: キャリブレーター未検出。未校正の生確率を使用します (model_dir=%s)。"
+            " binary_isotonic.pkl または platt_calibrator.pkl が必要です。",
+            model_dir.name,
+        )
+    print(f"  [校正] binary: {cal_method}")
 
     # 勝率直接推定モデル（Expanding Window検証で使用）
     win_model_path = model_dir / "win_model.txt"
@@ -107,8 +118,12 @@ def score_ml(data: dict, model_dir: Path = None) -> dict | None:
         iso_win = load_isotonic_calibrator("win_isotonic", model_dir)
         if iso_win is not None:
             win_probs_direct = calibrate_isotonic(raw_win, iso_win)
+            logger.info("Win校正: Isotonic使用")
+            print("  [校正] win: isotonic")
         else:
             win_probs_direct = raw_win
+            logger.info("Win校正: キャリブレーター未検出、生確率使用")
+            print("  [校正] win: raw (isotonic未検出)")
 
     horses = data.get("horses", [])
     for i, horse in enumerate(horses):

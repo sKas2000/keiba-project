@@ -377,8 +377,42 @@ class OddsScraper(BaseScraper):
 # ============================================================
 
 def build_input_json(scraped: dict, race_info: dict) -> dict:
+    # --- データ検証ゲート ---
+    # 必須フィールドの存在チェック（surface/distance が無いと予測不能）
+    critical_missing = []
+    if not race_info.get("surface"):
+        critical_missing.append("surface")
+    if not race_info.get("distance"):
+        critical_missing.append("distance")
+    if critical_missing:
+        raise ValueError(
+            f"レース必須情報が不足しています: {', '.join(critical_missing)}。"
+            f" スクレイピング結果を確認してください。"
+            f" (venue={race_info.get('venue')}, race_number={race_info.get('race_number')})"
+        )
+
+    # 非必須だが重要なフィールドの警告
+    warn_missing = []
+    if not race_info.get("name"):
+        warn_missing.append("name")
+    if not race_info.get("grade"):
+        warn_missing.append("grade")
+    if not race_info.get("direction"):
+        warn_missing.append("direction")
+    if warn_missing:
+        logger.warning(
+            "レース情報に不足あり (venue=%s, R%s): %s",
+            race_info.get("venue", "?"), race_info.get("race_number", "?"),
+            ", ".join(warn_missing),
+        )
+
+    # 出走馬データの検証
+    raw_horses = scraped.get("horses", [])
+    if not raw_horses:
+        raise ValueError("出走馬データが空です。オッズページの解析に失敗した可能性があります。")
+
     horses = []
-    for h in scraped.get("horses", []):
+    for h in raw_horses:
         horses.append({
             "num": h["num"], "name": h["name"],
             "score": 0,

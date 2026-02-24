@@ -51,7 +51,11 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
 
     # running_style: デフォルト1（先行）。0（逃げ）だとコーナー通過順が
     # 欠損の馬が全て逃げ馬として扱われ、race_n_front が実態より膨らむ
+    # feature_extract.py（ライブ予測側）と統一: 通過順データなし → 1（先行）
     df["running_style"] = 1.0
+    # days_since_last_race: 初出走馬は365日（=長期休み相当）をデフォルトに設定
+    # feature_extract.py側と統一（0だと同日出走と誤認される）
+    df["days_since_last_race"] = 365.0
 
     has_margin = "margin_float" in df.columns
     has_corner = "first_corner_pos" in df.columns
