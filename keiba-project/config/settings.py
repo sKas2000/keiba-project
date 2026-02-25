@@ -170,8 +170,9 @@ FEATURE_COLUMNS = [
     # "decay_finish_30d", "decay_finish_60d", "decay_finish_90d", "momentum",
     # v12: スーパープレミアム追加特徴量（ペース、人気、賞金、馬体重）
     "avg_pace_front_last5", "avg_pace_back_last5", "pace_balance",
+    # v13: 穴馬発見特徴量（人気度・賞金）
     "prev_popularity_1", "avg_popularity_last5",
-    "prev_prize_money_1",
+    "prev_prize_money_1", "avg_prize_money_last5",
     "avg_weight_last3", "weight_stability",
 ]
 
