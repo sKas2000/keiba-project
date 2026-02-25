@@ -1,0 +1,215 @@
+"""
+netkeiba premium data exploration script
+Extracts training, newspaper, horse page column structures
+"""
+import asyncio
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+from config.settings import load_env_var, setup_encoding
+setup_encoding()
+
+from playwright.async_api import async_playwright
+
+RACE_IDS_TO_TRY = [
+    "202605020701",
+    "202605010101",
+    "202505010101",
+    "202509010101",
+    "202506010101",
+    "202505020801",
+]
+
+HORSE_URL = "https://db.netkeiba.com/horse/2022104038/"
+SEP = "=" * 80
+
+
+async def login_netkeiba(page):
+    email = load_env_var("NETKEIBA_EMAIL")
+    password = load_env_var("NETKEIBA_PASSWORD")
+    if not email or not password:
+        print("[ERROR] NETKEIBA_EMAIL or NETKEIBA_PASSWORD not found in .env")
+        return False
+
+    print(f"[LOGIN] logging in... (email: {email[:5]}***)")
+    await page.goto(
+        "https://regist.netkeiba.com/account/?pid=login",
+        wait_until="domcontentloaded", timeout=30000,
+    )
+    await asyncio.sleep(3)
+
+    email_input = page.locator(__SQ__input[name="login_id"]__SQ__)
+    if await email_input.count() > 0:
+        await email_input.fill(email)
+    else:
+        print("[ERROR] email field not found")
+        return False
+
+    pw_input = page.locator(__SQ__input[name="pswd"]__SQ__)
+    if await pw_input.count() == 0:
+        pw_input = page.locator(__SQ__input[type="password"]__SQ__)
+    if await pw_input.count() > 0:
+        await pw_input.first.fill(password)
+    else:
+        print("[ERROR] password field not found")
+        return False
+
+    await asyncio.sleep(0.5)
+    login_btn = page.locator(
+        __SQ__input[type="image"], input[type="submit"], button[type="submit"]__SQ__
+    )
+    if await login_btn.count() > 0:
+        await login_btn.first.click()
+    else:
+        await page.keyboard.press("Enter")
+
+    await page.wait_for_load_state("domcontentloaded")
+    await asyncio.sleep(3)
+
+    if "pid=login" in page.url:
+        print("[ERROR] login failed")
+        return False
+
+    print("[OK] login success")
+    return True
+
+
+async def find_working_race_id(page, race_ids):
+    for race_id in race_ids:
+        url = f"https://race.netkeiba.com/race/shutuba.html?race_id={race_id}"
+        print(f"\n[CHECK] race_id {race_id} ...")
+        try:
+            await page.goto(url, wait_until="domcontentloaded", timeout=15000)
+            await asyncio.sleep(2)
+            title = await page.title()
+            content = await page.content()
+            if any(kw in content for kw in ["RaceName", "RaceList_Item"]) or "\u51fa\u99ac\u8868" in title:
+                print(f"  [OK] {race_id} valid (title: {title})")
+                return race_id
+            else:
+                print(f"  [SKIP] {race_id}: (title: {title})")
+        except Exception as e:
+            print(f"  [SKIP] {race_id}: {e}")
+    return None
+
+
+JS_GET_CLASSES = __TQ__() => {
+    const s = new Set();
+    document.querySelectorAll(__SQ__*[class]__SQ__).forEach(el => {
+        el.classList.forEach(c => s.add(c));
+    });
+    return Array.from(s).sort();
+}__TQ__
+
+
+async def dump_tables(page, max_tables=5, max_rows=25):
+    tables = page.locator("table")
+    tc = await tables.count()
+    print(f"  table count: {tc}")
+    for ti in range(min(tc, max_tables)):
+        tbl = tables.nth(ti)
+        th = await tbl.locator("th").all_text_contents()
+        th_clean = [t.strip().replace("\n", " ") for t in th if t.strip()]
+        if th_clean:
+            print(f"\n  Table[{ti}] headers ({len(th_clean)}): {th_clean}")
+        rows = tbl.locator("tr")
+        rc = await rows.count()
+        print(f"  Table[{ti}] rows: {rc}")
+        for ri in range(min(rc, max_rows)):
+            cells = await rows.nth(ri).locator("td, th").all_text_contents()
+            cells_clean = [c.strip().replace("\n", " ").replace("\t", " ")[:80] for c in cells if c.strip()]
+            if cells_clean:
+                print(f"    Row[{ri}]: {cells_clean}")
+
+
+async def dump_classes(page, filter_keywords=None):
+    classes = await page.evaluate(JS_GET_CLASSES)
+    if filter_keywords:
+        interesting = [c for c in classes if any(k in c.lower() for k in filter_keywords)]
+        print(f"  relevant classes: {interesting}")
+    print(f"  total classes: {len(classes)}")
+    if len(classes) < 300:
+        print(f"  all classes: {classes}")
+    return classes
+
+
+async def check_selectors(page, selectors):
+    for sel in selectors:
+        try:
+            loc = page.locator(sel)
+            cnt = await loc.count()
+            if cnt > 0:
+                texts = await loc.all_text_contents()
+                sample = [t.strip()[:120] for t in texts[:5] if t.strip()]
+                print(f"  {sel}: {cnt} items, sample={sample}")
+        except Exception:
+            pass
+
+
+async def explore_training_page(page, race_id):
+    print(f"\n{SEP}")
+    print(f"[1] TRAINING PAGE: race_id={race_id}")
+    print(SEP)
+    url = f"https://race.netkeiba.com/race/oikiri.html?race_id={race_id}"
+    print(f"  URL: {url}")
+    try:
+        await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+        await asyncio.sleep(3)
+        print(f"  title: {await page.title()}")
+        content = await page.content()
+        for kw in ["\u30d7\u30ec\u30df\u30a2\u30e0", "\u6709\u6599", "\u30ed\u30b0\u30a4\u30f3", "\u4f1a\u54e1"]:
+            if kw in content:
+                print(f"  [INFO] page contains: {kw}")
+        print("\n  --- Tables ---")
+        await dump_tables(page)
+        print("\n  --- Training selectors ---")
+        await check_selectors(page, [
+            ".Oikiri", ".Training", ".Cyokyou", ".CyokyouComment",
+            ".TrainingComment", ".HyoukaRank", ".Hyouka",
+            ".OikiriDataHead", ".OikiriDataBody", ".OikiriDataWrap",
+            ".HorseName", ".TrainBox",
+        ])
+        print("\n  --- Classes ---")
+        await dump_classes(page, [
+            "oikiri", "train", "cyokyou", "horse", "rank", "hyouka",
+            "eval", "grade", "time", "comment", "data", "table", "result",
+        ])
+    except Exception as e:
+        print(f"  [ERROR] {e}")
+        import traceback; traceback.print_exc()
+
+
+async def explore_newspaper_page(page, race_id):
+    print(f"\n{SEP}")
+    print(f"[2] NEWSPAPER PAGE: race_id={race_id}")
+    print(SEP)
+    url = f"https://race.netkeiba.com/race/newspaper.html?race_id={race_id}"
+    print(f"  URL: {url}")
+    try:
+        await page.goto(url, wait_until="domcontentloaded", timeout=20000)
+        await asyncio.sleep(3)
+        print(f"  title: {await page.title()}")
+        content = await page.content()
+        for kw in ["\u30d7\u30ec\u30df\u30a2\u30e0", "\u6709\u6599", "\u30ed\u30b0\u30a4\u30f3", "\u4f1a\u54e1"]:
+            if kw in content:
+                print(f"  [INFO] page contains: {kw}")
+        print("\n  --- Tables ---")
+        await dump_tables(page)
+        print("\n  --- Newspaper selectors ---")
+        await check_selectors(page, [
+            ".Mark", ".Shinbun", ".Newspaper", ".Comment",
+            ".Yosou", ".Prediction",
+            ".Newspaper_Main", ".NewspaperWrap", ".NP_Table",
+            ".HorseInfo", ".HorseName",
+        ])
+        print("\n  --- Classes ---")
+        await dump_classes(page, [
+            "mark", "shinbun", "newspaper", "yosou", "comment",
+            "prediction", "horse", "column", "data", "table",
+            "result", "grade", "rank", "sign",
+        ])
+    except Exception as e:
+        print(f"  [ERROR] {e}")
+        import traceback; traceback.print_exc()

@@ -99,20 +99,21 @@ BACKTEST_BEST_PARAMS = {
 # 再精査実験: バグ修正後のコードで全パラメータを体系的に再検証
 # エビデンス: docs/reeval_evidence.md
 EXPANDING_BEST_PARAMS = {
-    "kelly_fraction": 0,          # フラットベット（Kelly非使用）
-    "confidence_min": 0.02,       # 確信度フィルタ（再精査: 0.02が最適、Val/Test安定）
+    "kelly_fraction": 0,          # フラットベット（Kelly非使用、0.10/0.25で単勝-4pt悪化）
+    "confidence_min": 0.04,       # 確信度フィルタ（0.04が最適、馬連+5.8pt）
     "quinella_top_n": 2,          # 馬連: top2のみ
     "wide_top_n": 2,              # ワイド: top2のみ
-    "trio_top_n": 4,              # 3連複: top4（4点買い。top3=1点は的中率低すぎ）
+    "trio_top_n": 3,              # 3連複: top3（1点買い、trio=4→3でROI+11.5pt）
     "skip_classes": [4, 6],       # 2勝+OP除外（全券種改善）
     "top_n": 3,
     "use_calibration": True,      # Isotonic校正（必須）
     "use_ranking": False,         # ランキング不使用
     "calibration_pct": 0.10,      # 最適校正割合（10%）
     "window_months": 6,           # テスト期間（6ヶ月、再精査: 3→6で安定性向上）
-    # 再精査実験結果 (Phase14 — B7_full + 6mo + conf=0.02):
-    #   Val ROI: 125.9%  Test ROI: 111.4%  （旧ベースライン: Val 104.3% / Test 103.8%）
-    # 正則化: 現行 l1=0.1/l2=1.0 維持（l1=0.01/l2=0.1はTest+3.8ptだがVal不安定）
+    # 2026-02-25 最適化実験結果（スーパープレミアム特徴量v12）:
+    #   skip=[4,6] conf=0.04 trio=3: 馬連81.2% ワイド81.9% 3連複81.3% 複勝83.7%
+    #   理由: 少数精鋭戦略（購入1/4.5、的中率1.7倍、投資効率向上）
+    #   Kelly基準は単勝・複勝で-4pt悪化のため不採用
 }
 
 # ML用デフォルト温度（キャリブレーション未使用時のフォールバック）

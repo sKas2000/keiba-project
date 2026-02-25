@@ -239,6 +239,10 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
                           odds_max: float = 0.0,
                           axis_flow: bool = False,
                           kelly_fraction: float = 0.0,
+                          skip_classes: list = None,
+                          quinella_top_n: int = 0,
+                          wide_top_n: int = 0,
+                          trio_top_n: int = 0,
                           analyze_cond: bool = False,
                           surface_split: bool = False):
     """バックテストパイプライン"""
@@ -307,6 +311,10 @@ def run_backtest_pipeline(input_path: str = None, model_dir: str = None,
         odds_max=odds_max,
         axis_flow=axis_flow,
         kelly_fraction=kelly_fraction,
+        skip_classes=skip_classes,
+        quinella_top_n=quinella_top_n,
+        wide_top_n=wide_top_n,
+        trio_top_n=trio_top_n,
         surface_split=surface_split,
     )
     print_backtest_report(results)

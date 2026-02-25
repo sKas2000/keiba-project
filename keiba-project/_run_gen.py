@@ -1,0 +1,1 @@
+import sys; exec(open(sys.argv[1], encoding="utf-8").read())
