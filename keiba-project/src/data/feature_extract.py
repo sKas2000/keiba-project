@@ -37,7 +37,12 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                    "distance_change", "running_style",
                    "avg_early_position_last5", "track_cond_place_rate",
                    "class_change", "weight_carried_change",
-                   "prev_interval_2"]:
+                   "prev_interval_2",
+                   # v12: スーパープレミアム追加特徴量
+                   "avg_pace_front_last5", "avg_pace_back_last5", "pace_balance",
+                   "prev_popularity_1", "avg_popularity_last5",
+                   "prev_prize_money_1",
+                   "avg_weight_last3", "weight_stability"]:
             row[k] = 0
         row["days_since_last_race"] = 365
         return
@@ -205,6 +210,42 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
                 row["prev_interval_2"] = abs((dt0 - dt1).days)
             except Exception:
                 pass
+
+    # v12: スーパープレミアム追加特徴量
+    # ペース（前半・後半の平均ペース）
+    pace_front_vals = [safe_float(r.get("pace_front", 0)) for r in past_races[:5]]
+    pace_back_vals = [safe_float(r.get("pace_back", 0)) for r in past_races[:5]]
+    valid_front = [v for v in pace_front_vals if v > 0]
+    valid_back = [v for v in pace_back_vals if v > 0]
+
+    row["avg_pace_front_last5"] = round(np.mean(valid_front), 2) if valid_front else 0
+    row["avg_pace_back_last5"] = round(np.mean(valid_back), 2) if valid_back else 0
+
+    # ペースバランス（前半と後半の差: 前傾=負、後傾=正）
+    if row["avg_pace_front_last5"] > 0 and row["avg_pace_back_last5"] > 0:
+        row["pace_balance"] = round(row["avg_pace_back_last5"] - row["avg_pace_front_last5"], 2)
+    else:
+        row["pace_balance"] = 0
+
+    # 人気（前走人気、直近5走平均人気）
+    row["prev_popularity_1"] = safe_int(past_races[0].get("popularity", 0)) if past_races else 0
+    popularity_vals = [safe_int(r.get("popularity", 0)) for r in past_races[:5]]
+    valid_pop = [v for v in popularity_vals if v > 0]
+    row["avg_popularity_last5"] = round(np.mean(valid_pop), 2) if valid_pop else 0
+
+    # 賞金（前走賞金）
+    row["prev_prize_money_1"] = safe_float(past_races[0].get("prize_money", 0)) if past_races else 0
+
+    # 馬体重（直近3走平均、安定性）
+    weight_vals = [safe_float(r.get("weight", 0)) for r in past_races[:3]]
+    valid_weights = [v for v in weight_vals if v > 0]
+    if valid_weights:
+        row["avg_weight_last3"] = round(np.mean(valid_weights), 1)
+        # 体重安定性（標準偏差、小さいほど安定）
+        row["weight_stability"] = round(np.std(valid_weights), 1) if len(valid_weights) > 1 else 0
+    else:
+        row["avg_weight_last3"] = 0
+        row["weight_stability"] = 0
 
 
 # ============================================================

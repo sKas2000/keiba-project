@@ -98,7 +98,7 @@ def encode_categoricals(df: pd.DataFrame) -> pd.DataFrame:
         df["distance"],
         bins=[0, 1400, 1800, 2200, 9999],
         labels=[0, 1, 2, 3],
-    ).astype(int)
+    ).cat.add_categories([-1]).fillna(-1).astype(int)
 
     df["course_id_code"] = pd.to_numeric(df["course_id"], errors="coerce").fillna(0).astype(int)
 
