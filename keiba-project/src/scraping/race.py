@@ -776,15 +776,14 @@ async def collect_races(start_date: str, end_date: str,
     print(f"  結果: {results_path}")
     print(f"  払戻: {returns_path}")
 
-    # 調教データ収集（Playwright, netkeiba認証情報がある場合のみ）
+    # 調教データ収集（HTTP版, netkeiba認証情報がある場合のみ）
     from config.settings import load_env_var
     email = load_env_var("NETKEIBA_EMAIL")
     password = load_env_var("NETKEIBA_PASSWORD")
     if email and password and all_race_ids:
         training_path = results_path.parent / "training.csv"
         await collect_training_for_races(
-            all_race_ids, training_path,
-            headless=headless, append=True,
+            all_race_ids, training_path, append=True,
         )
 
 
@@ -808,66 +807,251 @@ def save_training_csv(results: list, output_path: Path, append: bool = False):
 
 
 # ============================================================
-# 調教データ一括収集（Playwright版）
+# 調教データ一括収集（HTTP + BeautifulSoup 版）
 # ============================================================
+
+def _parse_oikiri_html(html: str, race_id: str) -> list:
+    """oikiri ページの HTML をパースして調教データを抽出"""
+    soup = BeautifulSoup(html, "html.parser")
+    table = soup.find("table", class_="OikiriTable")
+    if not table:
+        return []
+
+    results = []
+    rows = table.find_all("tr", class_="HorseList")
+
+    i = 0
+    while i < len(rows):
+        info_row = rows[i]
+
+        # 馬番を確認して情報行か判定
+        umaban_td = info_row.find("td", class_="Umaban")
+        if not umaban_td:
+            i += 1
+            continue
+        horse_num = safe_int(umaban_td.get_text(strip=True))
+        if horse_num <= 0:
+            i += 1
+            continue
+
+        # 馬名・horse_id
+        horse_name = ""
+        horse_id = ""
+        for link in info_row.find_all("a", href=True):
+            href = link["href"]
+            if "/horse/" in href and "training" not in href:
+                horse_name = link.get_text(strip=True)
+                m = re.search(r'/horse/(\d{10})', href)
+                if m:
+                    horse_id = m.group(1)
+                break
+
+        # コメント
+        review = ""
+        review_el = info_row.find(class_="TrainingReview_Cell")
+        if review_el:
+            review = review_el.get_text(strip=True)
+
+        # データ行
+        training_date = ""
+        training_course = ""
+        track_condition = ""
+        rider = ""
+        training_time = ""
+        lap_times = ""
+        overall_time = ""
+        final_3f = ""
+        final_1f = ""
+        sparring_info = ""
+        training_load = ""
+        evaluation = ""
+        grade = ""
+
+        if i + 1 < len(rows):
+            data_row = rows[i + 1]
+            data_umaban = data_row.find("td", class_="Umaban")
+            if not data_umaban:
+                # データ行
+                day_td = data_row.find("td", class_="Training_Day")
+                if day_td:
+                    training_date = day_td.get_text(strip=True)
+
+                cells = data_row.find_all("td")
+                cell_texts = [c.get_text(strip=True) for c in cells]
+                if len(cell_texts) >= 4:
+                    training_course = cell_texts[1]
+                    track_condition = cell_texts[2]
+                    rider = cell_texts[3]
+
+                # タイムデータ: TrainingTimeDataList
+                time_ul = data_row.find("ul", class_="TrainingTimeDataList")
+                if time_ul:
+                    times = []
+                    laps = []
+                    for li in time_ul.find_all("li"):
+                        rap_span = li.find("span", class_="RapTime")
+                        rap_text = rap_span.get_text(strip=True) if rap_span else ""
+                        full_text = li.get_text(strip=True)
+                        t_val = full_text.replace(rap_text, "").strip()
+                        lap_val = rap_text.strip("()")
+                        times.append(t_val)
+                        laps.append(lap_val)
+                    training_time = "-".join(times)
+                    lap_times = "-".join(laps)
+                    if times:
+                        overall_time = times[0]
+                    if len(times) >= 2:
+                        final_3f = times[-2]
+                    if times:
+                        final_1f = times[-1]
+
+                    # 併走情報（ul の後のテキスト）
+                    sp_parts = []
+                    for sibling in time_ul.next_siblings:
+                        t = sibling.string if sibling.string else (
+                            sibling.get_text() if hasattr(sibling, 'get_text')
+                            else str(sibling)
+                        )
+                        t = t.strip()
+                        if t:
+                            sp_parts.append(t)
+                    sparring_info = " ".join(sp_parts)
+                elif len(cell_texts) >= 5:
+                    training_time = cell_texts[4]
+
+                # 負荷・評価・等級
+                load_el = data_row.find(class_="TrainingLoad")
+                if load_el:
+                    training_load = load_el.get_text(strip=True)
+                critic_el = data_row.find(class_="Training_Critic")
+                if critic_el:
+                    evaluation = critic_el.get_text(strip=True)
+                rank_el = data_row.find(attrs={"class": re.compile(r"Rank_")})
+                if rank_el:
+                    grade = rank_el.get_text(strip=True)
+
+                i += 2
+            else:
+                # データ行なし
+                critic_el = info_row.find(class_="Training_Critic")
+                if critic_el:
+                    evaluation = critic_el.get_text(strip=True)
+                rank_el = info_row.find(
+                    attrs={"class": re.compile(r"Rank_")}
+                )
+                if rank_el:
+                    grade = rank_el.get_text(strip=True)
+                i += 1
+        else:
+            i += 1
+
+        results.append({
+            "race_id": race_id,
+            "race_date": "",
+            "horse_number": horse_num,
+            "horse_name": horse_name,
+            "horse_id": horse_id,
+            "training_date": training_date,
+            "training_course": training_course,
+            "track_condition": track_condition,
+            "rider": rider,
+            "training_time": training_time,
+            "lap_times": lap_times,
+            "overall_time": overall_time,
+            "final_3f": final_3f,
+            "final_1f": final_1f,
+            "sparring_info": sparring_info,
+            "training_load": training_load,
+            "evaluation": evaluation,
+            "grade": grade,
+            "review": review,
+        })
+
+    return results
+
+
+async def _login_netkeiba_http(client: httpx.AsyncClient) -> bool:
+    """httpx セッションで netkeiba にログイン"""
+    from config.settings import load_env_var
+    email = load_env_var("NETKEIBA_EMAIL")
+    password = load_env_var("NETKEIBA_PASSWORD")
+    if not email or not password:
+        return False
+
+    try:
+        resp = await client.post(
+            "https://regist.netkeiba.com/account/",
+            data={
+                "pid": "login",
+                "action": "auth",
+                "login_id": email,
+                "pswd": password,
+            },
+        )
+        if "nkauth" in client.cookies:
+            logger.info("netkeiba HTTPログイン成功")
+            return True
+        logger.warning("netkeiba HTTPログイン失敗 (nkauth Cookie なし)")
+        return False
+    except Exception as e:
+        logger.error("netkeiba HTTPログインエラー: %s", e)
+        return False
+
 
 async def collect_training_for_races(
     race_ids: list, output_path: Path,
     headless: bool = True, append: bool = False,
 ):
-    """Playwright で oikiri ページから調教データを収集"""
-    from src.scraping.horse import HorseScraper
-
+    """HTTP + BeautifulSoup で oikiri ページから調教データを収集"""
     print(f"\n{'=' * 60}")
-    print(f"  調教データ収集 (Playwright版)")
+    print(f"  調教データ収集 (HTTP版)")
     print(f"  対象: {len(race_ids)}レース")
     print(f"{'=' * 60}\n")
 
-    scraper = HorseScraper(headless=headless, debug=False)
     total_training = 0
     try:
-        await scraper.start()
-        if not await scraper.login_netkeiba():
-            print("  [WARN] netkeibaログイン失敗 — 調教データ収集をスキップ")
-            return
+        async with httpx.AsyncClient(
+            headers=_HEADERS, follow_redirects=True, timeout=30,
+        ) as client:
+            if not await _login_netkeiba_http(client):
+                print("  [WARN] netkeibaログイン失敗 — 調教データ収集をスキップ")
+                return
 
-        for idx, race_id in enumerate(race_ids):
-            if idx > 0 and idx % 10 == 0:
-                await scraper.restart()
+            print("  [OK] netkeibaログイン成功\n")
 
-            try:
-                training = await scraper.scrape_training_data(race_id)
-                if training:
-                    # race_date をrace_idから推定（YYYY年の部分）
-                    rows = []
-                    for t in training:
-                        rows.append({
-                            "race_id": race_id,
-                            "race_date": "",  # 後でresults.csvとJOINして補完可能
-                            "horse_number": t["horse_number"],
-                            "horse_name": t["horse_name"],
-                            "horse_id": t["horse_id"],
-                            "training_date": t["training_date"],
-                            "training_course": t["training_course"],
-                            "track_condition": t["track_condition"],
-                            "rider": t["rider"],
-                            "training_time": t["training_time"],
-                            "training_load": t["training_load"],
-                            "evaluation": t["evaluation"],
-                            "grade": t["grade"],
-                            "review": t["review"],
-                        })
-                    save_training_csv(rows, output_path, append=True)
-                    total_training += len(training)
+            for idx, race_id in enumerate(race_ids):
+                try:
+                    url = (
+                        f"https://race.netkeiba.com/race/oikiri.html"
+                        f"?race_id={race_id}&type=2"
+                    )
+                    resp = await client.get(url)
+                    if resp.status_code != 200:
+                        print(f"  [{idx+1}/{len(race_ids)}] {race_id}: "
+                              f"HTTP {resp.status_code}")
+                        continue
+
+                    training = _parse_oikiri_html(resp.text, race_id)
+                    if training:
+                        save_training_csv(training, output_path, append=True)
+                        total_training += len(training)
+                        if (idx + 1) % 50 == 0 or idx == 0:
+                            print(
+                                f"  [{idx+1}/{len(race_ids)}] {race_id}: "
+                                f"{len(training)}頭 (累計{total_training})"
+                            )
+                    else:
+                        if (idx + 1) % 50 == 0:
+                            print(
+                                f"  [{idx+1}/{len(race_ids)}] {race_id}: "
+                                f"データなし"
+                            )
+
+                except Exception as e:
                     print(f"  [{idx+1}/{len(race_ids)}] {race_id}: "
-                          f"{len(training)}頭 (累計{total_training})")
-                else:
-                    print(f"  [{idx+1}/{len(race_ids)}] {race_id}: データなし")
+                          f"エラー ({e})")
 
-            except Exception as e:
-                print(f"  [{idx+1}/{len(race_ids)}] {race_id}: エラー ({e})")
-
-            await asyncio.sleep(REQUEST_DELAY)
+                await asyncio.sleep(REQUEST_DELAY)
 
     except KeyboardInterrupt:
         print("\n[!] 調教データ収集中断")
@@ -875,8 +1059,6 @@ async def collect_training_for_races(
         print(f"\n[ERROR] 調教データ収集エラー: {e}")
         import traceback
         traceback.print_exc()
-    finally:
-        await scraper.close()
 
     print(f"\n[OK] 調教データ: {total_training}件")
     if total_training > 0:
