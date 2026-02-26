@@ -1077,25 +1077,47 @@ async def collect_training_for_races(
 # 血統データ収集（HTTP + BeautifulSoup）
 # ============================================================
 
-def _parse_pedigree_html(html: str, horse_id: str) -> dict | None:
-    """馬詳細ページ HTML から血統(父・母父)・生産者を抽出"""
-    soup = BeautifulSoup(html, "html.parser")
+def _parse_ped_html(html: str) -> dict:
+    """血統ページ (/horse/ped/{id}/) の blood_table から父・母父を抽出
 
-    result = {"horse_id": horse_id, "horse_name": "", "sire": "", "bms": "", "breeder": ""}
+    blood_table 構造（5世代血統表）:
+      rowspan=16: [0]=父(sire), [1]=母(dam)
+      rowspan=8:  [0]=父父, [1]=父母, [2]=母父(BMS), [3]=母母
+    リンクテキストが馬名（余分なテキストを含まない）
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    result = {"sire": "", "bms": ""}
+
+    bt = soup.find("table", class_="blood_table")
+    if not bt:
+        return result
+
+    # rowspan=16 → 父
+    rs16 = bt.find_all("td", rowspan="16")
+    if rs16:
+        a = rs16[0].find("a")
+        if a:
+            result["sire"] = a.get_text(strip=True)
+
+    # rowspan=8 → [2]=母父(BMS)
+    rs8 = bt.find_all("td", rowspan="8")
+    if len(rs8) >= 3:
+        a = rs8[2].find("a")
+        if a:
+            result["bms"] = a.get_text(strip=True)
+
+    return result
+
+
+def _parse_prof_html(html: str) -> dict:
+    """馬プロフィールページ (/horse/{id}/) の db_prof_table から生産者・馬名を抽出"""
+    soup = BeautifulSoup(html, "html.parser")
+    result = {"horse_name": "", "breeder": ""}
 
     # 馬名
     name_el = soup.select_one(".horse_title h1, .horse_name h1")
     if name_el:
         result["horse_name"] = name_el.get_text(strip=True)
-
-    # blood_table: td[0]=父, td[4]=母父(BMS)
-    bt = soup.find("table", class_="blood_table")
-    if bt:
-        tds = bt.find_all("td")
-        if len(tds) >= 1:
-            result["sire"] = tds[0].get_text(strip=True)
-        if len(tds) >= 5:
-            result["bms"] = tds[4].get_text(strip=True)
 
     # db_prof_table: 「生産者」行
     prof = soup.find("table", class_="db_prof_table")
@@ -1112,8 +1134,6 @@ def _parse_pedigree_html(html: str, horse_id: str) -> dict | None:
                     result["breeder"] = td.get_text(strip=True)
                 break
 
-    if not result["sire"]:
-        return None
     return result
 
 
@@ -1187,14 +1207,40 @@ async def collect_pedigree_for_results(
     ) as client:
         for idx, horse_id in enumerate(remaining_list):
             try:
-                url = f"https://db.netkeiba.com/horse/{horse_id}/"
-                resp = await client.get(url)
-                if resp.status_code != 200:
-                    continue
+                row = {"horse_id": horse_id, "horse_name": "",
+                       "sire": "", "bms": "", "breeder": ""}
 
-                pedigree = _parse_pedigree_html(resp.text, horse_id)
-                if pedigree:
-                    batch.append(pedigree)
+                # 1) 血統ページ（/horse/ped/）→ 父・母父
+                ped_url = f"https://db.netkeiba.com/horse/ped/{horse_id}/"
+                resp = await client.get(ped_url)
+                if resp.status_code == 200:
+                    html = resp.content.decode("euc-jp", errors="replace")
+                    ped = _parse_ped_html(html)
+                    row["sire"] = ped["sire"]
+                    row["bms"] = ped["bms"]
+
+                    # 馬名も ped ページ title から取得
+                    soup_title = BeautifulSoup(html, "html.parser")
+                    title_el = soup_title.find("title")
+                    if title_el:
+                        # "スローテキーラ | 5代血統表 | ... " 形式
+                        title_text = title_el.get_text(strip=True)
+                        row["horse_name"] = title_text.split("|")[0].strip()
+
+                await asyncio.sleep(REQUEST_DELAY * 0.3)
+
+                # 2) プロフページ（/horse/）→ 生産者
+                prof_url = f"https://db.netkeiba.com/horse/{horse_id}/"
+                resp2 = await client.get(prof_url)
+                if resp2.status_code == 200:
+                    html2 = resp2.content.decode("euc-jp", errors="replace")
+                    prof = _parse_prof_html(html2)
+                    if not row["horse_name"]:
+                        row["horse_name"] = prof["horse_name"]
+                    row["breeder"] = prof["breeder"]
+
+                if row["sire"]:
+                    batch.append(row)
                     total += 1
 
                 # 100件ごとにCSV書き出し + 進捗表示
