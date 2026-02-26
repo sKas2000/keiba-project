@@ -449,6 +449,170 @@ class HorseScraper(BaseScraper):
         return result
 
     # ----------------------------------------------------------
+    # 調教データ取得（oikiri ページ, type=2: 最終追切）
+    # ----------------------------------------------------------
+
+    async def scrape_training_data(self, race_id: str) -> list:
+        """レースの調教データを取得
+
+        Args:
+            race_id: 12桁のrace_id (e.g. "202609010211")
+
+        Returns:
+            馬ごとの調教データリスト
+        """
+        url = f"https://race.netkeiba.com/race/oikiri.html?race_id={race_id}&type=2"
+        results = []
+
+        try:
+            await self.page.goto(url, wait_until="domcontentloaded", timeout=30000)
+            await asyncio.sleep(3)
+
+            # 繰り返しスクロールして全馬を読み込む（遅延読み込み対応）
+            for _ in range(5):
+                await self.page.evaluate(
+                    "window.scrollTo(0, document.body.scrollHeight)"
+                )
+                await asyncio.sleep(1)
+
+            # ページ先頭に戻る
+            await self.page.evaluate("window.scrollTo(0, 0)")
+            await asyncio.sleep(1)
+
+            table = self.page.locator("table.OikiriTable").first
+            if await table.count() == 0:
+                self.log(f"  [!] 調教テーブルが見つかりません (race_id={race_id})")
+                return results
+
+            rows = await table.locator("tr.HorseList").all()
+            if not rows:
+                return results
+
+            # 行はペアで構成: 情報行(馬番+コメント) + データ行(タイム等)
+            i = 0
+            while i < len(rows):
+                info_row = rows[i]
+
+                # 馬番を確認して情報行かどうか判定
+                umaban_el = info_row.locator("td.Umaban")
+                if await umaban_el.count() == 0:
+                    i += 1
+                    continue
+
+                horse_num = safe_int((await umaban_el.text_content() or "").strip())
+                if horse_num <= 0:
+                    i += 1
+                    continue
+
+                # 馬名・horse_id
+                horse_name = ""
+                horse_id = ""
+                name_links = await info_row.locator(
+                    ".Horse_Name a, td.Horse_Info a[href*='/horse/']"
+                ).all()
+                for link in name_links:
+                    href = await link.get_attribute("href") or ""
+                    if "/horse/" in href and "training" not in href:
+                        horse_name = (await link.text_content() or "").strip()
+                        m = re.search(r'/horse/(\d{10})', href)
+                        if m:
+                            horse_id = m.group(1)
+                        break
+
+                # 調教コメント（TrainingReview_Cell）
+                review = ""
+                review_el = info_row.locator(".TrainingReview_Cell")
+                if await review_el.count() > 0:
+                    review = (await review_el.text_content() or "").strip()
+
+                # データ行（次の行）
+                training_date = ""
+                training_course = ""
+                track_condition = ""
+                rider = ""
+                training_time = ""
+                training_load = ""
+                evaluation = ""
+                grade = ""
+
+                if i + 1 < len(rows):
+                    data_row = rows[i + 1]
+                    # データ行かどうか確認（馬番セルがなければデータ行）
+                    data_umaban = data_row.locator("td.Umaban")
+                    if await data_umaban.count() == 0:
+                        cells = await data_row.locator("td").all()
+                        cell_texts = []
+                        for cell in cells:
+                            t = await cell.text_content()
+                            cell_texts.append(t.strip() if t else "")
+
+                        if len(cell_texts) >= 5:
+                            training_date = cell_texts[0]
+                            training_course = cell_texts[1]
+                            track_condition = cell_texts[2]
+                            rider = cell_texts[3]
+                            training_time = cell_texts[4]
+
+                        # CSS class で特定フィールドを取得
+                        load_el = data_row.locator(".TrainingLoad")
+                        if await load_el.count() > 0:
+                            training_load = (
+                                await load_el.text_content() or ""
+                            ).strip()
+
+                        critic_el = data_row.locator(".Training_Critic")
+                        if await critic_el.count() > 0:
+                            evaluation = (
+                                await critic_el.text_content() or ""
+                            ).strip()
+
+                        rank_el = data_row.locator("[class*='Rank_']")
+                        if await rank_el.count() > 0:
+                            grade = (
+                                await rank_el.text_content() or ""
+                            ).strip()
+
+                        i += 2  # 情報行 + データ行をスキップ
+                    else:
+                        # データ行なし → 情報行から評価だけ取得
+                        critic_el = info_row.locator(".Training_Critic")
+                        if await critic_el.count() > 0:
+                            evaluation = (
+                                await critic_el.text_content() or ""
+                            ).strip()
+                        rank_el = info_row.locator("[class*='Rank_']")
+                        if await rank_el.count() > 0:
+                            grade = (
+                                await rank_el.text_content() or ""
+                            ).strip()
+                        i += 1
+                else:
+                    i += 1
+
+                results.append({
+                    "horse_number": horse_num,
+                    "horse_name": horse_name,
+                    "horse_id": horse_id,
+                    "training_date": training_date,
+                    "training_course": training_course,
+                    "track_condition": track_condition,
+                    "rider": rider,
+                    "training_time": training_time,
+                    "training_load": training_load,
+                    "evaluation": evaluation,
+                    "grade": grade,
+                    "review": review,
+                })
+
+            self.log(f"  調教データ: {len(results)}頭取得 (race_id={race_id})")
+
+        except Exception as e:
+            self.log(f"  [!] 調教データ取得エラー: {e}")
+            logger.debug("調教データ取得エラー (race_id=%s): %s", race_id, e)
+
+        return results
+
+    # ----------------------------------------------------------
     # 騎手名検索 -> 成績
     # ----------------------------------------------------------
 
@@ -551,6 +715,16 @@ def _extract_horse_id_from_url(url: str) -> str:
     return m.group(1) if m else ""
 
 
+def _construct_race_id_from_data(data: dict) -> str:
+    """enriched data から netkeiba race_id を構築"""
+    from src.monitor.helpers import build_race_id
+    race = data.get("race", {})
+    meeting_text = race.get("meeting_text", "")
+    venue = race.get("venue", "")
+    race_number = race.get("race_number", 0)
+    return build_race_id(meeting_text, venue, race_number)
+
+
 async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
     """馬データのスクレイピング + キャッシュ統合コア処理"""
     from src.scraping.cache import HorseCache
@@ -642,6 +816,34 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
           f"| 騎手: hit={cache_stats['jockey_hit']}, miss={cache_stats['jockey_miss']} "
           f"| DB: 馬{db_stats['horses']}件, 騎手{db_stats['jockeys']}件")
     cache.close()
+
+    # 調教データ取得（プレミアム会員 + ログイン済みの場合のみ）
+    if scraper._netkeiba_logged_in:
+        race_id = _construct_race_id_from_data(data)
+        if race_id:
+            print(f"\n[調教データ] race_id={race_id}")
+            training = await scraper.scrape_training_data(race_id)
+            if training:
+                data.setdefault("premium", {})["training"] = training
+                # 各馬にマージ
+                training_map = {t["horse_number"]: t for t in training}
+                for horse in horses:
+                    t = training_map.get(horse.get("num", 0))
+                    if t:
+                        horse["training"] = {
+                            "date": t["training_date"],
+                            "course": t["training_course"],
+                            "time": t["training_time"],
+                            "load": t["training_load"],
+                            "evaluation": t["evaluation"],
+                            "grade": t["grade"],
+                            "review": t["review"],
+                        }
+                print(f"  [OK] 調教データ {len(training)}頭マージ完了")
+            else:
+                print("  [!] 調教データなし（非プレミアム or レース未登録）")
+        else:
+            print("\n[調教データ] race_id構築不可（meeting_text不足）")
 
     return data
 

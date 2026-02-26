@@ -100,10 +100,11 @@ class EnricherMixin:
                 self.log(f"    {race_key}: 出馬表取得エラー ({e})")
             await asyncio.sleep(1.0)
 
-        # 馬データ補完（過去走 + 騎手成績）
+        # 馬データ補完（過去走 + 騎手成績 + 調教データ）
         horse_scraper = HorseScraper(headless=self.headless, debug=False)
         try:
             await horse_scraper.start()
+            await horse_scraper.login_netkeiba()  # プレミアムデータ用
 
             enriched_count = 0
             targets = [(k, r) for k, r in self.races.items()
@@ -156,6 +157,35 @@ class EnricherMixin:
 
                     await self._enrich_jockey_stats(horse, horse_scraper)
                     await asyncio.sleep(2.0)
+
+                # 調教データ取得（netkeiba プレミアム）
+                if horse_scraper._netkeiba_logged_in:
+                    race_id = construct_race_id(race, self.meeting_info)
+                    if race_id:
+                        try:
+                            training = await horse_scraper.scrape_training_data(
+                                race_id
+                            )
+                            if training:
+                                data.setdefault("premium", {})["training"] = training
+                                training_map = {
+                                    t["horse_number"]: t for t in training
+                                }
+                                for h in horses:
+                                    t = training_map.get(h.get("num", 0))
+                                    if t:
+                                        h["training"] = {
+                                            "date": t["training_date"],
+                                            "course": t["training_course"],
+                                            "time": t["training_time"],
+                                            "load": t["training_load"],
+                                            "evaluation": t["evaluation"],
+                                            "grade": t["grade"],
+                                            "review": t["review"],
+                                        }
+                                self.log(f"    調教データ: {len(training)}頭取得")
+                        except Exception as e:
+                            self.log(f"    調教データ取得エラー: {e}")
 
                 race["enriched"] = data
                 path = self.monitor_dir / f"{race_key}_enriched.json"

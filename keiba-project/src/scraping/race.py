@@ -15,7 +15,7 @@ from bs4 import BeautifulSoup
 from src.scraping.parsers import (
     safe_int, safe_float, time_to_seconds, parse_horse_weight, parse_sex_age,
 )
-from config.settings import COURSE_CODES, CSV_COLUMNS, RAW_DIR
+from config.settings import COURSE_CODES, CSV_COLUMNS, TRAINING_CSV_COLUMNS, RAW_DIR
 
 logger = logging.getLogger("keiba.scraping.race")
 
@@ -699,6 +699,7 @@ async def collect_races(start_date: str, end_date: str,
     results_path = Path(output_path) if output_path else RAW_DIR / "results.csv"
     returns_path = results_path.parent / "returns.csv"
     total_races = 0
+    all_race_ids = []  # 調教データ収集用
 
     # 収集済み日付をスキップ（resume対応）
     collected_dates = set()
@@ -736,6 +737,7 @@ async def collect_races(start_date: str, end_date: str,
                     print("  [WARN] レースが見つかりません（スキップ）")
                     continue
 
+                all_race_ids.extend(race_ids)
                 tasks = [
                     _fetch_and_parse_race(client, rid, semaphore)
                     for rid in race_ids
@@ -773,3 +775,109 @@ async def collect_races(start_date: str, end_date: str,
     print(f"\n[OK] 完了: {total_races}レース")
     print(f"  結果: {results_path}")
     print(f"  払戻: {returns_path}")
+
+    # 調教データ収集（Playwright, netkeiba認証情報がある場合のみ）
+    from config.settings import load_env_var
+    email = load_env_var("NETKEIBA_EMAIL")
+    password = load_env_var("NETKEIBA_PASSWORD")
+    if email and password and all_race_ids:
+        training_path = results_path.parent / "training.csv"
+        await collect_training_for_races(
+            all_race_ids, training_path,
+            headless=headless, append=True,
+        )
+
+
+# ============================================================
+# 調教データ CSV 書き出し
+# ============================================================
+
+def save_training_csv(results: list, output_path: Path, append: bool = False):
+    """調教データをCSVに保存"""
+    mode = "a" if append and output_path.exists() else "w"
+    write_header = mode == "w" or not output_path.exists()
+
+    with open(output_path, mode, newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=TRAINING_CSV_COLUMNS, extrasaction="ignore",
+        )
+        if write_header:
+            writer.writeheader()
+        for row in results:
+            writer.writerow(row)
+
+
+# ============================================================
+# 調教データ一括収集（Playwright版）
+# ============================================================
+
+async def collect_training_for_races(
+    race_ids: list, output_path: Path,
+    headless: bool = True, append: bool = False,
+):
+    """Playwright で oikiri ページから調教データを収集"""
+    from src.scraping.horse import HorseScraper
+
+    print(f"\n{'=' * 60}")
+    print(f"  調教データ収集 (Playwright版)")
+    print(f"  対象: {len(race_ids)}レース")
+    print(f"{'=' * 60}\n")
+
+    scraper = HorseScraper(headless=headless, debug=False)
+    total_training = 0
+    try:
+        await scraper.start()
+        if not await scraper.login_netkeiba():
+            print("  [WARN] netkeibaログイン失敗 — 調教データ収集をスキップ")
+            return
+
+        for idx, race_id in enumerate(race_ids):
+            if idx > 0 and idx % 10 == 0:
+                await scraper.restart()
+
+            try:
+                training = await scraper.scrape_training_data(race_id)
+                if training:
+                    # race_date をrace_idから推定（YYYY年の部分）
+                    rows = []
+                    for t in training:
+                        rows.append({
+                            "race_id": race_id,
+                            "race_date": "",  # 後でresults.csvとJOINして補完可能
+                            "horse_number": t["horse_number"],
+                            "horse_name": t["horse_name"],
+                            "horse_id": t["horse_id"],
+                            "training_date": t["training_date"],
+                            "training_course": t["training_course"],
+                            "track_condition": t["track_condition"],
+                            "rider": t["rider"],
+                            "training_time": t["training_time"],
+                            "training_load": t["training_load"],
+                            "evaluation": t["evaluation"],
+                            "grade": t["grade"],
+                            "review": t["review"],
+                        })
+                    save_training_csv(rows, output_path, append=True)
+                    total_training += len(training)
+                    print(f"  [{idx+1}/{len(race_ids)}] {race_id}: "
+                          f"{len(training)}頭 (累計{total_training})")
+                else:
+                    print(f"  [{idx+1}/{len(race_ids)}] {race_id}: データなし")
+
+            except Exception as e:
+                print(f"  [{idx+1}/{len(race_ids)}] {race_id}: エラー ({e})")
+
+            await asyncio.sleep(REQUEST_DELAY)
+
+    except KeyboardInterrupt:
+        print("\n[!] 調教データ収集中断")
+    except Exception as e:
+        print(f"\n[ERROR] 調教データ収集エラー: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        await scraper.close()
+
+    print(f"\n[OK] 調教データ: {total_training}件")
+    if total_training > 0:
+        print(f"  出力: {output_path}")

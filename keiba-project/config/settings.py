@@ -200,6 +200,13 @@ CSV_COLUMNS = [
     "win_odds", "popularity", "prize_money",
 ]
 
+TRAINING_CSV_COLUMNS = [
+    "race_id", "race_date", "horse_number", "horse_name", "horse_id",
+    "training_date", "training_course", "track_condition",
+    "rider", "training_time", "training_load",
+    "evaluation", "grade", "review",
+]
+
 
 # ============================================================
 # Windows エンコーディング修正（起動時に1回だけ呼ぶ）

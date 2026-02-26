@@ -59,6 +59,7 @@ class OddsScraper(BaseScraper):
         info = {
             "venue": extract_venue(meeting_text),
             "race_number": race_num,
+            "meeting_text": meeting_text,
             "name": "", "grade": "", "surface": "",
             "distance": 0, "direction": "", "post_time": "",
         }
@@ -400,6 +401,7 @@ def build_input_json(scraped: dict, race_info: dict) -> dict:
             "date": datetime.now().strftime("%Y-%m-%d"),
             "venue": race_info.get("venue", ""),
             "race_number": race_info.get("race_number", 0),
+            "meeting_text": race_info.get("meeting_text", ""),
             "name": race_info.get("name", ""),
             "grade": grade,
             "surface": race_info.get("surface", ""),
