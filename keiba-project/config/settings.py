@@ -203,7 +203,9 @@ CSV_COLUMNS = [
 TRAINING_CSV_COLUMNS = [
     "race_id", "race_date", "horse_number", "horse_name", "horse_id",
     "training_date", "training_course", "track_condition",
-    "rider", "training_time", "training_load",
+    "rider", "training_time", "lap_times",
+    "overall_time", "final_3f", "final_1f",
+    "sparring_info", "training_load",
     "evaluation", "grade", "review",
 ]
 

@@ -134,24 +134,27 @@ class BaseScraper:
                 self.log("  [!] パスワード入力フィールドが見つかりません")
                 return False
 
-            # ログインボタンクリック（type="image" のログインボタン）
+            # ログインボタンクリック
+            # ページには検索フォーム(type=submit)とログインフォーム(type=image)があるため
+            # ログインフォーム内のボタンを正確に特定する
             await asyncio.sleep(0.5)
-            login_btn = self.page.locator(
-                'input[type="image"], input[type="submit"], '
-                'button[type="submit"]'
+            login_form_btn = self.page.locator(
+                'input[name="login_id"]'
+            ).locator('xpath=ancestor::form').locator(
+                'input[type="image"], input[type="submit"], button[type="submit"]'
             )
-            if await login_btn.count() > 0:
-                await login_btn.first.click()
+            if await login_form_btn.count() > 0:
+                await login_form_btn.first.click()
             else:
-                await self.page.keyboard.press("Enter")
+                # フォールバック: パスワード入力欄でEnter
+                await pw_input.first.press("Enter")
 
             # ページ遷移を待機
             await self.page.wait_for_load_state("domcontentloaded")
             await asyncio.sleep(3)
 
-            # ログイン成功確認
+            # ログイン成功確認: ログアウトリンクまたはマイページ要素の有無
             current_url = self.page.url
-            # ログインページにまだいる（pid=login）なら失敗
             if "pid=login" in current_url:
                 self.log("  [!] netkeibaログイン失敗（認証情報を確認してください）")
                 logger.warning("netkeibaログイン失敗")

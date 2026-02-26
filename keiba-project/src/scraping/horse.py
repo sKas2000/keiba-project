@@ -534,24 +534,98 @@ class HorseScraper(BaseScraper):
                 training_load = ""
                 evaluation = ""
                 grade = ""
+                overall_time = ""
+                final_3f = ""
+                final_1f = ""
+                lap_times = ""
+                sparring_info = ""
 
                 if i + 1 < len(rows):
                     data_row = rows[i + 1]
                     # データ行かどうか確認（馬番セルがなければデータ行）
                     data_umaban = data_row.locator("td.Umaban")
                     if await data_umaban.count() == 0:
+                        # 日付・コース・馬場・騎手はクラスセレクタで取得
+                        day_el = data_row.locator("td.Training_Day")
+                        if await day_el.count() > 0:
+                            training_date = (
+                                await day_el.text_content() or ""
+                            ).strip()
+
                         cells = await data_row.locator("td").all()
                         cell_texts = []
                         for cell in cells:
                             t = await cell.text_content()
                             cell_texts.append(t.strip() if t else "")
-
-                        if len(cell_texts) >= 5:
-                            training_date = cell_texts[0]
+                        if len(cell_texts) >= 4:
                             training_course = cell_texts[1]
                             track_condition = cell_texts[2]
                             rider = cell_texts[3]
-                            training_time = cell_texts[4]
+
+                        # タイムデータを TrainingTimeDataList から構造化取得
+                        time_list = data_row.locator(
+                            ".TrainingTimeDataList li"
+                        )
+                        time_count = await time_list.count()
+                        if time_count > 0:
+                            times = []
+                            laps = []
+                            for ti in range(time_count):
+                                li_el = time_list.nth(ti)
+                                # <li>83.8<span>(17.3)</span></li>
+                                # li全体のテキストから span テキストを引く
+                                full = (
+                                    await li_el.text_content() or ""
+                                ).strip()
+                                rap_el = li_el.locator(".RapTime")
+                                rap = ""
+                                if await rap_el.count() > 0:
+                                    rap = (
+                                        await rap_el.text_content() or ""
+                                    ).strip()
+                                # 通過タイム = 全テキスト - ラップ部分
+                                t_val = full.replace(rap, "").strip()
+                                # ラップタイムから括弧を除去
+                                lap_val = rap.strip("()")
+                                times.append(t_val)
+                                laps.append(lap_val)
+
+                            training_time = "-".join(times)
+                            lap_times = "-".join(laps)
+                            if times:
+                                overall_time = times[0]
+                            if len(times) >= 2:
+                                final_3f = times[-2]
+                            if times:
+                                final_1f = times[-1]
+                        else:
+                            # TrainingTimeDataList がない場合は
+                            # テキスト全体をフォールバック
+                            if len(cell_texts) >= 5:
+                                training_time = cell_texts[4]
+
+                        # 併走情報（TrainingTimeData内のul後テキスト）
+                        time_td = data_row.locator("td.TrainingTimeData")
+                        if await time_td.count() > 0:
+                            sp = await time_td.evaluate("""
+                                el => {
+                                    const ul = el.querySelector(
+                                        '.TrainingTimeDataList'
+                                    );
+                                    if (!ul) return '';
+                                    let text = '';
+                                    let node = ul.nextSibling;
+                                    while (node) {
+                                        if (node.nodeType === 3)
+                                            text += node.textContent;
+                                        else if (node.nodeType === 1)
+                                            text += node.textContent;
+                                        node = node.nextSibling;
+                                    }
+                                    return text.trim();
+                                }
+                            """)
+                            sparring_info = sp.replace("\n", " ").strip()
 
                         # CSS class で特定フィールドを取得
                         load_el = data_row.locator(".TrainingLoad")
@@ -598,6 +672,11 @@ class HorseScraper(BaseScraper):
                     "track_condition": track_condition,
                     "rider": rider,
                     "training_time": training_time,
+                    "lap_times": lap_times,
+                    "overall_time": overall_time,
+                    "final_3f": final_3f,
+                    "final_1f": final_1f,
+                    "sparring_info": sparring_info,
                     "training_load": training_load,
                     "evaluation": evaluation,
                     "grade": grade,
@@ -834,6 +913,11 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
                             "date": t["training_date"],
                             "course": t["training_course"],
                             "time": t["training_time"],
+                            "lap_times": t.get("lap_times", ""),
+                            "overall_time": t.get("overall_time", ""),
+                            "final_3f": t.get("final_3f", ""),
+                            "final_1f": t.get("final_1f", ""),
+                            "sparring_info": t.get("sparring_info", ""),
                             "load": t["training_load"],
                             "evaluation": t["evaluation"],
                             "grade": t["grade"],
