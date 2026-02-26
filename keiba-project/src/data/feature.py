@@ -45,9 +45,6 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         "weight_carried_change",
         # v5: ローテーションパターン
         "prev_interval_2", "is_second_start",
-        # v13: 人気度・賞金特徴量（穴馬発見）
-        "prev_popularity_1", "avg_popularity_last5",
-        "prev_prize_money_1", "avg_prize_money_last5",
     ]
     for col in feature_cols:
         df[col] = 0.0
@@ -188,31 +185,31 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                     # 叩き良化判定: 前々走間隔>60日 and 前走間隔<45日 → 叩き2走目
                     df.at[idx, "is_second_start"] = 1.0 if interval_2 > 60 and interval_1 < 45 else 0.0
 
-            # v13: 人気度特徴量（穴馬発見の鍵）
-            if "popularity" in df.columns:
-                # 前走人気
-                prev_pop = past.iloc[-1].get("popularity", 0)
-                if prev_pop > 0:
-                    df.at[idx, "prev_popularity_1"] = prev_pop
-
-                # 最近5走の平均人気
-                pop_vals = recent["popularity"].values
-                valid_pop = pop_vals[pop_vals > 0]
-                if len(valid_pop) > 0:
-                    df.at[idx, "avg_popularity_last5"] = round(valid_pop.mean(), 2)
-
-            # v13: 賞金特徴量（実力指標）
-            if "prize_money" in df.columns:
-                # 前走賞金
-                prev_prize = past.iloc[-1].get("prize_money", 0)
-                if prev_prize > 0:
-                    df.at[idx, "prev_prize_money_1"] = prev_prize
-
-                # 最近5走の平均賞金
-                prize_vals = recent["prize_money"].values
-                valid_prize = prize_vals[prize_vals > 0]
-                if len(valid_prize) > 0:
-                    df.at[idx, "avg_prize_money_last5"] = round(valid_prize.mean(), 2)
+            # v13: 人気度・賞金特徴量（穴馬発見）— 実験の結果、ROI悪化（市場追従化）のため不採用
+            # if "popularity" in df.columns:
+            #     # 前走人気
+            #     prev_pop = past.iloc[-1].get("popularity", 0)
+            #     if prev_pop > 0:
+            #         df.at[idx, "prev_popularity_1"] = prev_pop
+            #
+            #     # 最近5走の平均人気
+            #     pop_vals = recent["popularity"].values
+            #     valid_pop = pop_vals[pop_vals > 0]
+            #     if len(valid_pop) > 0:
+            #         df.at[idx, "avg_popularity_last5"] = round(valid_pop.mean(), 2)
+            #
+            # # v13: 賞金特徴量（実力指標）
+            # if "prize_money" in df.columns:
+            #     # 前走賞金
+            #     prev_prize = past.iloc[-1].get("prize_money", 0)
+            #     if prev_prize > 0:
+            #         df.at[idx, "prev_prize_money_1"] = prev_prize
+            #
+            #     # 最近5走の平均賞金
+            #     prize_vals = recent["prize_money"].values
+            #     valid_prize = prize_vals[prize_vals > 0]
+            #     if len(valid_prize) > 0:
+            #         df.at[idx, "avg_prize_money_last5"] = round(valid_prize.mean(), 2)
 
     # 一時カラム削除
     df = df.drop(columns=["_group_key"])

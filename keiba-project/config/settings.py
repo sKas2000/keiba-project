@@ -168,12 +168,12 @@ FEATURE_COLUMNS = [
     "course_dist_win_rate", "course_dist_place_rate",
     # v11: 時間減衰特徴量 — 実験の結果、ROI悪化（市場追従化）のため不採用
     # "decay_finish_30d", "decay_finish_60d", "decay_finish_90d", "momentum",
-    # v12: スーパープレミアム追加特徴量（ペース、人気、賞金、馬体重）
+    # v12: スーパープレミアム追加特徴量（ペース、馬体重）
     "avg_pace_front_last5", "avg_pace_back_last5", "pace_balance",
-    # v13: 穴馬発見特徴量（人気度・賞金）
-    "prev_popularity_1", "avg_popularity_last5",
-    "prev_prize_money_1", "avg_prize_money_last5",
     "avg_weight_last3", "weight_stability",
+    # v13: 穴馬発見特徴量（人気度・賞金） — 実験の結果、ROI悪化（市場追従化）のため不採用
+    # "prev_popularity_1", "avg_popularity_last5",
+    # "prev_prize_money_1", "avg_prize_money_last5",
 ]
 
 CATEGORICAL_FEATURES = [
