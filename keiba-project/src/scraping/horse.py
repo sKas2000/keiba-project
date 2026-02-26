@@ -344,6 +344,61 @@ class HorseScraper(BaseScraper):
         return ""
 
     # ----------------------------------------------------------
+    # 血統・生産者取得
+    # ----------------------------------------------------------
+
+    async def get_pedigree_info(self) -> dict:
+        """現在表示中の馬ページから血統(父・母父)・生産者を抽出
+
+        Returns:
+            {"sire": "父名", "bms": "母父名", "breeder": "生産者名"}
+        """
+        result = {"sire": "", "bms": "", "breeder": ""}
+        try:
+            # blood_table: td[0]=父, td[4]=母父(BMS)
+            bt = self.page.locator("table.blood_table")
+            if await bt.count() > 0:
+                tds = await bt.locator("td").all()
+                if len(tds) >= 1:
+                    result["sire"] = (
+                        await tds[0].text_content() or ""
+                    ).strip()
+                if len(tds) >= 5:
+                    result["bms"] = (
+                        await tds[4].text_content() or ""
+                    ).strip()
+
+            # db_prof_table: 「生産者」行
+            prof = self.page.locator(
+                "table.db_prof_table, div.db_prof_area_02 table"
+            )
+            if await prof.count() > 0:
+                rows = await prof.first.locator("tr").all()
+                for row in rows:
+                    th_el = row.locator("th")
+                    if await th_el.count() == 0:
+                        continue
+                    th = (await th_el.first.text_content() or "").strip()
+                    if "生産者" in th:
+                        td = (
+                            await row.locator("td").first.text_content()
+                            or ""
+                        ).strip()
+                        result["breeder"] = td
+                        break
+
+            if result["sire"]:
+                self.log(
+                    f"  血統: 父={result['sire']}, "
+                    f"母父={result['bms']}, "
+                    f"生産者={result['breeder']}"
+                )
+        except Exception as e:
+            self.log(f"  [!] 血統取得失敗: {e}")
+
+        return result
+
+    # ----------------------------------------------------------
     # 騎手ID抽出（過去走データから）
     # ----------------------------------------------------------
 
@@ -845,6 +900,12 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
             horse["past_races"] = cached_horse["past_races"]
             if cached_horse["trainer_name"]:
                 horse["trainer_name"] = cached_horse["trainer_name"]
+            # 血統データ復元
+            pedigree = cached_horse.get("pedigree", {})
+            if pedigree:
+                horse["sire"] = pedigree.get("sire", "")
+                horse["bms"] = pedigree.get("bms", "")
+                horse["breeder"] = pedigree.get("breeder", "")
             cache_stats["horse_hit"] += 1
             print(f"  [cache] 馬データ取得済み (horse_id={horse_id})")
         else:
@@ -856,12 +917,18 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
                 trainer_name = await scraper.get_trainer_name()
                 if trainer_name:
                     horse["trainer_name"] = trainer_name
+                # 血統・生産者取得（馬ページ表示中に取得）
+                pedigree = await scraper.get_pedigree_info()
+                horse["sire"] = pedigree.get("sire", "")
+                horse["bms"] = pedigree.get("bms", "")
+                horse["breeder"] = pedigree.get("breeder", "")
                 # キャッシュに保存
                 scraped_id = _extract_horse_id_from_url(horse_url)
                 if scraped_id:
                     horse["horse_id"] = scraped_id
                     cache.set_horse(scraped_id, horse_name, past_races,
-                                    horse.get("trainer_name", ""))
+                                    horse.get("trainer_name", ""),
+                                    pedigree=pedigree)
             else:
                 horse["past_races"] = []
             cache_stats["horse_miss"] += 1

@@ -15,7 +15,10 @@ from bs4 import BeautifulSoup
 from src.scraping.parsers import (
     safe_int, safe_float, time_to_seconds, parse_horse_weight, parse_sex_age,
 )
-from config.settings import COURSE_CODES, CSV_COLUMNS, TRAINING_CSV_COLUMNS, RAW_DIR
+from config.settings import (
+    COURSE_CODES, CSV_COLUMNS, TRAINING_CSV_COLUMNS,
+    PEDIGREE_CSV_COLUMNS, RAW_DIR,
+)
 
 logger = logging.getLogger("keiba.scraping.race")
 
@@ -786,6 +789,11 @@ async def collect_races(start_date: str, end_date: str,
             all_race_ids, training_path, append=True,
         )
 
+    # 血統データ収集（認証不要、db.netkeiba.com から取得）
+    if results_path.exists():
+        pedigree_path = results_path.parent / "pedigree.csv"
+        await collect_pedigree_for_results(results_path, pedigree_path)
+
 
 # ============================================================
 # 調教データ CSV 書き出し
@@ -1063,3 +1071,149 @@ async def collect_training_for_races(
     print(f"\n[OK] 調教データ: {total_training}件")
     if total_training > 0:
         print(f"  出力: {output_path}")
+
+
+# ============================================================
+# 血統データ収集（HTTP + BeautifulSoup）
+# ============================================================
+
+def _parse_pedigree_html(html: str, horse_id: str) -> dict | None:
+    """馬詳細ページ HTML から血統(父・母父)・生産者を抽出"""
+    soup = BeautifulSoup(html, "html.parser")
+
+    result = {"horse_id": horse_id, "horse_name": "", "sire": "", "bms": "", "breeder": ""}
+
+    # 馬名
+    name_el = soup.select_one(".horse_title h1, .horse_name h1")
+    if name_el:
+        result["horse_name"] = name_el.get_text(strip=True)
+
+    # blood_table: td[0]=父, td[4]=母父(BMS)
+    bt = soup.find("table", class_="blood_table")
+    if bt:
+        tds = bt.find_all("td")
+        if len(tds) >= 1:
+            result["sire"] = tds[0].get_text(strip=True)
+        if len(tds) >= 5:
+            result["bms"] = tds[4].get_text(strip=True)
+
+    # db_prof_table: 「生産者」行
+    prof = soup.find("table", class_="db_prof_table")
+    if not prof:
+        prof_area = soup.find("div", class_="db_prof_area_02")
+        if prof_area:
+            prof = prof_area.find("table")
+    if prof:
+        for tr in prof.find_all("tr"):
+            th = tr.find("th")
+            if th and "生産者" in th.get_text():
+                td = tr.find("td")
+                if td:
+                    result["breeder"] = td.get_text(strip=True)
+                break
+
+    if not result["sire"]:
+        return None
+    return result
+
+
+def save_pedigree_csv(results: list, output_path: Path, append: bool = False):
+    """血統データをCSVに保存"""
+    mode = "a" if append and output_path.exists() else "w"
+    write_header = mode == "w" or not output_path.exists()
+
+    with open(output_path, mode, newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(
+            f, fieldnames=PEDIGREE_CSV_COLUMNS, extrasaction="ignore",
+        )
+        if write_header:
+            writer.writeheader()
+        for row in results:
+            writer.writerow(row)
+
+
+def _load_collected_horse_ids(pedigree_path: Path) -> set:
+    """既存 pedigree CSV から収集済み horse_id を取得"""
+    if not pedigree_path.exists():
+        return set()
+    ids = set()
+    with open(pedigree_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            hid = row.get("horse_id", "")
+            if hid:
+                ids.add(hid)
+    return ids
+
+
+async def collect_pedigree_for_results(
+    results_path: Path, output_path: Path = None,
+):
+    """results.csv から全 horse_id を抽出し、血統データを収集"""
+    if not results_path.exists():
+        print("  [WARN] results.csv が見つかりません — 血統収集スキップ")
+        return
+
+    pedigree_path = output_path or results_path.parent / "pedigree.csv"
+
+    # 全 horse_id を抽出
+    all_horse_ids = set()
+    with open(results_path, "r", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            hid = row.get("horse_id", "")
+            if hid:
+                all_horse_ids.add(hid)
+
+    # 収集済みをスキップ
+    collected = _load_collected_horse_ids(pedigree_path)
+    remaining = all_horse_ids - collected
+
+    print(f"\n{'=' * 60}")
+    print(f"  血統データ収集 (HTTP版)")
+    print(f"  対象: {len(all_horse_ids)}頭 (未収集: {len(remaining)}頭)")
+    print(f"{'=' * 60}\n")
+
+    if not remaining:
+        print("  全馬が収集済みです")
+        return
+
+    total = 0
+    batch = []
+    remaining_list = sorted(remaining)
+
+    async with httpx.AsyncClient(
+        timeout=15, follow_redirects=True, headers=_HEADERS,
+    ) as client:
+        for idx, horse_id in enumerate(remaining_list):
+            try:
+                url = f"https://db.netkeiba.com/horse/{horse_id}/"
+                resp = await client.get(url)
+                if resp.status_code != 200:
+                    continue
+
+                pedigree = _parse_pedigree_html(resp.text, horse_id)
+                if pedigree:
+                    batch.append(pedigree)
+                    total += 1
+
+                # 100件ごとにCSV書き出し + 進捗表示
+                if len(batch) >= 100:
+                    save_pedigree_csv(batch, pedigree_path, append=True)
+                    batch = []
+
+                if (idx + 1) % 200 == 0 or idx == 0:
+                    print(f"  [{idx+1}/{len(remaining_list)}] 累計{total}頭")
+
+            except Exception as e:
+                logger.debug("血統取得エラー (horse_id=%s): %s", horse_id, e)
+
+            await asyncio.sleep(REQUEST_DELAY * 0.5)
+
+    # 残りを書き出し
+    if batch:
+        save_pedigree_csv(batch, pedigree_path, append=True)
+
+    print(f"\n[OK] 血統データ: {total}頭")
+    if total > 0:
+        print(f"  出力: {pedigree_path}")

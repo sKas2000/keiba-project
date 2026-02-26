@@ -209,6 +209,10 @@ TRAINING_CSV_COLUMNS = [
     "evaluation", "grade", "review",
 ]
 
+PEDIGREE_CSV_COLUMNS = [
+    "horse_id", "horse_name", "sire", "bms", "breeder",
+]
+
 
 # ============================================================
 # Windows エンコーディング修正（起動時に1回だけ呼ぶ）

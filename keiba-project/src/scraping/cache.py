@@ -55,6 +55,14 @@ class HorseCache:
             )
         """)
         conn.commit()
+        # pedigree カラムの後方互換追加
+        try:
+            conn.execute(
+                "ALTER TABLE horse_data ADD COLUMN pedigree TEXT DEFAULT ''"
+            )
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass  # カラム既存
 
     def close(self):
         if self._conn:
@@ -71,31 +79,40 @@ class HorseCache:
             return None
         conn = self._connect()
         row = conn.execute(
-            "SELECT past_races, trainer_name, updated_at FROM horse_data WHERE horse_id = ?",
+            "SELECT past_races, trainer_name, pedigree, updated_at FROM horse_data WHERE horse_id = ?",
             (horse_id,),
         ).fetchone()
         if row is None:
             return None
-        past_races_json, trainer_name, updated_at = row
+        past_races_json, trainer_name, pedigree_json, updated_at = row
         if self._is_expired(updated_at, ttl_days):
             return None
+        pedigree = {}
+        if pedigree_json:
+            try:
+                pedigree = json.loads(pedigree_json)
+            except (json.JSONDecodeError, TypeError):
+                pass
         return {
             "past_races": json.loads(past_races_json) if past_races_json else [],
             "trainer_name": trainer_name or "",
+            "pedigree": pedigree,
         }
 
     def set_horse(self, horse_id: str, horse_name: str,
-                  past_races: list, trainer_name: str = ""):
+                  past_races: list, trainer_name: str = "",
+                  pedigree: dict = None):
         """馬データをキャッシュに保存"""
         if not horse_id:
             return
         conn = self._connect()
+        pedigree_json = json.dumps(pedigree, ensure_ascii=False) if pedigree else ""
         conn.execute(
             """INSERT OR REPLACE INTO horse_data
-               (horse_id, horse_name, past_races, trainer_name, updated_at)
-               VALUES (?, ?, ?, ?, ?)""",
+               (horse_id, horse_name, past_races, trainer_name, pedigree, updated_at)
+               VALUES (?, ?, ?, ?, ?, ?)""",
             (horse_id, horse_name, json.dumps(past_races, ensure_ascii=False),
-             trainer_name, datetime.now().isoformat()),
+             trainer_name, pedigree_json, datetime.now().isoformat()),
         )
         conn.commit()
 
