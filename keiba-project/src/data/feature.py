@@ -45,6 +45,9 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         "weight_carried_change",
         # v5: ローテーションパターン
         "prev_interval_2", "is_second_start",
+        # v12: 馬体重・ペース特徴量
+        "avg_weight_last3", "weight_stability",
+        "avg_pace_front_last5", "pace_balance",
     ]
     for col in feature_cols:
         df[col] = 0.0
@@ -184,6 +187,36 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                     df.at[idx, "prev_interval_2"] = interval_2
                     # 叩き良化判定: 前々走間隔>60日 and 前走間隔<45日 → 叩き2走目
                     df.at[idx, "is_second_start"] = 1.0 if interval_2 > 60 and interval_1 < 45 else 0.0
+
+            # v12: 馬体重特徴量（直近3走の平均・安定性）
+            if "horse_weight" in past.columns:
+                recent3 = past.tail(3)
+                w_vals = recent3["horse_weight"].values
+                valid_w = w_vals[w_vals > 0]
+                if len(valid_w) > 0:
+                    df.at[idx, "avg_weight_last3"] = round(float(valid_w.mean()), 1)
+                    if len(valid_w) > 1:
+                        df.at[idx, "weight_stability"] = round(float(valid_w.std()), 1)
+
+            # v12: ペース特徴量（前半600m換算ペース・ペースバランス）
+            if "finish_time_sec" in past.columns and "last_3f" in past.columns:
+                front_paces = []
+                pace_diffs = []
+                for _, pr in recent.iterrows():
+                    ft = pr.get("finish_time_sec", 0)
+                    l3f = pr.get("last_3f", 0)
+                    d = pr.get("distance", 0)
+                    if ft > 0 and l3f > 0 and d > 600:
+                        front_time = ft - l3f
+                        # 前半所要時間を600m換算（last_3fと同スケール）
+                        normalized_front = front_time / (d - 600) * 600
+                        front_paces.append(normalized_front)
+                        # 正=後半減速（前半速い）、負=後半加速（差し脚質）
+                        pace_diffs.append(l3f - normalized_front)
+                if front_paces:
+                    df.at[idx, "avg_pace_front_last5"] = round(np.mean(front_paces), 2)
+                if pace_diffs:
+                    df.at[idx, "pace_balance"] = round(np.mean(pace_diffs), 2)
 
             # v13: 人気度・賞金特徴量（穴馬発見）— 実験の結果、ROI悪化（市場追従化）のため不採用
             # if "popularity" in df.columns:

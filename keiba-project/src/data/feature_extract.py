@@ -211,21 +211,23 @@ def _compute_past_features(row: dict, past_races: list, race: dict,
             except Exception:
                 pass
 
-    # v12: スーパープレミアム追加特徴量
-    # ペース（前半・後半の平均ペース）
-    pace_front_vals = [safe_float(r.get("pace_front", 0)) for r in past_races[:5]]
-    pace_back_vals = [safe_float(r.get("pace_back", 0)) for r in past_races[:5]]
-    valid_front = [v for v in pace_front_vals if v > 0]
-    valid_back = [v for v in pace_back_vals if v > 0]
+    # v12: ペース特徴量（前半600m換算ペース・ペースバランス）
+    # CSV学習パイプラインと同じ計算方式: finish_time - last3f → 600m換算
+    front_paces = []
+    pace_diffs = []
+    for r in past_races[:5]:
+        ft = safe_float(r.get("time", 0))
+        l3f = safe_float(r.get("last3f", 0))
+        d = safe_int(r.get("distance", 0))
+        if ft > 0 and l3f > 0 and d > 600:
+            front_time = ft - l3f
+            normalized_front = front_time / (d - 600) * 600
+            front_paces.append(normalized_front)
+            pace_diffs.append(l3f - normalized_front)
 
-    row["avg_pace_front_last5"] = round(np.mean(valid_front), 2) if valid_front else 0
-    row["avg_pace_back_last5"] = round(np.mean(valid_back), 2) if valid_back else 0
-
-    # ペースバランス（前半と後半の差: 前傾=負、後傾=正）
-    if row["avg_pace_front_last5"] > 0 and row["avg_pace_back_last5"] > 0:
-        row["pace_balance"] = round(row["avg_pace_back_last5"] - row["avg_pace_front_last5"], 2)
-    else:
-        row["pace_balance"] = 0
+    row["avg_pace_front_last5"] = round(np.mean(front_paces), 2) if front_paces else 0
+    row["avg_pace_back_last5"] = 0  # avg_last3f_last5と重複するため未使用
+    row["pace_balance"] = round(np.mean(pace_diffs), 2) if pace_diffs else 0
 
     # 人気（前走人気、直近5走平均人気）
     row["prev_popularity_1"] = safe_int(past_races[0].get("popularity", 0)) if past_races else 0

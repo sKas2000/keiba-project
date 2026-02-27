@@ -1039,7 +1039,8 @@ async def collect_training_for_races(
                               f"HTTP {resp.status_code}")
                         continue
 
-                    training = _parse_oikiri_html(resp.text, race_id)
+                    html = resp.content.decode("euc-jp", errors="replace")
+                    training = _parse_oikiri_html(html, race_id)
                     if training:
                         save_training_csv(training, output_path, append=True)
                         total_training += len(training)
@@ -1243,13 +1244,16 @@ async def collect_pedigree_for_results(
                     batch.append(row)
                     total += 1
 
-                # 100件ごとにCSV書き出し + 進捗表示
-                if len(batch) >= 100:
+                # 50件ごとにCSV書き出し
+                if len(batch) >= 50:
                     save_pedigree_csv(batch, pedigree_path, append=True)
                     batch = []
 
-                if (idx + 1) % 200 == 0 or idx == 0:
-                    print(f"  [{idx+1}/{len(remaining_list)}] 累計{total}頭")
+                if (idx + 1) % 100 == 0 or idx == 0:
+                    print(
+                        f"  [{idx+1}/{len(remaining_list)}] 累計{total}頭",
+                        flush=True,
+                    )
 
             except Exception as e:
                 logger.debug("血統取得エラー (horse_id=%s): %s", horse_id, e)
