@@ -363,6 +363,11 @@ def simulate_bets(prepared: dict,
                   quinella_top_n: int = 0,
                   wide_top_n: int = 0,
                   trio_top_n: int = 0,
+                  quinella_prob_min: float = 0.0,
+                  wide_prob_min: float = 0.0,
+                  trio_prob_min: float = 0.0,
+                  ev_threshold_win: float = 0.0,
+                  ev_threshold_place: float = 0.0,
                   ) -> dict:
     """賭けシミュレーション（prepare済みデータに対して実行）
 
@@ -373,6 +378,11 @@ def simulate_bets(prepared: dict,
         quinella_top_n: 馬連用top_n（0でtop_nを使用）
         wide_top_n: ワイド用top_n（0でtop_nを使用）
         trio_top_n: 3連複用top_n（0でtop_nを使用）
+        quinella_prob_min: 馬連のPL確率下限（0=フィルタなし）
+        wide_prob_min: ワイドのPL確率下限（0=フィルタなし）
+        trio_prob_min: 3連複のPL確率下限（0=フィルタなし）
+        ev_threshold_win: 単勝専用EV閾値（0=ev_thresholdを使用）
+        ev_threshold_place: 複勝専用EV閾値（0=ev_thresholdを使用）
         他のパラメータはrun_backtestと同一
     """
     val_df = prepared["val_df"]
@@ -498,6 +508,10 @@ def simulate_bets(prepared: dict,
             top_horses_multi = top_horses
         horse_numbers_multi = top_horses_multi["horse_number"].values if "horse_number" in top_horses_multi.columns else []
 
+        # コンボ確率フィルタ用: race_groupインデックスマップ（PL確率計算用）
+        _rg_idx_map = {idx: pos for pos, idx in enumerate(race_group.index)}
+        n_horses = len(race_group)
+
         # --- 単勝シミュレーション ---
         for i, (_, horse) in enumerate(top_horses.head(top_n).iterrows()):
             odds = horse.get("win_odds", 0)
@@ -509,7 +523,8 @@ def simulate_bets(prepared: dict,
             if odds_max > 0 and odds > odds_max:
                 continue
             ev_win = horse["win_prob"] * odds
-            if ev_threshold > 0 and ev_win < ev_threshold:
+            _ev_t_win = ev_threshold_win if ev_threshold_win > 0 else ev_threshold
+            if _ev_t_win > 0 and ev_win < _ev_t_win:
                 continue
             if horse["pred_prob"] < bet_threshold:
                 continue
@@ -540,7 +555,8 @@ def simulate_bets(prepared: dict,
             n_entries = len(race_group)
             est_place_odds = _estimate_place_odds(odds, n_entries)
             ev_place = pred_place * est_place_odds
-            if ev_threshold > 0 and ev_place < ev_threshold:
+            _ev_t_place = ev_threshold_place if ev_threshold_place > 0 else ev_threshold
+            if _ev_t_place > 0 and ev_place < _ev_t_place:
                 continue
             if pred_place < bet_threshold:
                 continue
@@ -573,6 +589,14 @@ def simulate_bets(prepared: dict,
                 nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
                 if 0 in nums:
                     continue
+                # PL確率フィルタ: 2頭が1-2着を占める確率
+                if quinella_prob_min > 0:
+                    rg_i = _rg_idx_map.get(h_i.name, -1)
+                    rg_j = _rg_idx_map.get(h_j.name, -1)
+                    if rg_i >= 0 and rg_j >= 0:
+                        q_prob = _pl_unordered_top_k(win_probs, [rg_i, rg_j], 2)
+                        if q_prob < quinella_prob_min:
+                            continue
                 combo_key = _make_combination_key(nums, ordered=False)
                 actual_1st = race_group[race_group["finish_position"] == 1]
                 actual_2nd = race_group[race_group["finish_position"] == 2]
@@ -602,6 +626,14 @@ def simulate_bets(prepared: dict,
                 nums = [h_i.get("horse_number", 0), h_j.get("horse_number", 0)]
                 if 0 in nums:
                     continue
+                # PL確率フィルタ: 2頭が共に3着以内に入る確率
+                if wide_prob_min > 0:
+                    rg_i = _rg_idx_map.get(h_i.name, -1)
+                    rg_j = _rg_idx_map.get(h_j.name, -1)
+                    if rg_i >= 0 and rg_j >= 0:
+                        w_prob = _pl_wide_prob(win_probs, rg_i, rg_j, n_horses)
+                        if w_prob < wide_prob_min:
+                            continue
                 combo_key = _make_combination_key(nums, ordered=False)
                 hit = int(nums[0]) in actual_top3 and int(nums[1]) in actual_top3
                 payout = 0
@@ -656,6 +688,15 @@ def simulate_bets(prepared: dict,
                 ]
                 if 0 in nums:
                     continue
+                # PL確率フィルタ: 3頭が上位3着を占める確率
+                if trio_prob_min > 0:
+                    rg_i = _rg_idx_map.get(top_horses_multi.iloc[i].name, -1)
+                    rg_j = _rg_idx_map.get(top_horses_multi.iloc[j].name, -1)
+                    rg_k = _rg_idx_map.get(top_horses_multi.iloc[k].name, -1)
+                    if rg_i >= 0 and rg_j >= 0 and rg_k >= 0:
+                        t_prob = _pl_unordered_top_k(win_probs, [rg_i, rg_j, rg_k], 3)
+                        if t_prob < trio_prob_min:
+                            continue
                 combo_key = _make_combination_key(nums, ordered=False)
                 actual_top3_horses = race_group[race_group["finish_position"] <= 3]
                 if len(actual_top3_horses) < 3:
@@ -752,6 +793,11 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  quinella_top_n: int = 0,
                  wide_top_n: int = 0,
                  trio_top_n: int = 0,
+                 quinella_prob_min: float = 0.0,
+                 wide_prob_min: float = 0.0,
+                 trio_prob_min: float = 0.0,
+                 ev_threshold_win: float = 0.0,
+                 ev_threshold_place: float = 0.0,
                  _prepared: dict = None,
                  surface_split: bool = False,
                  ) -> dict:
@@ -780,6 +826,11 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         quinella_top_n=quinella_top_n,
         wide_top_n=wide_top_n,
         trio_top_n=trio_top_n,
+        quinella_prob_min=quinella_prob_min,
+        wide_prob_min=wide_prob_min,
+        trio_prob_min=trio_prob_min,
+        ev_threshold_win=ev_threshold_win,
+        ev_threshold_place=ev_threshold_place,
     )
 
 
