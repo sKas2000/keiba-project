@@ -344,10 +344,10 @@ def expanding_window_backtest(
         flags.append("rank")
     flag_str = ", ".join(flags) if flags else "basic"
     print(f"\n  [Expanding Window Backtest] window={window_months}M, {flag_str}")
-    print(f"  {'='*95}")
+    print(f"  {'='*115}")
     print(f"  {'Win':8s} {'Train':>12s} {'Test':>18s} {'Races':>6s}"
-          f" {'Win':>7s} {'Place':>7s} {'Q':>7s} {'Wide':>7s} {'Trio':>7s}")
-    print(f"  {'-'*95}")
+          f" {'Win':>7s} {'Place':>7s} {'Q':>7s} {'Wide':>7s} {'Exacta':>7s} {'Trio':>7s} {'Trifct':>7s}")
+    print(f"  {'-'*115}")
 
     quiet_cb = [lgb.log_evaluation(0), lgb.early_stopping(50)]
 
@@ -516,7 +516,9 @@ def expanding_window_backtest(
               f" {rois['place']:>6.1f}%"
               f" {rois['quinella']:>6.1f}%"
               f" {rois['wide']:>6.1f}%"
-              f" {rois['trio']:>6.1f}%")
+              f" {rois['exacta']:>6.1f}%"
+              f" {rois['trio']:>6.1f}%"
+              f" {rois['trifecta']:>6.1f}%")
 
         window_bets = {}
         for bt in BET_TYPES:
@@ -537,7 +539,7 @@ def expanding_window_backtest(
         train_end = test_end
 
     # 総合結果
-    print(f"  {'-'*95}")
+    print(f"  {'-'*115}")
     total_rois = {}
     for bt in BET_TYPES:
         b = total_bets[bt]
@@ -549,8 +551,10 @@ def expanding_window_backtest(
           f" {total_rois['place']:>6.1f}%"
           f" {total_rois['quinella']:>6.1f}%"
           f" {total_rois['wide']:>6.1f}%"
-          f" {total_rois['trio']:>6.1f}%")
-    print(f"  {'='*95}")
+          f" {total_rois['exacta']:>6.1f}%"
+          f" {total_rois['trio']:>6.1f}%"
+          f" {total_rois['trifecta']:>6.1f}%")
+    print(f"  {'='*115}")
     print(f"  (* = ROI >= 100%)")
 
     return {
