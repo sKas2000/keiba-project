@@ -5,12 +5,7 @@ import json
 from pathlib import Path
 
 from config.settings import PROCESSED_DIR
-
-BET_TYPES = ["win", "place", "quinella", "wide", "exacta", "trio", "trifecta"]
-BET_LABELS = {
-    "win": "単勝", "place": "複勝", "quinella": "馬連", "wide": "ワイド",
-    "exacta": "馬単", "trio": "3連複", "trifecta": "3連単",
-}
+from src.model.evaluator import BET_TYPES, BET_LABELS
 
 
 def print_backtest_report(results: dict):

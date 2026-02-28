@@ -44,7 +44,7 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
         # v4: 斤量変化
         "weight_carried_change",
         # v5: ローテーションパターン
-        "prev_interval_2", "is_second_start",
+        "prev_interval_2",
         # v12: 馬体重・ペース特徴量
         "avg_weight_last3", "weight_stability",
         "avg_pace_front_last5", "pace_balance",
@@ -185,8 +185,6 @@ def compute_horse_history_features(df: pd.DataFrame) -> pd.DataFrame:
                     interval_1 = (current_date - d0).days
                     interval_2 = (d0 - d1).days
                     df.at[idx, "prev_interval_2"] = interval_2
-                    # 叩き良化判定: 前々走間隔>60日 and 前走間隔<45日 → 叩き2走目
-                    df.at[idx, "is_second_start"] = 1.0 if interval_2 > 60 and interval_1 < 45 else 0.0
 
             # v12: 馬体重特徴量（直近3走の平均・安定性）
             if "horse_weight" in past.columns:
@@ -332,7 +330,7 @@ def compute_race_pace_features(df: pd.DataFrame) -> pd.DataFrame:
     """レース内の脚質構成から展開予測特徴量を計算
     running_style: 0=逃げ, 1=先行, 2=差し, 3=追込
     """
-    pace_cols = ["race_n_front", "race_n_mid", "race_n_back", "pace_advantage"]
+    pace_cols = ["race_n_front", "race_n_mid", "race_n_back"]
     for col in pace_cols:
         df[col] = 0.0
 
@@ -346,20 +344,6 @@ def compute_race_pace_features(df: pd.DataFrame) -> pd.DataFrame:
         df.loc[indices, "race_n_front"] = n_front
         df.loc[indices, "race_n_mid"] = n_mid
         df.loc[indices, "race_n_back"] = n_back
-
-        # 自分の脚質に対するペース有利不利
-        # 逃げ・先行馬が多い=ハイペース=差し有利
-        # 逃げ・先行馬が少ない=スローペース=先行有利
-        for idx in indices:
-            style = df.at[idx, "running_style"]
-            if n_front >= 4:
-                # ハイペース: 差し・追込に有利
-                df.at[idx, "pace_advantage"] = 1.0 if style >= 2 else -1.0
-            elif n_front <= 2:
-                # スローペース: 逃げ・先行に有利
-                df.at[idx, "pace_advantage"] = 1.0 if style <= 1 else -1.0
-            else:
-                df.at[idx, "pace_advantage"] = 0.0
 
     return df
 

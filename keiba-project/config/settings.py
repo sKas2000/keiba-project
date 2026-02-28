@@ -111,9 +111,16 @@ EXPANDING_BEST_PARAMS = {
     "calibration_pct": 0.10,      # 最適校正割合（10%）
     "window_months": 6,           # テスト期間（6ヶ月、再精査: 3→6で安定性向上）
     "ev_threshold_win": 1.0,      # 単勝EVフィルタ（expanding window検証: +2.5pt）
+    "ev_threshold_place": 0.0,    # 複勝EVフィルタ（0=無効、推定精度が低いため）
+    "ev_cap_win": 0.0,            # 単勝EV上限（0=無効、長期-1.3pt悪化のため不使用）
+    "ev_cap_place": 0.0,          # 複勝EV上限（0=無効）
+    "quinella_prob_min": 0.0,     # 馬連PL確率下限（0=無効、長期で過学習）
+    "wide_prob_min": 0.0,         # ワイドPL確率下限（0=無効、同上）
+    "trio_prob_min": 0.0,         # 3連複PL確率下限（0=無効、同上）
     # 2026-02-28 買い方改善実験:
     #   ev_threshold_win=1.0: 単勝86.8%(+2.5pt) 他券種不変
-    #   PL確率フィルタ(quinella/wide/trio_prob_min): 2ヶ月では効果あり、長期では過学習
+    #   ev_cap_win=2.0: 2ヶ月+4pt、長期-1.3pt → 不採用
+    #   PL確率フィルタ(prob_min): 2ヶ月では効果あり、長期では過学習 → 0.0維持
     #   ev_threshold=1.5(統合): 単勝+1.1pt だが複勝-4.7pt、分離がベスト
     #   skip=[4,5,6]: Trio+1.7pt だがQ-1.9pt（トレードオフ、現行[4,6]維持）
 }

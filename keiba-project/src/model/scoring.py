@@ -5,7 +5,7 @@
 import re
 from datetime import datetime
 
-from src.scraping.parsers import safe_int, safe_float
+from src.scraping.parsers import safe_int
 
 
 def calculate_days_between(date1_str: str, date2_str: str) -> int:

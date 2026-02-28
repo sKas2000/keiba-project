@@ -6,7 +6,6 @@ EVフィルタリング + 実払い戻しデータ対応
 Phase 3: 勝率直接推定モデル + Isotonic Regression + Kelly基準
 """
 import json
-import pickle
 from itertools import combinations, permutations
 from pathlib import Path
 
@@ -368,6 +367,8 @@ def simulate_bets(prepared: dict,
                   trio_prob_min: float = 0.0,
                   ev_threshold_win: float = 0.0,
                   ev_threshold_place: float = 0.0,
+                  ev_cap_win: float = 0.0,
+                  ev_cap_place: float = 0.0,
                   ) -> dict:
     """賭けシミュレーション（prepare済みデータに対して実行）
 
@@ -526,6 +527,8 @@ def simulate_bets(prepared: dict,
             _ev_t_win = ev_threshold_win if ev_threshold_win > 0 else ev_threshold
             if _ev_t_win > 0 and ev_win < _ev_t_win:
                 continue
+            if ev_cap_win > 0 and ev_win > ev_cap_win:
+                continue
             if horse["pred_prob"] < bet_threshold:
                 continue
 
@@ -557,6 +560,8 @@ def simulate_bets(prepared: dict,
             ev_place = pred_place * est_place_odds
             _ev_t_place = ev_threshold_place if ev_threshold_place > 0 else ev_threshold
             if _ev_t_place > 0 and ev_place < _ev_t_place:
+                continue
+            if ev_cap_place > 0 and ev_place > ev_cap_place:
                 continue
             if pred_place < bet_threshold:
                 continue
@@ -798,6 +803,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
                  trio_prob_min: float = 0.0,
                  ev_threshold_win: float = 0.0,
                  ev_threshold_place: float = 0.0,
+                 ev_cap_win: float = 0.0,
+                 ev_cap_place: float = 0.0,
                  _prepared: dict = None,
                  surface_split: bool = False,
                  ) -> dict:
@@ -831,6 +838,8 @@ def run_backtest(input_path: str = None, model_dir: Path = None,
         trio_prob_min=trio_prob_min,
         ev_threshold_win=ev_threshold_win,
         ev_threshold_place=ev_threshold_place,
+        ev_cap_win=ev_cap_win,
+        ev_cap_place=ev_cap_place,
     )
 
 
