@@ -82,6 +82,13 @@ def load_results(path: str | Path) -> pd.DataFrame:
         df["first_corner_pos"] = df["passing_order"].apply(parse_first_corner)
 
     df = df[df["finish_position"] > 0].copy()
+
+    # 非JRA（地方競馬）レースを除外: 場コード01-10がJRA
+    venue_code = df["race_id"].str[4:6].astype(int)
+    non_jra = (venue_code > 10).sum()
+    if non_jra > 0:
+        df = df[venue_code <= 10].copy()
+
     df = df.sort_values(["race_date", "race_id", "finish_position"]).reset_index(drop=True)
 
     return df
