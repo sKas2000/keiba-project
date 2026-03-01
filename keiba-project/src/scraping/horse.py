@@ -862,12 +862,47 @@ def _construct_race_id_from_data(data: dict) -> str:
 async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
     """馬データのスクレイピング + キャッシュ統合コア処理"""
     from src.scraping.cache import HorseCache
+    from src.scraping.race import fetch_shutuba
 
     cache = HorseCache()
     cache_stats = {"horse_hit": 0, "horse_miss": 0, "jockey_hit": 0, "jockey_miss": 0}
 
     horses = data.get("horses", [])
     print(f"[対象馬] {len(horses)}頭")
+
+    # 出馬表から horse_id を事前取得（名前検索を回避）
+    race_id = _construct_race_id_from_data(data)
+    shutuba_id_map = {}  # horse_number -> horse_id
+    if race_id:
+        print(f"[出馬表] race_id={race_id} からhorse_id取得中...")
+        shutuba = await fetch_shutuba(race_id)
+        shutuba_horses = shutuba.get("horses", [])
+        for sh in shutuba_horses:
+            hnum = sh.get("horse_number", 0)
+            hid = sh.get("horse_id", "")
+            if hnum > 0 and hid:
+                shutuba_id_map[hnum] = hid
+            # 出馬表の馬体重・調教師名もマージ
+            if hnum > 0:
+                for h in horses:
+                    if h.get("num") == hnum:
+                        if sh.get("trainer_name"):
+                            h["trainer_name"] = sh["trainer_name"]
+                        if sh.get("horse_weight") and sh["horse_weight"] > 0:
+                            h["horse_weight_actual"] = sh["horse_weight"]
+                            h["horse_weight_change"] = sh.get("horse_weight_change", 0)
+                        break
+        if shutuba_id_map:
+            print(f"  [OK] {len(shutuba_id_map)}頭のhorse_id取得")
+        # 馬場状態・天気をマージ
+        meta = shutuba.get("race_meta", {})
+        race_data = data.get("race", {})
+        if meta.get("track_condition") and not race_data.get("track_condition"):
+            race_data["track_condition"] = meta["track_condition"]
+        if meta.get("weather") and not race_data.get("weather"):
+            race_data["weather"] = meta["weather"]
+    else:
+        print("[出馬表] race_id構築不可 — 名前検索にフォールバック")
 
     for i, horse in enumerate(horses):
         horse_name = horse.get("name", "")
@@ -891,6 +926,11 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
             if age_match:
                 birth_year = int(race_year_str) - int(age_match.group(1))
 
+        # 出馬表からhorse_idをセット
+        horse_num = horse.get("num", 0)
+        if not horse.get("horse_id") and horse_num in shutuba_id_map:
+            horse["horse_id"] = shutuba_id_map[horse_num]
+
         # キャッシュから馬データを検索（horse_idが判明している場合）
         horse_id = horse.get("horse_id", "")
         cached_horse = cache.get_horse(horse_id) if horse_id else None
@@ -909,8 +949,13 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
             cache_stats["horse_hit"] += 1
             print(f"  [cache] 馬データ取得済み (horse_id={horse_id})")
         else:
-            # キャッシュミス → スクレイピング
-            horse_url = await scraper.search_horse(horse_name, birth_year=birth_year)
+            # horse_idがある場合は直接アクセス、なければ名前検索にフォールバック
+            horse_url = ""
+            if horse_id:
+                horse_url = f"https://db.netkeiba.com/horse/{horse_id}/"
+                print(f"  [shutuba] horse_id={horse_id} で直接アクセス")
+            else:
+                horse_url = await scraper.search_horse(horse_name, birth_year=birth_year)
             if horse_url:
                 past_races = await scraper.scrape_horse_past_races(horse_url)
                 horse["past_races"] = past_races
@@ -923,7 +968,7 @@ async def _enrich_horses(scraper: HorseScraper, data: dict) -> dict:
                 horse["bms"] = pedigree.get("bms", "")
                 horse["breeder"] = pedigree.get("breeder", "")
                 # キャッシュに保存
-                scraped_id = _extract_horse_id_from_url(horse_url)
+                scraped_id = horse_id or _extract_horse_id_from_url(horse_url)
                 if scraped_id:
                     horse["horse_id"] = scraped_id
                     cache.set_horse(scraped_id, horse_name, past_races,

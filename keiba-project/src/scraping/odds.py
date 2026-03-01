@@ -418,3 +418,67 @@ def build_input_json(scraped: dict, race_info: dict) -> dict:
             "trio": scraped.get("trio", []),
         },
     }
+
+
+async def scrape_and_build_input(
+    scraper: OddsScraper,
+    meeting_index: int = None,
+    race: int = None,
+    non_interactive: bool = False,
+) -> dict:
+    """JRAオッズページからスクレイピング→input.json構築を一括実行"""
+    from src.scraping.calendar import (
+        select_meeting_interactive, select_race_interactive,
+        prompt_missing_race_info,
+    )
+
+    # 開催一覧取得
+    meetings = await scraper.goto_odds_top()
+    if not meetings:
+        raise RuntimeError("開催が見つかりません（本日JRA開催なし？）")
+
+    for i, m in enumerate(meetings):
+        print(f"  {i+1}. {m['text']}")
+
+    # 開催選択
+    class _Args:
+        pass
+    args = _Args()
+    args.meeting_index = meeting_index
+    args.race = race
+    args.non_interactive = non_interactive
+
+    idx = select_meeting_interactive(meetings, args)
+    meeting = meetings[idx]
+    print(f"  → {meeting['text']}")
+    await scraper.select_meeting(meeting["element"])
+
+    # レース選択
+    race_num = select_race_interactive(args)
+    print(f"  → {race_num}レース")
+    await scraper.select_race(race_num)
+
+    # レース情報取得
+    race_info = await scraper.scrape_race_info(meeting["text"], race_num)
+    race_info = prompt_missing_race_info(race_info, non_interactive)
+
+    # オッズ取得
+    horses = await scraper.parse_win_place()
+    print(f"  単勝・複勝: {len(horses)}頭")
+
+    quinella = await scraper.parse_triangle_odds("馬連")
+    print(f"  馬連: {len(quinella)}組")
+
+    wide = await scraper.parse_triangle_odds("ワイド", is_range=True)
+    print(f"  ワイド: {len(wide)}組")
+
+    trio = await scraper.parse_trio()
+    print(f"  3連複: {len(trio)}組")
+
+    scraped = {
+        "horses": horses,
+        "quinella": quinella,
+        "wide": wide,
+        "trio": trio,
+    }
+    return build_input_json(scraped, race_info)

@@ -27,7 +27,7 @@ async def run_rule_pipeline(
     headless: bool = True,
 ):
     """ルールベース全自動パイプライン"""
-    from src.scraping.odds import OddsScraper, build_input_json
+    from src.scraping.odds import OddsScraper, scrape_and_build_input
     from src.scraping.horse import HorseScraper, enrich_race_data
     from src.model.scoring import score_rule_based
     from src.model.ev import calculate_ev, print_ev_results
@@ -40,7 +40,7 @@ async def run_rule_pipeline(
     odds_scraper = OddsScraper(headless=headless)
     await odds_scraper.start()
     try:
-        data = await build_input_json(
+        data = await scrape_and_build_input(
             odds_scraper,
             meeting_index=meeting_index,
             race=race,
@@ -119,7 +119,7 @@ async def run_ml_pipeline(
         data = read_json(input_file)
     else:
         # スクレイピングから開始
-        from src.scraping.odds import OddsScraper, build_input_json
+        from src.scraping.odds import OddsScraper, scrape_and_build_input
         from src.scraping.horse import HorseScraper, enrich_race_data
 
         print("\n[Step 1/3] JRA オッズ取得")
@@ -127,7 +127,7 @@ async def run_ml_pipeline(
         odds_scraper = OddsScraper(headless=headless)
         await odds_scraper.start()
         try:
-            data = await build_input_json(
+            data = await scrape_and_build_input(
                 odds_scraper,
                 meeting_index=meeting_index,
                 race=race,
